@@ -3,6 +3,11 @@ Require Import List. Import ListNotations.
 
 Definition Var := string.
 
+Inductive Name : Type :=
+| cAnon
+| cName (_: Var)
+.
+
 Inductive PrTerm : Type :=
 | PrVar (_: nat)
 | PrRef (_: Var)
@@ -15,9 +20,11 @@ Inductive CedKind : Type :=
 | KdPi (_: CedKind) (_: CedKind).
 
 Inductive CedType : Type :=
-| TpPi (_: Var) (_: CedType)
+| TpPi (_: Name) (_: CedType) (_: CedType)
 | TpAppTp (_: CedType) (_: CedType)
 | TpAppTm (_: CedType) (_: PrTerm)
+| TpArrowT (_: CedType) (_: CedType)
+| TpVar (_: Var)
 .
 
 Inductive TpKd : Type :=
@@ -29,6 +36,7 @@ Inductive CedTerm : Type :=
 | VarT (_: Var)
 | LamT (_: Var) (_: option TpKd) (_: CedTerm)
 | AppT (_: CedTerm) (_: CedTerm)
+| ProdT (_: Name) (_: CedTerm) (_: CedTerm)
 .
 
 Inductive CedCtor : Type :=
