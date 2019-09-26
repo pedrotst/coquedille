@@ -1,9 +1,10 @@
-Require Import MetaCoq.Template.All.
-
-(* Module C := MetaCoq.Template.All. *)
+Require Import MetaCoq.Template.Ast.
+Require Import MetaCoq.Template.Loader.
 
 Require Import Coquedille.Ast.
-
+Require Import Hask.Control.Monad.
+Require Import Hask.Control.Monad.State.
+(* Require Import String. *)
 
 Require Import List. Import ListNotations.
 
@@ -41,12 +42,11 @@ Print foo_syntax.
 
 Definition default_t x := [CmdDef (DefTerm x (VarT x))].
 
-Import MonadNotation.
 Definition ced_context := list CedType.
 
 (* Notation "Γ ,, x" := (x :: Γ) (at level 20). *)
 
-Reserved Notation "⟦ Γ ̇ x ⟧" (at level 0).
+Reserved Notation "⟦ x ⟧" (at level 0).
 
 Definition nname_cname (n: name): Name :=
   match n with
@@ -54,22 +54,27 @@ Definition nname_cname (n: name): Name :=
   | nNamed c => cName c
   end.
 
-Fixpoint denoteTerm (t: term) (Γ: ced_context) {struct t}: CedType :=
+Open Scope string_scope.
+
+Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
   let default := TpVar "x" in
   match t with
   | tProd x t1 t2 =>
-    let t1' := ⟦ Γ ̇ t1 ⟧ in
-    let t2' := ⟦ (Γ ,, t1') ̇ t2 ⟧ in
+    t1' <- ⟦ t1 ⟧ ;
+    Γ <- get ;
+    put (Γ ,, t1') ;;
+    t2'  <- ⟦ t2 ⟧ ;
     let cname := nname_cname x in
-    (TpPi cname t1' t2')
+    pure (TpPi cname t1' t2')
   | tRel n =>
+    Γ <- get ;
     match nth_error Γ n with
-    | None => default
-    | Some x => x
+    | None => return_ default
+    | Some x => return_ x
     end
-  | _ => default
+  | _ => pure default
   end
-where "⟦ Γ ̇ x ⟧" := (denoteTerm x Γ).
+where "⟦ x ⟧" := (denoteTerm x).
 
 Fixpoint denoteCtors (ctor: (ident × term) × nat): CedCtor  :=
   let '(name, t, i) := ctor in
