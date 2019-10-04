@@ -1,0 +1,3 @@
+[submodule "coq-haskell"]
+	path = coq-haskell
+	url = https://github.com/jwiegley/coq-haskell.git

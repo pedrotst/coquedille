@@ -1,5 +1,5 @@
+-R coq-haskell/src Hask
 -R theories Coquedille
--R ../coq-haskell/src Hask
 
 theories/Ast.v
 theories/DenoteCoq.v
