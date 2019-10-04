@@ -1,0 +1,12 @@
+# Coq binaries
+*.vo
+*.glob
+*.aux
+*.d
+*.conf
+
+
+.DS_Store
+.idea
+*.log
+tmp/
