@@ -43,16 +43,14 @@ Print myNat_syntax.
 Print foo_syntax.
 
 
-Definition program_err (p : option CedProgram) :=
+Definition program_err (p : option CedProgram): CedProgram :=
   match p with
   | None => []
   | Some v => v
   end.
 
 Definition denotenat := program_err (denoteCoq nat_syntax).
-Definition denoteoption := program_err (denoteCoq option_syntax).
 Print nat_syntax.
-
 Eval compute in denotenat.
 (*
      = Just
@@ -63,13 +61,37 @@ Eval compute in denotenat.
      : Maybe CedCmds
  *)
 
+
+Definition denoteoption := program_err (denoteCoq option_syntax).
+Print option_syntax.
+
+(* ind_ctors := [("Some", *)
+(*                tProd (nNamed "A") *)
+(*                      (tSort *)
+(*                         (Universe.make'' *)
+(*                            (Level.Level *)
+(*                               "Coq.Init.Datatypes.13", *)
+(*                             false) [])) *)
+(*                      (tProd nAnon  *)
+(*                             (tRel 0) *)
+(*                             (tApp (tRel 2) [tRel 1])), 1); *)
+(*               ("None", *)
+(*                tProd (nNamed "A") *)
+(*                      (tSort *)
+(*                         (Universe.make'' *)
+(*                            (Level.Level *)
+(*                               "Coq.Init.Datatypes.13", *)
+(*                             false) [])) *)
+(*                      (tApp (tRel 1) [tRel 0]), 0)]; *)
 Eval compute in denoteoption.
      (* = [CmdData *)
      (*      (DefData "option" KdStar *)
      (*         [Ctr "Some" *)
-     (*            (TpPi (cName "A") (TpVar "x") *)
-     (*               (TpPi cAnon (TpVar "x") (TpVar "x"))); *)
-     (*         Ctr "None" (TpPi (cName "A") (TpVar "x") (TpVar "x"))])] *)
+     (*            (TpPi (cName "A") (TpVar "NotImpl") *)
+     (*               (TpPi cAnon (TpVar "NotImpl") (TpVar "NotImpl"))); *)
+     (*         Ctr "None" *)
+     (*           (TpPi (cName "A") (TpVar "NotImpl") *)
+     (*              (TpVar "NotImpl"))])] *)
      (* : CedProgram *)
 
 Eval compute in (ppProgram denoteoption).

@@ -34,6 +34,7 @@ Inductive TpKd : Type :=
 
 Inductive CedTerm : Type :=
 | VarT (_: Var)
+(* | RelT (_: nat) *)
 | LamT (_: Var) (_: option TpKd) (_: CedTerm)
 | AppT (_: CedTerm) (_: CedTerm)
 | ProdT (_: Name) (_: CedTerm) (_: CedTerm)
