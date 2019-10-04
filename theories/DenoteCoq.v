@@ -24,7 +24,7 @@ Definition nname_cname (n: name): Name :=
 Local Open Scope string_scope.
 
 Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
-  let default_name := TpVar "x" in
+  let default_name := TpVar "NOT IMPLEMENTED!" in
   match t with
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;
@@ -43,9 +43,9 @@ Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
   end
 where "⟦ x ⟧" := (denoteTerm x).
 
-Fixpoint denoteCtors (ctor: (ident * term) * nat): CedCtor  :=
+Fixpoint denoteCtors (data_name : Var) (ctor: (ident * term) * nat): CedCtor  :=
   let '(name, t, i) := ctor in
-  let '(t', Γ) := denoteTerm t [] in
+  let '(t', Γ) := denoteTerm t [TpVar data_name] in
   Ctr name t'.
 
 (* We assume that the term is well formed before calling denoteCoq *)
@@ -60,6 +60,6 @@ Fixpoint denoteCoq (p: program): Maybe CedProgram :=
     i_body <- head (ind_bodies body) ;
     let name := (ind_name i_body) in
     let ctors := ind_ctors i_body in
-    pure [CmdData (DefData name KdStar (fmap denoteCtors ctors))]
+    pure [CmdData (DefData name KdStar (fmap (denoteCtors name) ctors))]
   | _ => None
   end.
