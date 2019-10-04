@@ -24,7 +24,7 @@ Definition nname_cname (n: name): Name :=
 Local Open Scope string_scope.
 
 Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
-  let default_name := TpVar "NotImpl" in
+  let default_name := TpVar "notimpl" in
   match t with
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;
@@ -36,8 +36,8 @@ Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
   | tRel n =>
     Γ <- get ;
     match nth_error Γ n with
-    | None => return_ (TpVar "noty")
-    | Some x => return_ x
+    | None => pure (TpVar "typing err")
+    | Some x => pure x
     end
   | _ => pure default_name
   end

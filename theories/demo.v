@@ -51,15 +51,43 @@ Definition program_err (p : option CedProgram): CedProgram :=
 
 Definition denotenat := program_err (denoteCoq nat_syntax).
 Print nat_syntax.
+(* nat_syntax =  *)
+(* ([InductiveDecl "Coq.Init.Datatypes.nat" *)
+(*     {| *)
+(*     ind_finite := Finite; *)
+(*     ind_npars := 0; *)
+(*     ind_params := []; *)
+(*     ind_bodies := [{| *)
+(*                    ind_name := "nat"; *)
+(*                    ind_type := tSort *)
+(*                                  (Universe.make'' *)
+(*                                     (Level.lSet, false) []); *)
+(*                    ind_kelim := [InProp; InSet; InType]; *)
+(*                    ind_ctors := [("O", tRel 0, 0); *)
+(*                                 ("S", *)
+(*                                 tProd nAnon (tRel 0) (tRel 1), 1)]; *)
+(*                    ind_projs := [] |}]; *)
+(*     ind_universes := Monomorphic_ctx *)
+(*                        (LevelSetProp.of_list [], *)
+(*                        ConstraintSet.empty) |}], *)
+(* tInd *)
+(*   {| *)
+(*   inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*   inductive_ind := 0 |} []) *)
+(*      : program *)
+
 Eval compute in denotenat.
-(*
-     = Just
-         [CmdData
-            (DefData "nat" KdStar
-               [Ctr "O" (TpVar "x");
-               Ctr "S" (TpPi cAnon (TpVar "x") (TpVar "x"))])]
-     : Maybe CedCmds
- *)
+(* = [CmdData *)
+(*      (DefData "nat" KdStar *)
+(*         [Ctr "O" (TpVar "nat"); *)
+(*         Ctr "S" (TpPi cAnon (TpVar "nat") (TpVar "nat"))])] *)
+(* : CedProgram *)
+Eval compute in (ppProgram denotenat).
+(*      = "  data nat : ★ :=  *)
+(*           | O : nat *)
+(*           | S : ∀ anon :nat . nat. *)
+(* " *)
+(*      : string *)
 
 
 Definition denoteoption := program_err (denoteCoq option_syntax).

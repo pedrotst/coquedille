@@ -15,6 +15,7 @@ Definition TkDot     := ".".
 Definition TkTab     := "  ".
 Definition TkAnon    := "anon".
 Definition TkPi      := "Π".
+Definition TkAll     := "∀".
 Definition TkOpenPar := "(".
 Definition TkClosePar:= ")".
 Definition TkCR      := "
@@ -62,15 +63,16 @@ Fixpoint ppType (t : CedType) :=
   match t with
   | TpArrowT t1 t2 => ppType t1 ++ TkArrow ++ ppType t2
   | TpPi name t1 t2 => TkPi ++ TkSpace ++ ppName name ++ TkSpace
-                           ++ TkColon ++ ppType t1 ++ TkSpace
-                           ++ TkDot ++ TkSpace ++ ppType t2
+                            ++ TkColon ++ TkSpace
+                            ++ ppType t1 ++ TkSpace
+                            ++ TkDot ++ TkSpace ++ ppType t2
   | TpVar v => v
   | _ => TkNotImpl
   end.
 
 Fixpoint ppCtor (ctor : CedCtor) :=
   match ctor with
-  | Ctr v t => TkPipe ++ TkSpace ++ v ++ TkSpace ++ TkColon ++ TkSpace ++ ppType t
+  | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ ppType ty
   end.
 
 Definition ppDatatype (name : Var) (kind : CedKind) (ctors : list CedCtor) :=
