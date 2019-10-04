@@ -57,4 +57,4 @@ Inductive CedCmd : Type :=
 | CmdData (_: CedData)
 .
 
-Definition CedCmds := list CedCmd.
+Definition CedProgram := list CedCmd.

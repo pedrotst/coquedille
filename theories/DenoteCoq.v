@@ -21,10 +21,10 @@ Definition nname_cname (n: name): Name :=
   | nNamed c => cName c
   end.
 
-Open Scope string_scope.
+Local Open Scope string_scope.
 
 Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
-  let default := TpVar "x" in
+  let default_name := TpVar "x" in
   match t with
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;
@@ -36,10 +36,10 @@ Fixpoint denoteTerm (t: term) {struct t}: State ced_context CedType :=
   | tRel n =>
     Γ <- get ;
     match nth_error Γ n with
-    | None => return_ default
+    | None => return_ default_name
     | Some x => return_ x
     end
-  | _ => pure default
+  | _ => pure default_name
   end
 where "⟦ x ⟧" := (denoteTerm x).
 
@@ -51,7 +51,7 @@ Fixpoint denoteCtors (ctor: (ident * term) * nat): CedCtor  :=
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
 (* TODO: browse metacoq library for well typed term guarantees *)
-Fixpoint denoteCoq (p: program): Maybe CedCmds :=
+Fixpoint denoteCoq (p: program): Maybe CedProgram :=
   let (genv, t) := p in
   match t with
   | tInd ind univ =>

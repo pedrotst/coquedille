@@ -4,13 +4,16 @@ Require Import MetaCoq.Template.Loader.
 
 Require Import Coquedille.Ast.
 Require Import Coquedille.DenoteCoq.
+Require Import Coquedille.PrettyPrinter.
 
+Require Import String.
 Require Import List. Import ListNotations.
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
 
 Require Import Vectors.Vector.
+Local Open Scope string_scope.
 
 Inductive myBool : Type :=
 | t
@@ -33,14 +36,21 @@ Inductive foo : Type :=
 | buz : forall x: nat, Vector.t bool x -> foo -> bool -> foo
 .
 
+
 Quote Recursively Definition myNat_syntax := myNat.
 Quote Recursively Definition foo_syntax := foo.
 Print myNat_syntax.
 Print foo_syntax.
 
 
-Definition denotenat := denoteCoq nat_syntax.
-Definition denoteoption := denoteCoq option_syntax.
+Definition program_err (p : option CedProgram) :=
+  match p with
+  | None => []
+  | Some v => v
+  end.
+
+Definition denotenat := program_err (denoteCoq nat_syntax).
+Definition denoteoption := program_err (denoteCoq option_syntax).
 Print nat_syntax.
 
 Eval compute in denotenat.
@@ -54,3 +64,14 @@ Eval compute in denotenat.
  *)
 
 Eval compute in denoteoption.
+     (* = [CmdData *)
+     (*      (DefData "option" KdStar *)
+     (*         [Ctr "Some" *)
+     (*            (TpPi (cName "A") (TpVar "x") *)
+     (*               (TpPi cAnon (TpVar "x") (TpVar "x"))); *)
+     (*         Ctr "None" (TpPi (cName "A") (TpVar "x") (TpVar "x"))])] *)
+     (* : CedProgram *)
+
+Eval compute in (ppProgram denoteoption).
+Eval compute in (ppProgram denotenat).
+Local Close Scope string_scope.
