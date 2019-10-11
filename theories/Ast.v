@@ -4,8 +4,8 @@ Require Import List. Import ListNotations.
 Definition Var := string.
 
 Inductive Name : Type :=
-| cAnon
-| cName (_: Var)
+| Anon
+| Named (_: Var)
 .
 
 Inductive PrTerm : Type :=
@@ -14,48 +14,48 @@ Inductive PrTerm : Type :=
 | PrLam (_: PrTerm)
 | PrApp (_: PrTerm) (_: PrTerm).
 
-Inductive CedKind : Type :=
+Inductive Kind : Type :=
 | KdStar
-| KdArrow (_: CedKind) (_: CedKind)
-| KdPi (_: CedKind) (_: CedKind).
+| KdArrow (_: Kind) (_: Kind)
+| KdPi (_: Kind) (_: Kind).
 
-Inductive CedType : Type :=
-| TpPi (_: Name) (_: CedType) (_: CedType)
-| TpAppTp (_: CedType) (_: CedType)
-| TpAppTm (_: CedType) (_: PrTerm)
-| TpArrowT (_: CedType) (_: CedType)
+Inductive Typ : Type :=
+| TpPi (_: Name) (_: Typ) (_: Typ)
+| TpAppTp (_: Typ) (_: Typ)
+| TpAppTm (_: Typ) (_: PrTerm)
+| TpArrowT (_: Typ) (_: Typ)
 | TpVar (_: Var)
 .
 
 Inductive TpKd : Type :=
-| TkKind (_: CedKind)
-| TkType (_: CedType).
+| TkKind (_: Kind)
+| TkType (_: Typ).
 
 
-Inductive CedTerm : Type :=
+Inductive Term : Type :=
 | VarT (_: Var)
 (* | RelT (_: nat) *)
-| LamT (_: Var) (_: option TpKd) (_: CedTerm)
-| AppT (_: CedTerm) (_: CedTerm)
-| ProdT (_: Name) (_: CedTerm) (_: CedTerm)
+| LamT (_: Var) (_: option TpKd) (_: Term)
+| AppT (_: Term) (_: Term)
+| ProdT (_: Name) (_: Term) (_: Term)
 .
 
-Inductive CedCtor : Type :=
-| Ctr (_: Var) (_: CedType).
+Inductive Ctor : Type :=
+| Ctr (_: Var) (_: Typ).
 
-Definition CedCtors := list CedCtor.
+Definition Ctors := list Ctor.
 
-Inductive CedData : Type :=
-| DefData (_: Var) (_: CedKind) (_: CedCtors).
+Inductive Data : Type :=
+| DefData (_: Var) (_: Kind) (_: Ctors).
 
-Inductive CedDef : Type :=
-| DefType (_: Var) (_: CedType)
-| DefTerm (_: Var) (_: CedTerm)
+Inductive Assgn : Type :=
+| AssgnType (_: Var) (_: Typ)
+| AssgnTerm (_: Var) (_: Term)
 .
 
-Inductive CedCmd : Type :=
-| CmdDef (_: CedDef)
-| CmdData (_: CedData)
+Inductive Cmd : Type :=
+| CmdAssgn (_: Assgn)
+| CmdData (_: Data)
 .
 
-Definition CedProgram := list CedCmd.
+Definition Program := list Cmd.
