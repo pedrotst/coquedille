@@ -1,9 +1,11 @@
 Require Import Coquedille.Ast.
+Import Ced.
+
 Require Import Coquedille.DenoteCoq.
 
 Require Import String.
-
 Local Open Scope string.
+
 (* Token Definitions *)
 Definition TkNotImpl := "TOKEN NOT IMPLEMENTED!!".
 Definition TkStar    := "★".
@@ -30,6 +32,7 @@ Fixpoint ppIndentation (n : nat) :=
 Definition string_of_list_aux {A} (f : A -> string) (sep : string) (l : list A) (indentation: nat): string :=
   let fix aux l :=
       match l return string with
+
       | nil => ""
       | cons a nil => ppIndentation indentation ++ f a
       | cons a l => ppIndentation indentation ++ f a ++ sep ++ aux l
@@ -39,17 +42,17 @@ Definition string_of_list_aux {A} (f : A -> string) (sep : string) (l : list A) 
 Definition string_of_list {A} (f : A -> string) (l : list A): string :=
   string_of_list_aux f TkCR l 1.
 
-Fixpoint ppKind (k : CedKind) :=
+Fixpoint ppKind (k : Ced.Kind) :=
   match k with
-  | KdStar => TkStar
-  | KdArrow k1 k2 => ppKind k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ ppKind k2
-  | KdPi k t => TkNotImpl
+  | Ced.KdStar => TkStar
+  | Ced.KdArrow k1 k2 => ppKind k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ ppKind k2
+  | Ced.KdPi k t => TkNotImpl
   end.
 
 Definition ppName (name : Name) :=
   match name with
-  | cAnon => TkAnon
-  | cName v => v
+  | Anon => TkAnon
+  | Named v => v
   end.
 
      (* = [CmdData *)
@@ -59,7 +62,7 @@ Definition ppName (name : Name) :=
      (*               (TpPi cAnon (TpVar "x") (TpVar "x"))); *)
      (*         Ctr "None" (TpPi (cName "A") (TpVar "x") (TpVar "x"))])] *)
      (* : CedProgram *)
-Fixpoint ppType (t : CedType) :=
+Fixpoint ppType (t : Typ) :=
   match t with
   | TpArrowT t1 t2 => ppType t1 ++ TkArrow ++ ppType t2
   | TpPi name t1 t2 => TkPi ++ TkSpace ++ ppName name ++ TkSpace
@@ -70,24 +73,24 @@ Fixpoint ppType (t : CedType) :=
   | _ => TkNotImpl
   end.
 
-Fixpoint ppCtor (ctor : CedCtor) :=
+Fixpoint ppCtor (ctor : Ctor) :=
   match ctor with
   | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ ppType ty
   end.
 
-Definition ppDatatype (name : Var) (kind : CedKind) (ctors : list CedCtor) :=
+Definition ppDatatype (name : Var) (kind : Kind) (ctors : list Ctor) :=
 "data " ++ name ++ " : " ++ ppKind kind ++ " := " ++ TkCR
         ++ string_of_list ppCtor ctors ++ TkDot.
 
 (* Eval compute in (ppDatatype ("Pedro")). *)
 
-Definition ppCmd (c : CedCmd) : string :=
+Definition ppCmd (c : Cmd) : string :=
   match c with
-  | CmdDef def => TkNotImpl
+  | CmdAssgn def => TkNotImpl
   | CmdData (DefData v k ctors)  => ppDatatype v k ctors ++ TkCR
   end.
 
-Definition ppProgram (p : CedProgram) :=
+Definition ppProgram (p : Program) :=
   string_of_list ppCmd p.
 
 Local Close Scope string_scope.

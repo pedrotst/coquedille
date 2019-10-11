@@ -8,10 +8,7 @@ Require Import MetaCoq.Template.Ast.
 Require Import MetaCoq.Template.AstUtils.
 Require Import MetaCoq.Template.BasicAst.
 
-Require Coquedille.Ast.
-Module Ced.
-  Include Coquedille.Ast.
-End Ced.
+Require Import Coquedille.Ast.
 
 (* We use a default term instead of dealing with errors for now *)
 Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT x))].

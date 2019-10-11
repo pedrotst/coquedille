@@ -43,7 +43,7 @@ Print myNat_syntax.
 Print foo_syntax.
 
 
-Definition program_err (p : option CedProgram): CedProgram :=
+Definition program_err (p : option Ced.Program): Ced.Program :=
   match p with
   | None => []
   | Some v => v
