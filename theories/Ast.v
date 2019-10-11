@@ -20,10 +20,10 @@ Module Ced.
   | PrLam (_: PrTerm)
   | PrApp (_: PrTerm) (_: PrTerm).
 
-  Inductive Kind : Type :=
-  | KdStar
-  | KdArrow (_: Kind) (_: Kind)
-  | KdPi (_: Kind) (_: Kind).
+  (* Inductive Kind : Type := *)
+  (* | KdStar *)
+  (* | KdArrow (_: Kind) (_: Kind) *)
+  (* | KdPi (_: Kind) (_: Kind). *)
 
   Inductive Typ : Type :=
   | TpPi (_: Name) (_: Typ) (_: Typ)
@@ -31,17 +31,18 @@ Module Ced.
   | TpAppTm (_: Typ) (_: PrTerm)
   | TpArrowT (_: Typ) (_: Typ)
   | TpVar (_: Var)
+  | KdStar
   .
 
-  Inductive TpKd : Type :=
-  | TkKind (_: Kind)
-  | TkType (_: Typ).
+  (* Inductive TpKd : Type := *)
+  (* | TkKind (_: Kind) *)
+  (* | TkType (_: Typ). *)
 
 
   Inductive Term : Type :=
   | VarT (_: Var)
   (* | RelT (_: nat) *)
-  | LamT (_: Var) (_: option TpKd) (_: Term)
+  | LamT (_: Var) (_: option Typ) (_: Term)
   | AppT (_: Term) (_: Term)
   | ProdT (_: Name) (_: Term) (_: Term)
   .
@@ -52,7 +53,7 @@ Module Ced.
   Definition Ctors := list Ctor.
 
   Inductive Data : Type :=
-  | DefData (_: Var) (_: Kind) (_: Ctors).
+  | DefData (_: Var) (_: Typ) (_: Ctors).
 
   Inductive Assgn : Type :=
   | AssgnType (_: Var) (_: Typ)

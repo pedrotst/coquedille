@@ -45,13 +45,13 @@ Definition string_of_list_aux {A} (f : A -> string) (sep : string) (l : list A) 
 Definition string_of_list {A} (f : A -> string) (l : list A): string :=
   string_of_list_aux f TkCR l 1.
 
-Instance PrettyKind : Pretty Kind :=
-  fix pp k :=
-    match k with
-    | Ced.KdStar => TkStar
-    | Ced.KdArrow k1 k2 => pp k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp k2
-    | Ced.KdPi k t => TkNotImpl
-    end.
+(* Instance PrettyKind : Pretty Kind := *)
+  (* fix pp k := *)
+    (* match k with *)
+    (* | Ced.KdStar => TkStar *)
+    (* | Ced.KdArrow k1 k2 => pp k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp k2 *)
+    (* | Ced.KdPi k t => TkNotImpl *)
+    (* end. *)
 
 Instance PrettyName : Pretty Name :=
   fun name =>
@@ -69,6 +69,7 @@ Instance PrettyType : Pretty Typ :=
                              ++ pp t1 ++ TkSpace
                              ++ TkDot ++ TkSpace ++ pp t2
     | TpVar v => v
+    | KdStar => TkStar
     | _ => TkNotImpl
     end.
 
@@ -78,7 +79,7 @@ Instance PrettyCtor : Pretty Ctor :=
   | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty
   end.
 
-Definition ppDatatype (name : Var) (kind : Kind) (ctors : list Ctor) :=
+Definition ppDatatype (name : Var) (kind : Typ) (ctors : list Ctor) :=
 "data " ++ name ++ " : " ++ pretty kind ++ " := " ++ TkCR
         ++ string_of_list pretty ctors ++ TkDot.
 

@@ -84,8 +84,8 @@ Eval compute in denotenat.
 (* : CedProgram *)
 Eval compute in (pretty denotenat).
 (*      = "  data nat : ★ :=  *)
-(*           | O : nat *)
-(*           | S : ∀ anon :nat . nat. *)
+(*   | O : nat *)
+(*   | S : Π anon : nat . nat. *)
 (* " *)
 (*      : string *)
 
@@ -112,15 +112,16 @@ Print option_syntax.
 (*                             false) [])) *)
 (*                      (tApp (tRel 1) [tRel 0]), 0)]; *)
 Eval compute in denoteoption.
-(* = [CmdData *)
-(*      (DefData "option" KdStar *)
-(*         [Ctr "Some" *)
-(*            (TpPi (cName "A") (TpVar "NotImpl") *)
-(*               (TpPi cAnon (TpVar "NotImpl") (TpVar "NotImpl"))); *)
-(*         Ctr "None" *)
-(*           (TpPi (cName "A") (TpVar "NotImpl") *)
-(*              (TpVar "NotImpl"))])] *)
-(* : CedProgram *)
+(* = [Ced.CmdData *)
+(*      (Ced.DefData "option" Ced.KdStar *)
+(*         [Ced.Ctr "Some" *)
+(*            (Ced.TpPi (Ced.Named "A") Ced.KdStar *)
+(*               (Ced.TpPi Ced.Anon Ced.KdStar *)
+(*                  (Ced.TpVar "notimpl"))); *)
+(*         Ced.Ctr "None" *)
+(*           (Ced.TpPi (Ced.Named "A") Ced.KdStar *)
+(*              (Ced.TpVar "notimpl"))])] *)
+(* : Ced.Program *)
 
 Eval compute in (pretty denoteoption).
 (*      = "  data option : ★ :=  *)

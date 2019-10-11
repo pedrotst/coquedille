@@ -41,6 +41,7 @@ Fixpoint denoteTerm (t: term) {struct t}: State ctx Ced.Typ :=
     | None => pure (Ced.TpVar "typing err")
     | Some x => pure x
     end
+  | tSort univ => pure Ced.KdStar
   | _ => pure default_name
   end
 where "⟦ x ⟧" := (denoteTerm x).
