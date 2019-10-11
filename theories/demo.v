@@ -82,7 +82,7 @@ Eval compute in denotenat.
 (*         [Ctr "O" (TpVar "nat"); *)
 (*         Ctr "S" (TpPi cAnon (TpVar "nat") (TpVar "nat"))])] *)
 (* : CedProgram *)
-Eval compute in (ppProgram denotenat).
+Eval compute in (pretty denotenat).
 (*      = "  data nat : ★ :=  *)
 (*           | O : nat *)
 (*           | S : ∀ anon :nat . nat. *)
@@ -112,16 +112,23 @@ Print option_syntax.
 (*                             false) [])) *)
 (*                      (tApp (tRel 1) [tRel 0]), 0)]; *)
 Eval compute in denoteoption.
-     (* = [CmdData *)
-     (*      (DefData "option" KdStar *)
-     (*         [Ctr "Some" *)
-     (*            (TpPi (cName "A") (TpVar "NotImpl") *)
-     (*               (TpPi cAnon (TpVar "NotImpl") (TpVar "NotImpl"))); *)
-     (*         Ctr "None" *)
-     (*           (TpPi (cName "A") (TpVar "NotImpl") *)
-     (*              (TpVar "NotImpl"))])] *)
-     (* : CedProgram *)
+(* = [CmdData *)
+(*      (DefData "option" KdStar *)
+(*         [Ctr "Some" *)
+(*            (TpPi (cName "A") (TpVar "NotImpl") *)
+(*               (TpPi cAnon (TpVar "NotImpl") (TpVar "NotImpl"))); *)
+(*         Ctr "None" *)
+(*           (TpPi (cName "A") (TpVar "NotImpl") *)
+(*              (TpVar "NotImpl"))])] *)
+(* : CedProgram *)
 
-Eval compute in (ppProgram denoteoption).
-Eval compute in (ppProgram denotenat).
+Eval compute in (pretty denoteoption).
+(*      = "  data option : ★ :=  *)
+(*   | Some : Π A : notimpl . Π anon : notimpl . notimpl *)
+(*   | None : Π A : notimpl . notimpl. *)
+(* " *)
+(*      : string *)
+
+
+Eval compute in (pretty denotenat).
 Local Close Scope string_scope.

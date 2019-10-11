@@ -23,6 +23,9 @@ Definition TkClosePar:= ")".
 Definition TkCR      := "
 ".
 
+Class Pretty (p : Type) :=
+  pretty : p -> string.
+
 Fixpoint ppIndentation (n : nat) :=
   match n with
   | O => ""
@@ -42,55 +45,52 @@ Definition string_of_list_aux {A} (f : A -> string) (sep : string) (l : list A) 
 Definition string_of_list {A} (f : A -> string) (l : list A): string :=
   string_of_list_aux f TkCR l 1.
 
-Fixpoint ppKind (k : Ced.Kind) :=
-  match k with
-  | Ced.KdStar => TkStar
-  | Ced.KdArrow k1 k2 => ppKind k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ ppKind k2
-  | Ced.KdPi k t => TkNotImpl
-  end.
+Instance PrettyKind : Pretty Kind :=
+  fix pp k :=
+    match k with
+    | Ced.KdStar => TkStar
+    | Ced.KdArrow k1 k2 => pp k1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp k2
+    | Ced.KdPi k t => TkNotImpl
+    end.
 
-Definition ppName (name : Name) :=
-  match name with
-  | Anon => TkAnon
-  | Named v => v
-  end.
+Instance PrettyName : Pretty Name :=
+  fun name =>
+    match name with
+    | Anon => TkAnon
+    | Named v => v
+    end.
 
-     (* = [CmdData *)
-     (*      (DefData "option" KdStar *)
-     (*         [Ctr "Some" *)
-     (*            (TpPi (cName "A") (TpVar "x") *)
-     (*               (TpPi cAnon (TpVar "x") (TpVar "x"))); *)
-     (*         Ctr "None" (TpPi (cName "A") (TpVar "x") (TpVar "x"))])] *)
-     (* : CedProgram *)
-Fixpoint ppType (t : Typ) :=
-  match t with
-  | TpArrowT t1 t2 => ppType t1 ++ TkArrow ++ ppType t2
-  | TpPi name t1 t2 => TkPi ++ TkSpace ++ ppName name ++ TkSpace
-                            ++ TkColon ++ TkSpace
-                            ++ ppType t1 ++ TkSpace
-                            ++ TkDot ++ TkSpace ++ ppType t2
-  | TpVar v => v
-  | _ => TkNotImpl
-  end.
+Instance PrettyType : Pretty Typ :=
+  fix pp t :=
+    match t with
+    | TpArrowT t1 t2 => pp t1 ++ TkArrow ++ pp t2
+    | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace
+                             ++ TkColon ++ TkSpace
+                             ++ pp t1 ++ TkSpace
+                             ++ TkDot ++ TkSpace ++ pp t2
+    | TpVar v => v
+    | _ => TkNotImpl
+    end.
 
-Fixpoint ppCtor (ctor : Ctor) :=
+Instance PrettyCtor : Pretty Ctor :=
+  fun ctor =>
   match ctor with
-  | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ ppType ty
+  | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty
   end.
 
 Definition ppDatatype (name : Var) (kind : Kind) (ctors : list Ctor) :=
-"data " ++ name ++ " : " ++ ppKind kind ++ " := " ++ TkCR
-        ++ string_of_list ppCtor ctors ++ TkDot.
+"data " ++ name ++ " : " ++ pretty kind ++ " := " ++ TkCR
+        ++ string_of_list pretty ctors ++ TkDot.
 
-(* Eval compute in (ppDatatype ("Pedro")). *)
 
-Definition ppCmd (c : Cmd) : string :=
-  match c with
-  | CmdAssgn def => TkNotImpl
-  | CmdData (DefData v k ctors)  => ppDatatype v k ctors ++ TkCR
-  end.
+Instance PrettyDatatype : Pretty Cmd :=
+  fun c =>
+    match c with
+    | CmdAssgn def => TkNotImpl
+    | CmdData (DefData v k ctors)  => ppDatatype v k ctors ++ TkCR
+    end.
 
-Definition ppProgram (p : Program) :=
-  string_of_list ppCmd p.
+Instance PrettyProgram : Pretty Program :=
+  fun p => string_of_list pretty p.
 
 Local Close Scope string_scope.
