@@ -33,26 +33,32 @@ Local Open Scope string_scope.
 Fixpoint denoteTerm (t: term) {struct t}: State ctx Ced.Typ :=
 let default_name := Ced.TpVar "notimpl" in
 match t with
-| tProd x t1 t2 =>
-  t1' <- ⟦ t1 ⟧ ;
-  Γ <- get ;
-  match x with
-  | nAnon =>
-    t2'  <- ⟦ t2 ⟧ ;
-    pure (Ced.TpArrowT t1' t2')
-  | nNamed c =>
-    put (Ced.TpVar c :: Γ) ;;
-    t2'  <- ⟦ t2 ⟧ ;
-    pure (Ced.TpPi (Ced.Named c) t1' t2')
-  end
-| tRel n =>
-  Γ <- get ;
-  match nth_error Γ n with
-  | None => pure (Ced.TpVar "typing err")
-  | Some x => pure x
-  end
-| tSort univ => pure (Ced.TpVar "univ") (*Ced.KdStar*)
-| _ => pure (Ced.TpVar "notimpl")
+  | tProd x t1 t2 =>
+    t1' <- ⟦ t1 ⟧ ;
+    Γ <- get ;
+    match x with
+    | nAnon =>
+      put (Ced.TpVar "dummy" :: Γ) ;;
+      t2'  <- ⟦ t2 ⟧ ;
+      pure (Ced.TpArrowT t1' t2')
+    | nNamed c =>
+      put (Ced.TpVar c :: Γ) ;;
+          t2'  <- ⟦ t2 ⟧ ;
+      pure (Ced.TpPi (Ced.Named c) t1' t2')
+    end
+  | tRel n =>
+    Γ <- get ;
+    match nth_error Γ n with
+    | None => pure (Ced.TpVar "typing err")
+    | Some x => pure x
+    end
+  | tApp t1 ts2 =>
+    t1' <- ⟦ t1 ⟧ ;
+    Γ <- get ;
+    let ts2' := map (fun t => fst (⟦ t ⟧ Γ)) ts2 in
+    pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1')
+  | tSort univ => pure (Ced.TpVar "univ") (*Ced.KdStar*)
+  | _ => pure (Ced.TpVar "notimpl")
 end
 where "⟦ x ⟧" := (denoteTerm x).
 
@@ -97,7 +103,6 @@ Definition OptionCtors := ("Some",
 Eval compute in (OptionParams).
 
 Eval compute in (denoteCtors "Option" [] OptionCtors).
-
 
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)

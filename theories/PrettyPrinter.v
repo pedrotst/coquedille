@@ -7,7 +7,7 @@ Require Import String.
 Local Open Scope string.
 
 (* Token Definitions *)
-Definition TkNotImpl := "TOKEN NOT IMPLEMENTED!!".
+Definition TkNotImpl := "Just a dummy token".
 Definition TkStar    := "★".
 Definition TkArrow   := "➔".
 Definition TkSpace   := " ".
@@ -21,6 +21,8 @@ Definition TkAll     := "∀".
 Definition TkOpenPar := "(".
 Definition TkClosePar:= ")".
 Definition TkAssgn   := ":=".
+Definition TkTpDot   := "·".
+Definition TkData    := "data".
 Definition TkCR      := "
 ".
 
@@ -69,9 +71,9 @@ Instance PrettyType : Pretty Typ :=
                              ++ TkColon ++ TkSpace
                              ++ pp t1 ++ TkSpace
                              ++ TkDot ++ TkSpace ++ pp t2
+    | TpApp t1 t2 => pp t1 ++ TkSpace ++ TkTpDot ++ pp t2
     | TpVar v => v
     | KdStar => TkStar
-    | _ => TkNotImpl
     end.
 
 Instance PrettyCtor : Pretty Ctor :=
@@ -90,15 +92,8 @@ Instance PrettyParams : Pretty Params :=
               ++ TkSpace ++ TkClosePar ++ pp ps
     end.
 
-
-(*      = "  data option :  (A :★ )★ :=  *)
-(*   | Some : Π A : ★ . ★ ➔ notimpl *)
-(*   | None : Π A : ★ . notimpl. *)
-(* " *)
-(*      : string *)
-
 Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
-  "data " ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
+  TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
           ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
           ++ string_of_list pretty ctors ++ TkDot.
 

@@ -20,24 +20,14 @@ Module Ced.
   | PrLam (_: PrTerm)
   | PrApp (_: PrTerm) (_: PrTerm).
 
-  (* Inductive Kind : Type := *)
-  (* | KdStar *)
-  (* | KdArrow (_: Kind) (_: Kind) *)
-  (* | KdPi (_: Kind) (_: Kind). *)
 
   Inductive Typ : Type :=
   | TpPi (_: Name) (_: Typ) (_: Typ)
-  | TpAppTp (_: Typ) (_: Typ)
-  | TpAppTm (_: Typ) (_: PrTerm)
+  | TpApp (_: Typ) (_: Typ)
   | TpArrowT (_: Typ) (_: Typ)
   | TpVar (_: Var)
   | KdStar
   .
-
-  (* Inductive TpKd : Type := *)
-  (* | TkKind (_: Kind) *)
-  (* | TkType (_: Typ). *)
-
 
   Inductive Term : Type :=
   | VarT (_: Var)
