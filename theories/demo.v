@@ -93,6 +93,14 @@ Eval compute in (pretty denotenat).
 Definition denoteoption := program_err (denoteCoq option_syntax).
 Print option_syntax.
 
+(* ind_params := [{| decl_name := nNamed "A"; *)
+(*                   decl_body := None; *)
+(*                   decl_type := tSort *)
+(*                                  (Universe.make'' *)
+(*                                    (Level.Level *)
+(*                                      "Coq.Init.Datatypes.13", *)
+(*                                      false) []) |}]; *)
+
 (* ind_ctors := [("Some", *)
 (*                tProd (nNamed "A") *)
 (*                      (tSort *)
@@ -124,9 +132,9 @@ Eval compute in denoteoption.
 (* : Ced.Program *)
 
 Eval compute in (pretty denoteoption).
-(*      = "  data option : ★ :=  *)
-(*   | Some : Π A : notimpl . Π anon : notimpl . notimpl *)
-(*   | None : Π A : notimpl . notimpl. *)
+(*      = "  data option :  (A :★ )★ :=  *)
+(*   | Some : Π A : ★ . ★ ➔ notimpl *)
+(*   | None : Π A : ★ . notimpl. *)
 (* " *)
 (*      : string *)
 

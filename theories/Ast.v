@@ -52,8 +52,10 @@ Module Ced.
 
   Definition Ctors := list Ctor.
 
+  Definition Params := list (Var * Typ).
+
   Inductive Data : Type :=
-  | DefData (_: Var) (_: Typ) (_: Ctors).
+  | DefData (_: Var) (_: Params) (_: Typ) (_: Ctors).
 
   Inductive Assgn : Type :=
   | AssgnType (_: Var) (_: Typ)

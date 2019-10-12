@@ -13,56 +13,105 @@ Require Import Coquedille.Ast.
 (* We use a default term instead of dealing with errors for now *)
 Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT x))].
 
+(* I'm still not sure if the context should be a list Ced.Typ *)
+(* Or a list Var *)
+(* Because in theory the only thing the bruijn indices should refer *)
+(* to would be Vars. *)
+(* In fact I'm not sure if I should not be using de bruijn indices at all *)
 Definition ctx := list Ced.Typ.
 
 Reserved Notation "⟦ x ⟧" (at level 0).
 
-Definition nname_cname (n: name): Ced.Name :=
-  match n with
-  | nAnon => Ced.Anon
-  | nNamed c => Ced.Named c
-  end.
+Definition DenoteName (n: name): Ced.Name :=
+match n with
+| nAnon => Ced.Anon
+| nNamed c => Ced.Named c
+end.
 
 Local Open Scope string_scope.
 
 Fixpoint denoteTerm (t: term) {struct t}: State ctx Ced.Typ :=
-  let default_name := Ced.TpVar "notimpl" in
-  match t with
-  | tProd x t1 t2 =>
-    t1' <- ⟦ t1 ⟧ ;
-    Γ <- get ;
-    put (Γ ,, t1') ;;
+let default_name := Ced.TpVar "notimpl" in
+match t with
+| tProd x t1 t2 =>
+  t1' <- ⟦ t1 ⟧ ;
+  Γ <- get ;
+  match x with
+  | nAnon =>
     t2'  <- ⟦ t2 ⟧ ;
-    let cname := nname_cname x in
-    pure (Ced.TpPi cname t1' t2')
-  | tRel n =>
-    Γ <- get ;
-    match nth_error Γ n with
-    | None => pure (Ced.TpVar "typing err")
-    | Some x => pure x
-    end
-  | tSort univ => pure Ced.KdStar
-  | _ => pure default_name
+    pure (Ced.TpArrowT t1' t2')
+  | nNamed c =>
+    put (Ced.TpVar c :: Γ) ;;
+    t2'  <- ⟦ t2 ⟧ ;
+    pure (Ced.TpPi (Ced.Named c) t1' t2')
   end
+| tRel n =>
+  Γ <- get ;
+  match nth_error Γ n with
+  | None => pure (Ced.TpVar "typing err")
+  | Some x => pure x
+  end
+| tSort univ => pure (Ced.TpVar "univ") (*Ced.KdStar*)
+| _ => pure (Ced.TpVar "notimpl")
+end
 where "⟦ x ⟧" := (denoteTerm x).
 
-Fixpoint denoteCtors (data_name : Ced.Var) (ctor: (ident * term) * nat): Ced.Ctor  :=
-  let '(name, t, i) := ctor in
-  let '(t', Γ) := denoteTerm t [Ced.TpVar data_name] in
-  Ced.Ctr name t'.
+Fixpoint denoteCtors (data_name : Ced.Var)
+        (params: Ced.Params) (ctor: (ident * term) * nat) : Ced.Ctor  :=
+let '(name, t, i) := ctor in
+let v := Ced.TpVar data_name in
+let '(t', Γ) := denoteTerm t (map Ced.TpVar (map fst params) ,, v) in
+Ced.Ctr name t'.
+
+Fixpoint denoteParams (params : context): Ced.Params :=
+match params with
+  | nil => []
+  | cons p ps =>
+    let name := decl_name p in
+    let t := decl_type p in
+    (match name with
+     | nNamed n => [(n, fst (denoteTerm t [Ced.TpVar n]))]
+     | cAnon => nil
+     end) ++ denoteParams ps
+end.
+
+Definition OptionParams := denoteParams [{| decl_name := nNamed "A";
+                  decl_body := None;
+                  decl_type := tSort
+                                 (Universe.make''
+                                   (Level.Level
+                                     "Coq.Init.Datatypes.13",
+                                     false) []) |}].
+
+Definition OptionCtors := ("Some",
+               tProd (nNamed "A")
+                     (tSort
+                        (Universe.make''
+                           (Level.Level
+                              "Coq.Init.Datatypes.13",
+                            false) []))
+                     (tProd nAnon
+                            (tRel 0)
+                            (tApp (tRel 2) [tRel 1])), 1).
+
+Eval compute in (OptionParams).
+
+Eval compute in (denoteCtors "Option" [] OptionCtors).
+
 
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
 (* TODO: browse metacoq library for well typed term guarantees *)
 Fixpoint denoteCoq (p: program): Maybe Ced.Program :=
-  let (genv, t) := p in
-  match t with
-  | tInd ind univ =>
-    let mind := inductive_mind ind in
-    body <- lookup_mind_decl mind genv ;
-    i_body <- head (ind_bodies body) ;
-    let name := (ind_name i_body) in
-    let ctors := ind_ctors i_body in
-    pure [Ced.CmdData (Ced.DefData name Ced.KdStar (fmap (denoteCtors name) ctors))]
-  | _ => None
-  end.
+let (genv, t) := p in
+match t with
+| tInd ind univ =>
+  let mind := inductive_mind ind in
+  body <- lookup_mind_decl mind genv ;
+  i_body <- head (ind_bodies body) ;
+  let name := (ind_name i_body) in
+  let ctors := ind_ctors i_body in
+  let params := denoteParams (ind_params body) in
+  pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))]
+| _ => None
+end.

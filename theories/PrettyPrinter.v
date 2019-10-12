@@ -20,6 +20,7 @@ Definition TkPi      := "Π".
 Definition TkAll     := "∀".
 Definition TkOpenPar := "(".
 Definition TkClosePar:= ")".
+Definition TkAssgn   := ":=".
 Definition TkCR      := "
 ".
 
@@ -63,7 +64,7 @@ Instance PrettyName : Pretty Name :=
 Instance PrettyType : Pretty Typ :=
   fix pp t :=
     match t with
-    | TpArrowT t1 t2 => pp t1 ++ TkArrow ++ pp t2
+    | TpArrowT t1 t2 => pp t1 ++ TkSpace ++ TkArrow ++ TkSpace ++pp t2
     | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace
                              ++ TkColon ++ TkSpace
                              ++ pp t1 ++ TkSpace
@@ -79,16 +80,34 @@ Instance PrettyCtor : Pretty Ctor :=
   | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty
   end.
 
-Definition ppDatatype (name : Var) (kind : Typ) (ctors : list Ctor) :=
-"data " ++ name ++ " : " ++ pretty kind ++ " := " ++ TkCR
-        ++ string_of_list pretty ctors ++ TkDot.
+Instance PrettyParams : Pretty Params :=
+  fix pp params :=
+    match params with
+    | nil => ""
+    | cons (n, t) ps =>
+      TkSpace ++ TkOpenPar ++ n ++ TkSpace
+              ++ TkColon ++ TkSpace ++ pretty t
+              ++ TkSpace ++ TkClosePar ++ pp ps
+    end.
+
+
+(*      = "  data option :  (A :★ )★ :=  *)
+(*   | Some : Π A : ★ . ★ ➔ notimpl *)
+(*   | None : Π A : ★ . notimpl. *)
+(* " *)
+(*      : string *)
+
+Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
+  "data " ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
+          ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
+          ++ string_of_list pretty ctors ++ TkDot.
 
 
 Instance PrettyDatatype : Pretty Cmd :=
   fun c =>
     match c with
     | CmdAssgn def => TkNotImpl
-    | CmdData (DefData v k ctors)  => ppDatatype v k ctors ++ TkCR
+    | CmdData (DefData name params kind ctors)  => ppDatatype name params kind ctors ++ TkCR
     end.
 
 Instance PrettyProgram : Pretty Program :=
