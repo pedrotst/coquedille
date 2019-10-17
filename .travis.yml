@@ -10,7 +10,7 @@ install:
   - eval $(opam env)
   - opam repo add coq-released https://coq.inria.fr/opam/released
   - opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-  - opam switch create coq.8.9.1 4.07.1
+  - opam switch create coq.8.9.1 ocaml-system.4.07.1
   - opam pin add coq 8.9.1
   - opam pin add coq-equations 1.2+8.9
   - opam install coq
