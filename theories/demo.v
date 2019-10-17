@@ -11,6 +11,7 @@ Require Import List. Import ListNotations.
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
+Quote Recursively Definition list_syntax := list.
 
 Require Import Vectors.Vector.
 Local Open Scope string_scope.
@@ -132,12 +133,11 @@ Eval compute in denoteoption.
 (* : Ced.Program *)
 
 Eval compute in (pretty denoteoption).
-(*      = "  data option :  (A :★ )★ :=  *)
-(*   | Some : Π A : ★ . ★ ➔ notimpl *)
-(*   | None : Π A : ★ . notimpl. *)
-(* " *)
-(*      : string *)
-
 
 Eval compute in (pretty denotenat).
+
+Definition denotelist := program_err (denoteCoq list_syntax).
+Print list_syntax.
+Eval compute in (pretty denotelist).
+
 Local Close Scope string_scope.

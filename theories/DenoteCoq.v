@@ -57,7 +57,7 @@ match t with
     Γ <- get ;
     let ts2' := map (fun t => fst (⟦ t ⟧ Γ)) ts2 in
     pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1')
-  | tSort univ => pure (Ced.TpVar "univ") (*Ced.KdStar*)
+  | tSort univ => pure Ced.KdStar
   | _ => pure (Ced.TpVar "notimpl")
 end
 where "⟦ x ⟧" := (denoteTerm x).
