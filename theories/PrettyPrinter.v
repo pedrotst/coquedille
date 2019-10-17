@@ -80,7 +80,7 @@ Instance PrettyParams : Pretty Params :=
     | cons (n, t) ps =>
       TkSpace ++ TkOpenPar ++ n ++ TkSpace
               ++ TkColon ++ TkSpace ++ pretty t
-              ++ TkSpace ++ TkClosePar ++ pp ps
+              ++ TkClosePar ++ pp ps
     end.
 
 Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
