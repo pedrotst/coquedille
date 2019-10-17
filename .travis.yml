@@ -1,19 +1,50 @@
-sudo: required
-language: coq
+dist: bionic
+language: minimal
 
-os:
-  - linux
+services:
+  - docker
 
-install:
-  - sudo apt-get -y install opam
-  - yes | opam init
-  - eval $(opam env)
-  - opam repo add coq-released https://coq.inria.fr/opam/released
-  - opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-  - opam switch create coq.8.9.1 ocaml-system.4.07.1
-  - opam pin add coq 8.9.1
-  - opam pin add coq-equations 1.2+8.9
-  - opam install coq
+env:
+  global:
+  - NJOBS="2"
+  - CONTRIB_NAME="coquedille"
+  matrix:
+  # TODO: remove unneeded versions below
+  # - COQ_IMAGE="coqorg/coq:8.4"
+  # - COQ_IMAGE="coqorg/coq:8.5"
+  # - COQ_IMAGE="coqorg/coq:8.6"
+  # - COQ_IMAGE="coqorg/coq:8.7"
+  # - COQ_IMAGE="coqorg/coq:8.8"
+  - COQ_IMAGE="coqorg/coq:8.9"
+  # - COQ_IMAGE="coqorg/coq:8.10"
+  # - COQ_IMAGE="coqorg/coq:dev"
+  # "default" switch: $COMPILER
+  # this config uses: $COMPILER_EDGE (cf. "opam switch" command below)
+  # See https://github.com/coq-community/docker-coq/wiki#supported-tags
+
+install: |
+  # Prepare the COQ container
+  docker pull ${COQ_IMAGE}
+  docker run -d -i --init --name=COQ -v ${TRAVIS_BUILD_DIR}:/home/coq/${CONTRIB_NAME} -w /home/coq/${CONTRIB_NAME} ${COQ_IMAGE}
+  docker exec COQ /bin/bash --login -c "
+    export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
+    if [ -n \"\${COMPILER_EDGE}\" ]; then opam switch \${COMPILER_EDGE}; eval \$(opam env); fi
+    opam update -y
+    # TODO: specify dependencies below
+    opam install -y -v -j ${NJOBS} coq-mathcomp-ssreflect
+    opam config list; opam repo list; opam list
+    " install
 
 script:
-  - coqc --version
+  - echo -e "${ANSI_YELLOW}Building ${CONTRIB_NAME}...${ANSI_RESET}" && echo -en 'travis_fold:start:script\\r'
+  - |
+    docker exec COQ /bin/bash --login -c "
+    export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
+    sudo chown -R coq:coq /home/coq/${CONTRIB_NAME}
+    # TODO: update configuration/build step below
+    ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
+    " script
+    - echo -en 'travis_fold:end:script\\r'
+
+after_script:
+  - docker stop COQ  # optional but recommended
