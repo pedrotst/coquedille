@@ -1,3 +1,4 @@
 [submodule "coq-haskell"]
-	path = coq-haskell
-	url = https://github.com/pedrotst/coq-haskell.git
+    path = coq-haskell
+    url = https://github.com/pedrotst/coq-haskell.git
+    branch = makefile
