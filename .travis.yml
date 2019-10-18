@@ -38,6 +38,7 @@ install:
     # TODO: specify dependencies below
     # opam install -y -v -j ${NJOBS} coq-mathcomp-ssreflect >
     # opam install -y -v -j ${NJOBS} coq-metacoq > /dev/null
+    eval $(opam env)
     opam config list; opam repo list; opam list
     " install
 
@@ -48,8 +49,8 @@ script:
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
     sudo chown -R coq:coq /home/coq/${CONTRIB_NAME}
     sudo chmod u+x init_repo.sh
+    eval $(opam env)
     ./init_repo.sh
-    # TODO: update configuration/build step below
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
     " script
     echo -en 'travis_fold:end:script\\r'
