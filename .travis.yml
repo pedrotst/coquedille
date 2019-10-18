@@ -5,40 +5,37 @@ services:
   - docker
 
 cache:
-  - coq-haskell
-  - ${TRAVIS_BUILD_DIR}:/home/coq/
+  bundler: true
+  directories:
+    - coq-haskell
+    - $HOME/docker
 
 env:
   global:
-  - NJOBS="2"
-  - CONTRIB_NAME="coquedille"
+    - NJOBS="2"
+    - CONTRIB_NAME="coquedille"
   matrix:
-  # TODO: remove unneeded versions below
-  # - COQ_IMAGE="coqorg/coq:8.4"
-  # - COQ_IMAGE="coqorg/coq:8.5"
-  # - COQ_IMAGE="coqorg/coq:8.6"
-  # - COQ_IMAGE="coqorg/coq:8.7"
-  - COQ_IMAGE="pedroabreu0/metacoq:8.8"
-  - COQ_IMAGE="coqorg/coq:8.9"
-  # - COQ_IMAGE="coqorg/coq:8.10"
-  # - COQ_IMAGE="coqorg/coq:dev"
-  # "default" switch: $COMPILER
-  # this config uses: $COMPILER_EDGE (cf. "opam switch" command below)
-  # See https://github.com/coq-community/docker-coq/wiki#supported-tags
+    - COQ_IMAGE="pedroabreu0/metacoq:8.8"
 
-install:
+before_cache:
+  # Save tagged docker images
+  - >
+    mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}'
+    | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
+
+before_install:
+  # Load cached docker images
+  - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
+
+
+install: |
   # Prepare the COQ container
-  - docker pull ${COQ_IMAGE}
-  - docker run -d -i --init --name=COQ -v ${TRAVIS_BUILD_DIR}:/home/coq/${CONTRIB_NAME} -w /home/coq/${CONTRIB_NAME} ${COQ_IMAGE}
-  - |
-    travis_wait 50 docker exec COQ /bin/bash --login -c "
+  docker pull ${COQ_IMAGE}
+  docker run -d -i --init --name=COQ -v ${TRAVIS_BUILD_DIR}:/home/coq/${CONTRIB_NAME} -w /home/coq/${CONTRIB_NAME} ${COQ_IMAGE}
+  docker exec COQ /bin/bash --login -c "
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
-    if [ -n \"\${COMPILER_EDGE}\" ]; then opam switch \${COMPILER_EDGE}; eval \$(opam env); fi
+    eval \$(opam env)
     opam update -y
-    # TODO: specify dependencies below
-    # opam install -y -v -j ${NJOBS} coq-mathcomp-ssreflect >
-    # opam install -y -v -j ${NJOBS} coq-metacoq > /dev/null
-    eval $(opam env)
     opam config list; opam repo list; opam list
     " install
 
@@ -49,7 +46,7 @@ script:
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
     sudo chown -R coq:coq /home/coq/${CONTRIB_NAME}
     sudo chmod u+x init_repo.sh
-    eval $(opam env)
+    # eval \$(opam env)
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
     " script
