@@ -140,4 +140,78 @@ Definition denotelist := program_err (denoteCoq list_syntax).
 Print list_syntax.
 Eval compute in (pretty denotelist).
 
+Inductive mydata (A B C: Type) (D : nat -> Type) :=
+| foo' : A -> mydata A B C D
+| bar' : B -> C -> mydata A B C D
+| baz' : forall x, D x -> mydata A B C D
+.
+
+Quote Recursively Definition mydata_syntax := mydata.
+Print mydata_syntax.
+(* mydata_syntax =  *)
+(* ([InductiveDecl "Coq.Init.Datatypes.nat" *)
+(* ind_ctors := [("foo'", *)
+(*               tProd (nNamed "A") *)
+(*                 (tSort *)
+(*                    (Universe.make'' *)
+(*                       (Level.Level "Top.23", *)
+(*                       false) [])) *)
+(*                 (tProd (nNamed "B") *)
+(*                    (tSort *)
+(*                       (Universe.make'' *)
+(*                          ( *)
+(*                          Level.Level "Top.24", *)
+(*                          false) [])) *)
+(*                    (tProd  *)
+(*                       (nNamed "C") *)
+(*                       (tSort *)
+(*                          (Universe.make'' *)
+(*                          ( *)
+(*                          Level.Level "Top.25", *)
+(*                          false) [])) *)
+(*                       (tProd  *)
+(*                          (nNamed "D") *)
+(*                          (tProd nAnon *)
+(*                          (tInd *)
+(*                          {| *)
+(*                          inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                          inductive_ind := 0 |} []) *)
+(*                          (tSort *)
+(*                          (Universe.make'' *)
+(*                          ( *)
+(*                          Level.Level "Top.26", *)
+(*                          false) []))) *)
+(*                          (tProd nAnon  *)
+(*                          (tRel 3) *)
+(*                          (tApp  *)
+(*                          (tRel 5) *)
+(*                          [ *)
+(*                          tRel 4;  *)
+(*                          tRel 3;  *)
+(*                          tRel 2;  *)
+(*                          tRel 1]))))), 1); *)
+(* Inductive mydata (A B C: Type) (D : nat -> Type) := *)
+(* | foo' : A -> mydata A B C D *)
+
+
+Definition denotemydata := program_err (denoteCoq mydata_syntax).
+
+
+Eval compute in (pretty denotemydata).
+(* [ _, _, _, B, _, A] *)
+(*      = "data mydata (A : ★) (B : ★) (C : ★) (D : notimpl ➔ ★) : ★ := *)
+(*   | foo' : B ➔ A ·B ·C ·dummy ·D *)
+(*   | bar' : C ➔ dummy ➔ A ·B ·C ·dummy ·D *)
+(*   | baz' : Π x : notimpl . D ·x ➔ A ·B ·C ·dummy ·D. *)
+(* " *)
+(*      : string *)
+Inductive tst :=
+  | tstctor1 : forall A B C, A -> B -> C -> tst.
+
+Quote Recursively Definition tst_syntax := tst.
+Print tst_syntax.
+Definition denotetst := (program_err (denoteCoq tst_syntax)).
+Eval compute in denotetst.
+Eval compute in (pretty ).
+
 Local Close Scope string_scope.

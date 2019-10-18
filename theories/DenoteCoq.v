@@ -62,12 +62,25 @@ match t with
 end
 where "⟦ x ⟧" := (denoteTerm x).
 
+Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
+match n with
+| O => t
+| S n' =>
+  match t with
+  | Ced.TpPi x t1 t2 => removeBindings t2 (pred n)
+  | _ => t
+  end
+end.
+
 Fixpoint denoteCtors (data_name : Ced.Var)
         (params: Ced.Params) (ctor: (ident * term) * nat) : Ced.Ctor  :=
 let '(name, t, i) := ctor in
 let v := Ced.TpVar data_name in
-let '(t', Γ) := denoteTerm t (map Ced.TpVar (map fst params) ,, v) in
-Ced.Ctr name t'.
+let paramnames := map fst params in
+let paramvars := map Ced.TpVar paramnames in
+let (t', _) := denoteTerm t [v] in
+let clean_ctor := removeBindings t' (length paramvars) in
+Ced.Ctr name clean_ctor.
 
 Fixpoint denoteParams (params : context): Ced.Params :=
 match params with
@@ -114,9 +127,9 @@ match t with
   let mind := inductive_mind ind in
   body <- lookup_mind_decl mind genv ;
   i_body <- head (ind_bodies body) ;
-  let name := (ind_name i_body) in
+  let name := ind_name i_body in
   let ctors := ind_ctors i_body in
-  let params := denoteParams (ind_params body) in
+  let params := rev (denoteParams (ind_params body)) in
   pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))]
 | _ => None
 end.
