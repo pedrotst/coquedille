@@ -212,6 +212,6 @@ Quote Recursively Definition tst_syntax := tst.
 Print tst_syntax.
 Definition denotetst := (program_err (denoteCoq tst_syntax)).
 Eval compute in denotetst.
-Eval compute in (pretty ).
+Eval compute in (pretty denotetst).
 
 Local Close Scope string_scope.

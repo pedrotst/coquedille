@@ -62,12 +62,12 @@ match t with
 end
 where "⟦ x ⟧" := (denoteTerm x).
 
-Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
+Fixpoint removeBindings (t: term) (n: nat) : term :=
 match n with
 | O => t
 | S n' =>
   match t with
-  | Ced.TpPi x t1 t2 => removeBindings t2 (pred n)
+  | tProd x t1 t2 => removeBindings t2 (pred n)
   | _ => t
   end
 end.
@@ -78,9 +78,9 @@ let '(name, t, i) := ctor in
 let v := Ced.TpVar data_name in
 let paramnames := map fst params in
 let paramvars := map Ced.TpVar paramnames in
-let (t', _) := denoteTerm t [v] in
-let clean_ctor := removeBindings t' (length paramvars) in
-Ced.Ctr name clean_ctor.
+let clean_t := removeBindings t (length paramvars) in
+let (t', _) := denoteTerm clean_t (rev (paramvars ,, v)) in
+Ced.Ctr name t'.
 
 Fixpoint denoteParams (params : context): Ced.Params :=
 match params with
