@@ -6,7 +6,7 @@ services:
 
 cache:
   - coq-haskell
-  - /home/coq/
+  - ${TRAVIS_BUILD_DIR}:/home/coq/
 
 env:
   global:
