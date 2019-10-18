@@ -18,8 +18,8 @@ env:
   # - COQ_IMAGE="coqorg/coq:8.5"
   # - COQ_IMAGE="coqorg/coq:8.6"
   # - COQ_IMAGE="coqorg/coq:8.7"
-  - COQ_IMAGE="coqorg/coq:8.8"
-  - Coq_IMAGE="coqorg/coq:8.9"
+  - COQ_IMAGE="pedroabreu0/metacoq:8.8"
+  - COQ_IMAGE="coqorg/coq:8.9"
   # - COQ_IMAGE="coqorg/coq:8.10"
   # - COQ_IMAGE="coqorg/coq:dev"
   # "default" switch: $COMPILER
@@ -37,7 +37,7 @@ install:
     opam update -y
     # TODO: specify dependencies below
     # opam install -y -v -j ${NJOBS} coq-mathcomp-ssreflect >
-    opam install -y -v -j ${NJOBS} coq-metacoq > /dev/null
+    # opam install -y -v -j ${NJOBS} coq-metacoq > /dev/null
     opam config list; opam repo list; opam list
     " install
 

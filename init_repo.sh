@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
 git submodule update --init
-make -C coq-haskell
+cd coq-haskell
+coq_makefile -f _CoqProject -o Makefile
+make
