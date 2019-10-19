@@ -94,29 +94,6 @@ match params with
      end) ++ denoteParams ps
 end.
 
-Definition OptionParams := denoteParams [{| decl_name := nNamed "A";
-                  decl_body := None;
-                  decl_type := tSort
-                                 (Universe.make''
-                                   (Level.Level
-                                     "Coq.Init.Datatypes.13",
-                                     false) []) |}].
-
-Definition OptionCtors := ("Some",
-               tProd (nNamed "A")
-                     (tSort
-                        (Universe.make''
-                           (Level.Level
-                              "Coq.Init.Datatypes.13",
-                            false) []))
-                     (tProd nAnon
-                            (tRel 0)
-                            (tApp (tRel 2) [tRel 1])), 1).
-
-Eval compute in (OptionParams).
-
-Eval compute in (denoteCtors "Option" [] OptionCtors).
-
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
 (* TODO: browse metacoq library for well typed term guarantees *)
