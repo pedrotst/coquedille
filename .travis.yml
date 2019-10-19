@@ -37,7 +37,7 @@ install: |
     eval \$(opam env)
     opam update -y
     opam config list; opam repo list; opam list
-    " install
+    " install || exit 1
 
 script:
   - echo -e "${ANSI_YELLOW}Building ${CONTRIB_NAME}...${ANSI_RESET}" && echo -en 'travis_fold:start:script\\r'
@@ -49,7 +49,7 @@ script:
     # eval \$(opam env)
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
-    " script
+    " script || exit 1
     echo -en 'travis_fold:end:script\\r'
 
 after_script:
