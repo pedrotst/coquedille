@@ -1,8 +1,10 @@
+Require Import Strings.String.
+Require Import List. Import ListNotations.
+
 Require Import Hask.Control.Monad.
 Require Import Hask.Control.Monad.State.
 Require Import Hask.Data.List.
 Require Import Hask.Data.Maybe.
-Require Import List. Import ListNotations.
 
 Require Import MetaCoq.Template.Ast.
 Require Import MetaCoq.Template.AstUtils.
@@ -62,6 +64,8 @@ match t with
 end
 where "⟦ x ⟧" := (denoteTerm x).
 
+Local Close Scope string_scope.
+
 Fixpoint removeBindings (t: term) (n: nat) : term :=
 match n with
 | O => t
@@ -90,7 +94,7 @@ match params with
     let t := decl_type p in
     (match name with
      | nNamed n => [(n, fst (denoteTerm t [Ced.TpVar n]))]
-     | cAnon => nil
+     | cAnon => []
      end) ++ denoteParams ps
 end.
 

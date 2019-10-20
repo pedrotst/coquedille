@@ -99,4 +99,12 @@ Instance PrettyDatatype : Pretty Cmd :=
 Instance PrettyProgram : Pretty Program :=
   fun p => string_of_list pretty p 0.
 
+Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
+  fun o =>
+    match o with
+      (* Maybe signal an error? *)
+    | None => ""
+    | Some x => pretty x
+    end.
+
 Local Close Scope string_scope.

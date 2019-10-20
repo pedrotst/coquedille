@@ -44,13 +44,13 @@ Print myNat_syntax.
 Print foo_syntax.
 
 
-Definition program_err (p : option Ced.Program): Ced.Program :=
-  match p with
-  | None => []
-  | Some v => v
-  end.
+(* Definition program_err (p : option Ced.Program): Ced.Program := *)
+  (* match p with *)
+  (* | None => [] *)
+  (* | Some v => v *)
+  (* end. *)
 
-Definition denotenat := program_err (denoteCoq nat_syntax).
+Definition denotenat := (denoteCoq nat_syntax).
 Print nat_syntax.
 (* nat_syntax =  *)
 (* ([InductiveDecl "Coq.Init.Datatypes.nat" *)
@@ -91,7 +91,7 @@ Eval compute in (pretty denotenat).
 (*      : string *)
 
 
-Definition denoteoption := program_err (denoteCoq option_syntax).
+Definition denoteoption := (denoteCoq option_syntax).
 Print option_syntax.
 
 (* ind_params := [{| decl_name := nNamed "A"; *)
@@ -133,12 +133,27 @@ Eval compute in denoteoption.
 (* : Ced.Program *)
 
 Eval compute in (pretty denoteoption).
+(*      = "data option (A : ★) : ★ := *)
+(*   | Some : A ➔ option ·A *)
+(*   | None : option ·A. *)
+(* " *)
+(*      : string *)
 
 Eval compute in (pretty denotenat).
+(*      = "data nat : ★ := *)
+(*   | O : nat *)
+(*   | S : nat ➔ nat. *)
+(* " *)
+(*      : string *)
 
-Definition denotelist := program_err (denoteCoq list_syntax).
+Definition denotelist := (denoteCoq list_syntax).
 Print list_syntax.
 Eval compute in (pretty denotelist).
+(*      = "data list (A : ★) : ★ := *)
+(*   | nil : list ·A *)
+(*   | cons : A ➔ list ·A ➔ list ·A. *)
+(* " *)
+(*      : string *)
 
 Inductive mydata (A B C: Type) (D : nat -> Type) :=
 | foo' : A -> mydata A B C D
@@ -194,7 +209,7 @@ Print mydata_syntax.
 (* | foo' : A -> mydata A B C D *)
 
 
-Definition denotemydata := program_err (denoteCoq mydata_syntax).
+Definition denotemydata := (denoteCoq mydata_syntax).
 
 
 Eval compute in (pretty denotemydata).
@@ -210,8 +225,6 @@ Inductive tst :=
 
 Quote Recursively Definition tst_syntax := tst.
 Print tst_syntax.
-Definition denotetst := (program_err (denoteCoq tst_syntax)).
+Definition denotetst := (denoteCoq tst_syntax).
 Eval compute in denotetst.
 Eval compute in (pretty denotetst).
-
-Local Close Scope string_scope.
