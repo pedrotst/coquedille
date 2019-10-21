@@ -15,7 +15,7 @@ env:
     - NJOBS="2"
     - CONTRIB_NAME="coquedille"
   matrix:
-    - COQ_IMAGE="pedroabreu0/metacoq:v2"
+    - COQ_IMAGE="pedroabreu0/coquedille:v2"
 
 before_cache:
   # Save tagged docker images
