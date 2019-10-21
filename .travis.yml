@@ -15,7 +15,7 @@ env:
     - NJOBS="2"
     - CONTRIB_NAME="coquedille"
   matrix:
-    - COQ_IMAGE="pedroabreu0/metacoq:8.8"
+    - COQ_IMAGE="pedroabreu0/metacoq:v2"
 
 before_cache:
   # Save tagged docker images
@@ -49,6 +49,7 @@ script:
     # eval \$(opam env)
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
+    ./tests/run_tests.sh
     " script || exit 1
     echo -en 'travis_fold:end:script\\r'
 
