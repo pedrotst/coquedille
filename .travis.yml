@@ -25,16 +25,6 @@ before_install:
     docker pull ${COQ_IMAGE}
     docker save -o "$filename" ${COQ_IMAGE}
 
-# before_cache:
-  # Save tagged docker images
-  # - >
-    # mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}'
-    # | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
-
-# before_install:
-  # Load cached docker images
-  # - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
-
 
 install: |
   # Prepare the COQ container
@@ -43,7 +33,6 @@ install: |
   docker exec COQ /bin/bash --login -c "
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
     eval \$(opam env)
-    opam update -y
     opam config list; opam repo list; opam list
     " install || exit 1
 
@@ -53,11 +42,8 @@ script:
     docker exec COQ /bin/bash --login -c "
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
     echo "123456789" | sudo -S chown -R coq:coq /home/coq/${CONTRIB_NAME}
-    echo "123456789" | sudo chmod u+x init_repo.sh
-    # eval \$(opam env)
     ./init_repo.sh
-    ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
-    cd tests && ./run_tests.sh
+    ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install && cd tests && ./run_tests.sh)
     " script || exit 1
     echo -en 'travis_fold:end:script\\r'
 
