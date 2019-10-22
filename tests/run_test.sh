@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# set -o xtrace
-
 cd $1
+
+cp ../main.hs .
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,15 +16,13 @@ main = setLocaleEncoding utf8 GHC.Base.>>
      Prelude.putStrLn (prettyProgram (program_err (denoteCoq $1_syntax)))
 "
 
-# echo $main_str
-
 echo $main_str >> main.hs
 
 ghc main.hs > /dev/null
 ./main > out
 
 if cmp --silent expected.tst out
-then echo -e "${GREEN} Test Passed $1${NC}!"
+then echo -e "${GREEN} Test Passed $1!${NC}"
 else echo -e "${RED}Failed!${NC}" \
     && diff expected.tst out \
     && exit 1

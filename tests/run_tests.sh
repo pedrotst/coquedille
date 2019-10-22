@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
-coqc -Q ../theories Coquedille -Q ../coq-haskell/src Hask Extraction.v
+# Modify here to add new test cases
+declare -a TESTCASES=("nat" "list" "option")
+
+# Uncomment this line to see each command being run
+# set -o xtrace
+
+NC='\033[0m'
+YELLOW='\033[1;33m'
+
+echo -e "${YELLOW}Extracting test cases to Haskell...${NC}"
+coqc -Q ../theories Coquedille -Q ../coq-haskell/src Hask Extraction.v 2> extract.log
 
 # Adds the necessary imports to the top of the file
 sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Bits' main.hs > m.hs
@@ -16,16 +26,8 @@ program_err None = Nil
 program_err (Some p) = p
 " >> main.hs
 
-# main = Prelude.putStrLn (prettyProgram (program_err (denoteCoq nat_syntax)))" >> main.hs
+# Run each test case
+for tst in ${TESTCASES[@]}; do
+    ./run_test.sh $tst
+done
 
-# Compile and run
-# ghc main.hs
-# ./main > nat.ced
-
-cp main.hs nat
-cp main.hs list
-cp main.hs option
-
-./nat/run_test.sh nat_syntax
-./list/run_test.sh list_syntax
-./option/run_test.sh option_syntax
