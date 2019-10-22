@@ -23,5 +23,9 @@ program_err (Some p) = p
 # ./main > nat.ced
 
 cp main.hs nat
+cp main.hs list
+cp main.hs option
 
 ./nat/run_test.sh nat_syntax
+./list/run_test.sh list_syntax
+./option/run_test.sh option_syntax
