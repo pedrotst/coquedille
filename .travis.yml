@@ -49,7 +49,7 @@ script:
     # eval \$(opam env)
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
-    ./tests/run_tests.sh
+    cd tests && ./run_tests.sh
     " script || exit 1
     echo -en 'travis_fold:end:script\\r'
 
