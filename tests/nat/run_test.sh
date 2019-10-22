@@ -7,7 +7,8 @@ cd nat
 echo "Starting nat tests"
 
 main_str="
-main = Prelude.putStrLn (prettyProgram (program_err (denoteCoq $1)))
+main = setLocaleEncoding utf8 GHC.Base.>>
+     Prelude.putStrLn (prettyProgram (program_err (denoteCoq $1)))
 "
 
 # echo $main_str

@@ -4,9 +4,10 @@ coqc -Q ../theories Coquedille -Q ../coq-haskell/src Hask Extraction.v
 
 # Adds the necessary imports to the top of the file
 sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Bits' main.hs > m.hs
-sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Char' m.hs > main.hs
+sed -e '/import qualified Prelude/a\'$'\n''import GHC.IO.Encoding' m.hs > main.hs
+sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Char' main.hs > m.hs
 
-rm m.hs
+mv m.hs main.hs
 
 # Adds the main
 echo "
