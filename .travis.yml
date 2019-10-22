@@ -23,7 +23,7 @@ before_install:
     if [[ -f $filename ]]; then 
         docker load < $filename; 
     else 
-        mkdir -p docker-cache
+        mkdir -p $HOME/docker
         docker pull ${COQ_IMAGE}
         docker save ${COQ_IMAGE} | gzip > $filename
     fi
