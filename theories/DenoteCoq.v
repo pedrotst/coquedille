@@ -20,7 +20,7 @@ Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT
 (* Because in theory the only thing the bruijn indices should refer *)
 (* to would be Vars. *)
 (* In fact I'm not sure if I should not be using de bruijn indices at all *)
-Definition ctx := list Ced.Typ.
+Definition ctx := list Ced.Var.
 
 Reserved Notation "⟦ x ⟧" (at level 0).
 
@@ -40,11 +40,11 @@ match t with
     Γ <- get ;
     match x with
     | nAnon =>
-      put (Ced.TpVar "dummy" :: Γ) ;;
+      put ("dummy" :: Γ) ;;
       t2'  <- ⟦ t2 ⟧ ;
       pure (Ced.TpArrowT t1' t2')
     | nNamed c =>
-      put (Ced.TpVar c :: Γ) ;;
+      put (c :: Γ) ;;
           t2'  <- ⟦ t2 ⟧ ;
       pure (Ced.TpPi (Ced.Named c) t1' t2')
     end
@@ -52,7 +52,7 @@ match t with
     Γ <- get ;
     match nth_error Γ n with
     | None => pure (Ced.TpVar "typing err")
-    | Some x => pure x
+    | Some x => pure (Ced.TpVar x)
     end
   | tApp t1 ts2 =>
     t1' <- ⟦ t1 ⟧ ;
@@ -79,11 +79,10 @@ end.
 Fixpoint denoteCtors (data_name : Ced.Var)
         (params: Ced.Params) (ctor: (ident * term) * nat) : Ced.Ctor  :=
 let '(name, t, i) := ctor in
-let v := Ced.TpVar data_name in
+let v := data_name in
 let paramnames := map fst params in
-let paramvars := map Ced.TpVar paramnames in
-let clean_t := removeBindings t (length paramvars) in
-let (t', _) := denoteTerm clean_t (rev (paramvars ,, v)) in
+let clean_t := removeBindings t (length paramnames) in
+let (t', _) := denoteTerm clean_t (rev (paramnames ,, v)) in
 Ced.Ctr name t'.
 
 Fixpoint denoteParams (params : context): Ced.Params :=
@@ -93,10 +92,19 @@ match params with
     let name := decl_name p in
     let t := decl_type p in
     (match name with
-     | nNamed n => [(n, fst (denoteTerm t [Ced.TpVar n]))]
+     | nNamed n => [(n, fst (denoteTerm t [n]))]
      | cAnon => []
      end) ++ denoteParams ps
 end.
+
+(* Fixpoint get_ctx (gdecl: global_decl) : ctx := *)
+(* match gdecl with *)
+(* | ConstantDecl _ cbody => [cst_type cbody] *)
+(* | InductiveDecl _ mbody => map ind_type (ind_bodies mbody) *)
+(* end. *)
+
+Instance List_Monad : Monad list :=
+{ join := fun a l => fold_left (@app a) l [] }.
 
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
@@ -111,6 +119,8 @@ match t with
   let name := ind_name i_body in
   let ctors := ind_ctors i_body in
   let params := rev (denoteParams (ind_params body)) in
+  (* let genv_terms := join (map get_terms genv) in *)
+  (* let env : list Ced.Typ := map fst (map (fun f => denoteTerm f []) genv_terms) in *)
   pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))]
 | _ => None
 end.
