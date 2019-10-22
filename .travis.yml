@@ -44,8 +44,8 @@ script:
   - |
     docker exec COQ /bin/bash --login -c "
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
-    sudo chown -R coq:coq /home/coq/${CONTRIB_NAME}
-    sudo chmod u+x init_repo.sh
+    echo "123456789" | sudo -S chown -R coq:coq /home/coq/${CONTRIB_NAME}
+    echo "123456789" | sudo chmod u+x init_repo.sh
     # eval \$(opam env)
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install )
