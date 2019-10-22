@@ -20,10 +20,14 @@ env:
 before_install:
   - |
     filename=$HOME/docker/saved_images.tar
-    if [[ -f "$filename" ]]; then docker load < "$filename"; fi
-    mkdir -p docker-cache
-    docker pull ${COQ_IMAGE}
-    docker save -o "$filename" ${COQ_IMAGE}
+    if [[ -f "$filename" ]]; then 
+        docker load < "$filename"; 
+    else 
+        mkdir -p docker-cache
+        docker pull ${COQ_IMAGE}
+        docker save -o "$filename" ${COQ_IMAGE}
+    fi
+
 
 
 install: |
