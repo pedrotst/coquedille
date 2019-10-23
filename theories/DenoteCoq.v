@@ -105,6 +105,26 @@ end.
 Instance List_Monad : Monad list :=
 { join := fun a l => fold_left (@app a) l [] }.
 
+Fixpoint denoteGenv (e : global_decl) : Maybe Ced.Cmd :=
+match e with
+| InductiveDecl kern mbody =>
+  body <- head (ind_bodies mbody) ;
+  let name := ind_name body in
+  let ctors := ind_ctors body in
+  let params := rev (denoteParams (ind_params mbody)) in
+  pure (Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors)))
+| ConstantDecl _ _ => None
+end.
+
+Fixpoint maybeList {A} (x : Maybe A) : list A :=
+match x with
+| None => []
+| Some a => [a]
+end.
+
+Fixpoint flattenMaybes {A} (x : list (Maybe A)) : list A :=
+join (fmap maybeList x).
+
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
 (* TODO: browse metacoq library for well typed term guarantees *)
@@ -121,7 +141,9 @@ match t with
   (* let genv_terms := join (map get_terms genv) in *)
   (* let env : list Ced.Typ := map fst (map (fun f => denoteTerm f []) genv_terms) in *)
   (* pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))] *)
-  pure [Ced.CmdAssgn (Ced.AssgnType "_" (fst (denoteTerm t [])))]
+  let decls := flattenMaybes (fmap denoteGenv genv) in
+  let t' := Ced.CmdAssgn (Ced.AssgnType "_" (fst (denoteTerm t []))) in
+  pure (decls ++ [t'])
 | _ => None
 end.
 

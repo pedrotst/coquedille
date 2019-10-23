@@ -14,6 +14,8 @@ Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
 Quote Recursively Definition list_syntax := list.
 Quote Recursively Definition vector_syntax := t.
+Eval compute in (pretty (denoteCoq vector_syntax)).
+Eval compute in (pretty (denoteCoq list_syntax)).
 
 Definition x' := nat.
 Definition x := x'.
