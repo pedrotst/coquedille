@@ -31,7 +31,7 @@ match n with
 end.
 
 Local Open Scope string_scope.
-
+Local Open Scope list_scope.
 Fixpoint denoteTerm (t: term) {struct t}: State ctx Ced.Typ :=
 let default_name := Ced.TpVar "notimpl" in
 match t with
@@ -59,12 +59,11 @@ match t with
     Γ <- get ;
     let ts2' := map (fun t => fst (⟦ t ⟧ Γ)) ts2 in
     pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1')
+  | tInd ind univ => pure (Ced.TpVar (inductive_mind ind))
   | tSort univ => pure Ced.KdStar
   | _ => pure (Ced.TpVar "notimpl")
 end
 where "⟦ x ⟧" := (denoteTerm x).
-
-Local Close Scope string_scope.
 
 Fixpoint removeBindings (t: term) (n: nat) : term :=
 match n with
@@ -113,14 +112,17 @@ Fixpoint denoteCoq (p: program): Maybe Ced.Program :=
 let (genv, t) := p in
 match t with
 | tInd ind univ =>
-  let mind := inductive_mind ind in
-  body <- lookup_mind_decl mind genv ;
-  i_body <- head (ind_bodies body) ;
-  let name := ind_name i_body in
-  let ctors := ind_ctors i_body in
-  let params := rev (denoteParams (ind_params body)) in
+  (* let mind := inductive_mind ind in *)
+  (* body <- lookup_mind_decl mind genv ; *)
+  (* i_body <- head (ind_bodies body) ; *)
+  (* let name := ind_name i_body in *)
+  (* let ctors := ind_ctors i_body in *)
+  (* let params := rev (denoteParams (ind_params body)) in *)
   (* let genv_terms := join (map get_terms genv) in *)
   (* let env : list Ced.Typ := map fst (map (fun f => denoteTerm f []) genv_terms) in *)
-  pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))]
+  (* pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))] *)
+  pure [Ced.CmdAssgn (Ced.AssgnType "_" (fst (denoteTerm t [])))]
 | _ => None
 end.
+
+Local Close Scope string_scope.

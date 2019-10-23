@@ -8,10 +8,24 @@ Require Import Coquedille.PrettyPrinter.
 
 Require Import String.
 Require Import List. Import ListNotations.
+Require Import Vectors.Vector.
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
 Quote Recursively Definition list_syntax := list.
+Quote Recursively Definition vector_syntax := t.
+
+Definition x' := nat.
+Definition x := x'.
+
+Inductive myDep (A : Type) : x -> Type :=
+| mynil : myDep A 0
+| mycons : A -> forall x, myDep A x -> myDep A (S x)
+.
+
+Quote Recursively Definition myDep_syntax := 2.
+
+Eval compute in (pretty (denoteCoq vector_syntax)).
 
 Require Import Vectors.Vector.
 Local Open Scope string_scope.

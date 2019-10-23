@@ -7,23 +7,24 @@ Require Import String.
 Local Open Scope string.
 
 (* Token Definitions *)
-Definition TkNotImpl := "Just a dummy token".
-Definition TkStar    := "★".
-Definition TkArrow   := "➔".
-Definition TkSpace   := " ".
-Definition TkColon   := ":".
-Definition TkPipe    := "|".
-Definition TkDot     := ".".
-Definition TkTab     := "  ".
-Definition TkAnon    := "anon".
-Definition TkPi      := "Π".
-Definition TkAll     := "∀".
-Definition TkOpenPar := "(".
-Definition TkClosePar:= ")".
-Definition TkAssgn   := ":=".
-Definition TkTpDot   := "·".
-Definition TkData    := "data".
-Definition TkCR      := "
+Definition TkNotImpl   := "ppNotImpl".
+Definition TkStar      := "★".
+Definition TkArrow     := "➔".
+Definition TkSpace     := " ".
+Definition TkColon     := ":".
+Definition TkPipe      := "|".
+Definition TkDot       := ".".
+Definition TkTab       := "  ".
+Definition TkAnon      := "anon".
+Definition TkPi        := "Π".
+Definition TkAll       := "∀".
+Definition TkOpenPar   := "(".
+Definition TkClosePar  := ")".
+Definition TkDataAssgn := ":=".
+Definition TkTpDot     := "·".
+Definition TkData      := "data".
+Definition TkAssgn     := "=".
+Definition TkCR        := "
 ".
 
 Class Pretty (p : Type) :=
@@ -85,14 +86,22 @@ Instance PrettyParams : Pretty Params :=
 
 Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
   TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
-          ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
+          ++ pretty kind ++ TkSpace ++ TkDataAssgn ++ TkCR
           ++ string_of_list pretty ctors 1 ++ TkDot.
 
+Instance PrettyAssgn : Pretty Assgn :=
+  fun asgn =>
+    match asgn with
+    | AssgnType name t => name ++ TkSpace ++ TkAssgn
+                              ++ TkSpace ++ pretty t
+                              ++ TkDot ++ TkCR
+    | AssgnTerm name t => TkNotImpl
+    end.
 
-Instance PrettyDatatype : Pretty Cmd :=
+Instance PrettyCmd : Pretty Cmd :=
   fun c =>
     match c with
-    | CmdAssgn def => TkNotImpl
+    | CmdAssgn def => pretty def ++ TkCR
     | CmdData (DefData name params kind ctors)  => ppDatatype name params kind ctors ++ TkCR
     end.
 
@@ -108,3 +117,4 @@ Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
     end.
 
 Local Close Scope string_scope.
+
