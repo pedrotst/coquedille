@@ -55,18 +55,24 @@ Instance PrettyName : Pretty Name :=
     | Named v => v
     end.
 
+Definition parens (b: bool) (s : string) :=
+  if b then TkOpenPar ++ s ++ TkClosePar else s.
+
+(* ((t ·A) ·(S ·n)) *)
+
 Instance PrettyType : Pretty Typ :=
-  fix pp t :=
+  (fix pp b t :=
     match t with
-    | TpArrowT t1 t2 => pp t1 ++ TkSpace ++ TkArrow ++ TkSpace ++pp t2
+    | TpArrowT t1 t2 => parens b (pp true t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false t2)
     | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace
                              ++ TkColon ++ TkSpace
-                             ++ pp t1 ++ TkSpace
-                             ++ TkDot ++ TkSpace ++ pp t2
-    | TpApp t1 t2 => pp t1 ++ TkSpace ++ TkTpDot ++ pp t2
+                             ++ pp false t1 ++ TkSpace
+                             ++ TkDot ++ TkSpace ++ pp false t2
+    | TpApp t1 t2 => parens b (pp false t1 ++ TkSpace
+                                     ++ TkTpDot ++ pp true t2)
     | TpVar v => v
     | KdStar => TkStar
-    end.
+    end) false.
 
 Instance PrettyCtor : Pretty Ctor :=
   fun ctor =>
