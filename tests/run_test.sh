@@ -13,6 +13,7 @@ echo -e "${YELLOW}Starting $1 tests${NC}"
 
 main_str="
 main = setLocaleEncoding utf8 GHC.Base.>>
+     Prelude.putStrLn \"module $1.\" GHC.Base.>>
      Prelude.putStrLn (prettyProgram (program_err (denoteCoq $1_syntax)))
 "
 
