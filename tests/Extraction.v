@@ -42,6 +42,7 @@ Extract Inlined Constant String.eqb => "(Prelude.==)".
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition list_syntax := list.
 Quote Recursively Definition option_syntax := option.
+Quote Recursively Definition vector_syntax := Vectors.Vector.t.
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettyProgram denoteCoq
-           nat_syntax list_syntax option_syntax.
+           nat_syntax list_syntax option_syntax vector_syntax.

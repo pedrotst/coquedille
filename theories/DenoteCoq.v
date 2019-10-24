@@ -1,4 +1,5 @@
 Require Import Strings.String.
+Require Import Strings.Ascii.
 Require Import List. Import ListNotations.
 
 Require Import Hask.Control.Monad.
@@ -24,14 +25,39 @@ Definition ctx := list Ced.Var.
 
 Reserved Notation "⟦ x ⟧" (at level 0).
 
+
 Definition DenoteName (n: name): Ced.Name :=
 match n with
 | nAnon => Ced.Anon
 | nNamed c => Ced.Named c
 end.
 
+Fixpoint string_of_list_ascii (s : list ascii) : string
+  := match s with
+     | nil => EmptyString
+     | cons ch s => String ch (string_of_list_ascii s)
+     end.
+
+Fixpoint list_ascii_of_string (s : string) : list ascii
+  := match s with
+     | EmptyString => nil
+     | String ch s => cons ch (list_ascii_of_string s)
+     end.
+
+Definition revStr (s: string) : string :=
+string_of_list_ascii (rev (list_ascii_of_string s)).
+
 Local Open Scope string_scope.
 Local Open Scope list_scope.
+
+Definition kername_to_qualid (s: string): string :=
+match index 0 "." (revStr s) with
+| None => s
+| Some n =>
+  let s_len := String.length s in
+  substring (s_len - n) s_len s
+end.
+
 Fixpoint denoteTerm (t: term) (genv : global_env) {struct t}: State ctx Ced.Typ :=
 let default_name := Ced.TpVar "notimpl" in
 match t with
@@ -59,7 +85,7 @@ match t with
     Γ <- get ;
     let ts2' := map (fun t => fst (⟦ t ⟧ genv Γ)) ts2 in
     pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1')
-  | tInd ind univ => pure (Ced.TpVar (inductive_mind ind))
+  | tInd ind univ => pure (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     (* Can we transform this to the Maybe Monad
        and then come back to the State Monad? *)

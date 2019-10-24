@@ -12,8 +12,21 @@ Require Import Vectors.Vector.
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
-Quote Recursively Definition list_syntax := list.
+
+Quote Recursively Definition list_syntax :=
+ltac:(let t := eval compute in list in exact t).
+
 Quote Recursively Definition vector_syntax := t.
+
+
+Inductive mytry : Type :=
+| foo
+| bar : (nat -> nat) -> nat -> mytry
+.
+
+Quote Recursively Definition x1 := (mytry).
+Eval compute in (pretty (denoteCoq x1)).
+
 Eval compute in (pretty (denoteCoq vector_syntax)).
 Eval compute in (pretty (denoteCoq vector_syntax)).
 Eval compute in (pretty (denoteCoq list_syntax)).
