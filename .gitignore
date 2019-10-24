@@ -1,4 +1,7 @@
+coqc.log
+out
 main.hs
+main
 
 # Coq binaries
 *.vo
