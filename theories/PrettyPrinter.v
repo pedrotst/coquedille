@@ -60,18 +60,18 @@ Definition parens (b: bool) (s : string) :=
 (* ((t ·A) ·(S ·n)) *)
 
 Instance PrettyType : Pretty Typ :=
-  (fix pp b t :=
+  (fix pp barr bapp t :=
     match t with
-    | TpArrowT t1 t2 => parens b (pp true t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false t2)
+    | TpArrowT t1 t2 => parens barr (pp true false t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false false t2)
     | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace
                              ++ TkColon ++ TkSpace
-                             ++ pp false t1 ++ TkSpace
-                             ++ TkDot ++ TkSpace ++ pp false t2
-    | TpApp t1 t2 => parens b (pp false t1 ++ TkSpace
-                                     ++ TkTpDot ++ pp true t2)
+                             ++ pp false false t1 ++ TkSpace
+                             ++ TkDot ++ TkSpace ++ pp false false t2
+    | TpApp t1 t2 => parens bapp (pp false false t1 ++ TkSpace
+                                     ++ TkTpDot ++ pp false true t2)
     | TpVar v => v
     | KdStar => TkStar
-    end) false.
+    end) false false.
 
 Instance PrettyCtor : Pretty Ctor :=
   fun ctor =>

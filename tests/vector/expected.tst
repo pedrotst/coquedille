@@ -5,7 +5,7 @@ data nat : ★ =
 
 data t (A : ★) : ★ =
   | nil : t ·A ·O
-  | cons : Π h : A . Π n : nat . (t ·A ·n) ➔ t ·A ·(S ·n).
+  | cons : Π h : A . Π n : nat . t ·A ·n ➔ t ·A ·(S ·n).
 
 _ = t.
 
