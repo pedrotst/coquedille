@@ -1,5 +1,5 @@
 module nat.
-data nat : ★ :=
+data nat : ★ =
   | O : nat
   | S : nat ➔ nat.
 

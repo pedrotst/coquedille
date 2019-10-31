@@ -20,7 +20,6 @@ Definition TkPi        := "Π".
 Definition TkAll       := "∀".
 Definition TkOpenPar   := "(".
 Definition TkClosePar  := ")".
-Definition TkDataAssgn := ":=".
 Definition TkTpDot     := "·".
 Definition TkData      := "data".
 Definition TkAssgn     := "=".
@@ -92,7 +91,7 @@ Instance PrettyParams : Pretty Params :=
 
 Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
   TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
-          ++ pretty kind ++ TkSpace ++ TkDataAssgn ++ TkCR
+          ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
           ++ string_of_list pretty ctors 1 ++ TkDot.
 
 Instance PrettyAssgn : Pretty Assgn :=
