@@ -23,7 +23,7 @@ Module Ced.
 
   Inductive Typ : Type :=
   | TpPi (_: Name) (_: Typ) (_: Typ)
-  | TpApp (_: Typ) (_: Typ)
+  | TpApp (_: Typ) (_: list Typ)
   | TpArrowT (_: Typ) (_: Typ)
   | TpVar (_: Var)
   | KdStar

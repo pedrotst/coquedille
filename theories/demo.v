@@ -21,15 +21,16 @@ Quote Recursively Definition vector_syntax := t.
 
 Inductive mytry : Type :=
 | foo
-| bar : (nat -> nat) -> nat -> mytry
+| bar : ((nat -> nat) -> (nat -> list nat)) -> mytry
 .
 
 Quote Recursively Definition x1 := (mytry).
 Eval compute in (pretty (denoteCoq x1)).
 
-Eval compute in (pretty (denoteCoq vector_syntax)).
-Eval compute in (pretty (denoteCoq vector_syntax)).
+Eval compute in (pretty (denoteCoq nat_syntax)).
 Eval compute in (pretty (denoteCoq list_syntax)).
+Eval compute in (pretty (denoteCoq option_syntax)).
+Eval compute in (pretty (denoteCoq vector_syntax)).
 
 Definition x' := nat.
 Definition x := x'.
@@ -39,9 +40,9 @@ Inductive myDep (A : Type) : x -> Type :=
 | mycons : A -> forall x, myDep A x -> myDep A (S x)
 .
 
-Quote Recursively Definition myDep_syntax := 2.
+Quote Recursively Definition myDep_syntax := myDep.
 
-Eval compute in (pretty (denoteCoq vector_syntax)).
+Eval compute in (pretty (denoteCoq myDep_syntax)).
 
 Require Import Vectors.Vector.
 Local Open Scope string_scope.
@@ -61,17 +62,17 @@ Inductive myNat : Type :=
 (* | sv : forall x, Vector.t nat x -> myNat *)
 .
 
-Inductive foo : Type :=
-| bar : foo
-| baz : bool -> foo -> foo
-| buz : forall x: nat, Vector.t bool x -> foo -> bool -> foo
-.
+(* Inductive foo : Type := *)
+(* | bar : foo *)
+(* | baz : bool -> foo -> foo *)
+(* | buz : forall x: nat, Vector.t bool x -> foo -> bool -> foo *)
+(* . *)
 
 
-Quote Recursively Definition myNat_syntax := myNat.
-Quote Recursively Definition foo_syntax := foo.
-Print myNat_syntax.
-Print foo_syntax.
+(* Quote Recursively Definition myNat_syntax := myNat. *)
+(* Quote Recursively Definition foo_syntax := foo. *)
+(* Print myNat_syntax. *)
+(* Print foo_syntax. *)
 
 
 (* Definition program_err (p : option Ced.Program): Ced.Program := *)

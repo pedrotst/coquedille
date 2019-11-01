@@ -3,6 +3,7 @@ Import Ced.
 
 Require Import Coquedille.DenoteCoq.
 
+Require Import List.
 Require Import String.
 Local Open Scope string.
 
@@ -67,17 +68,73 @@ Instance PrettyType : Pretty Typ :=
                              ++ TkColon ++ TkSpace
                              ++ pp false false t1 ++ TkSpace
                              ++ TkDot ++ TkSpace ++ pp false false t2
-    | TpApp t1 t2 => parens bapp (pp false false t1 ++ TkSpace
-                                     ++ TkTpDot ++ pp false true t2)
+    | TpApp t1 ts2 => parens bapp (pp false false t1 ++ TkSpace
+                                     ++ TkTpDot ++ string_of_list_aux id (TkSpace ++ TkTpDot) (map (pp false true) ts2) 0)
     | TpVar v => v
     | KdStar => TkStar
     end) false false.
 
-Instance PrettyCtor : Pretty Ctor :=
-  fun ctor =>
-  match ctor with
-  | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty
+Fixpoint removeBindings (t: Typ) (n: nat) : Typ :=
+match n with
+| O => t
+| S n' =>
+  match t with
+  | TpPi x t1 t2 => removeBindings t2 (pred n)
+  | TpArrowT t1 t2 => removeBindings t2 (pred n)
+  | _ => t
+  end
+end.
+
+Fixpoint removeN {A} (l: list A) (n: nat): list A :=
+  match n with
+  | O => l
+  | S n' =>
+    match l with
+    | cons _ xs => removeN xs n'
+    | nil => nil
+    end
   end.
+
+Definition flattenApp (t: Typ) :=
+  match t with
+  | TpApp t nil => t
+  | _ => t
+  end.
+
+Fixpoint removeParams (data_name : Var) params_count (t: Typ) :=
+  let removeParams' := removeParams data_name params_count in
+  match t with
+  | TpApp t1 ts2 =>
+    let rs := map removeParams' ts2 in
+    match t1 with
+    | TpVar v =>
+      if (string_dec v data_name)
+      then let rs' := removeN rs params_count in
+           flattenApp (TpApp t1 rs')
+      else flattenApp (TpApp t1 rs)
+    | _ => TpApp (removeParams' t1) ts2
+    end
+  | TpPi x t1 t2 => TpPi x (removeParams' t1) (removeParams' t2)
+  | TpArrowT t1 t2 => TpArrowT (removeParams' t1) (removeParams' t2)
+  | _ => t
+  end.
+
+(* Definition removeParams (t: Type) (data_name: Var) := removeParams' t data_name. *)
+
+Definition ppctor params_count data_name ctor :=
+  match ctor with
+  | Ctr cname ty =>
+    let no_bindings_t := removeBindings ty params_count in
+    let no_params_t := removeParams data_name params_count no_bindings_t in
+    TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty no_params_t
+  end.
+
+
+(* Instance PrettyCtor : Pretty Ctor := *)
+(*   fun ctor => *)
+(*   match ctor with *)
+(*   | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty *)
+(*   end. *)
 
 Instance PrettyParams : Pretty Params :=
   fix pp params :=
@@ -92,7 +149,13 @@ Instance PrettyParams : Pretty Params :=
 Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) :=
   TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
           ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
-          ++ string_of_list pretty ctors 1 ++ TkDot.
+          ++ string_of_list (ppctor (List.length params) name) ctors 1 ++ TkDot.
+
+(* Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) := *)
+  (* TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace *)
+          (* ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR *)
+          (* ++ string_of_list pretty ctors 1 ++ TkDot. *)
+
 
 Instance PrettyAssgn : Pretty Assgn :=
   fun asgn =>

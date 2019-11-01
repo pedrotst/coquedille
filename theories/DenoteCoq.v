@@ -84,7 +84,8 @@ match t with
     t1' <- ⟦ t1 ⟧ genv;
     Γ <- get ;
     let ts2' := map (fun t => fst (⟦ t ⟧ genv Γ)) ts2 in
-    pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1')
+    (* pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1') *)
+    pure (Ced.TpApp t1' ts2')
   | tInd ind univ => pure (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     (* Can we transform this to the Maybe Monad
@@ -126,8 +127,9 @@ Fixpoint denoteCtors (data_name : Ced.Var)
 let '(name, t, i) := ctor in
 let v := data_name in
 let paramnames := map fst params in
-let clean_t := removeBindings t (length paramnames) in
-let (t', _) := denoteTerm clean_t genv (rev (paramnames ,, v)) in
+(* let clean_t := removeBindings t (length paramnames) in *)
+(* let (t', _) := denoteTerm t genv (rev (paramnames ,, v)) in *)
+let (t', _) := denoteTerm t genv [v] in
 Ced.Ctr name t'.
 
 Fixpoint denoteParams (genv : global_env) (params : context): Ced.Params :=
@@ -142,12 +144,6 @@ match params with
      end) ++ denoteParams genv ps
 end.
 
-(* Fixpoint get_ctx (gdecl: global_decl) : ctx := *)
-(* match gdecl with *)
-(* | ConstantDecl _ cbody => [cst_type cbody] *)
-(* | InductiveDecl _ mbody => map ind_type (ind_bodies mbody) *)
-(* end. *)
-
 Instance List_Monad : Monad list :=
 { join := fun a l => fold_left (@app a) l [] }.
 
@@ -158,7 +154,10 @@ match e with
   let name := ind_name body in
   let ctors := ind_ctors body in
   let params := rev (denoteParams genv (ind_params mbody)) in
-  pure (Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params genv) ctors)))
+  let full_ty := ind_type body in
+  let noparam_ty := removeBindings full_ty (List.length params) in
+  let '(ty, _) := denoteTerm noparam_ty genv [] in
+  pure (Ced.CmdData (Ced.DefData name params ty (fmap (denoteCtors name params genv) ctors)))
 | ConstantDecl _ _ => None
 end.
 
@@ -178,16 +177,6 @@ Fixpoint denoteCoq (p: program): Maybe Ced.Program :=
 let (genv, t) := p in
 match t with
 | tInd ind univ =>
-  (* let mind := inductive_mind ind in *)
-  (* body <- lookup_mind_decl mind genv ; *)
-  (* i_body <- head (ind_bodies body) ; *)
-  (* let name := ind_name i_body in *)
-  (* let ctors := ind_ctors i_body in *)
-  (* let params := rev (denoteParams (ind_params body)) in *)
-  (* let genv_terms := join (map get_terms genv) in *)
-  (* let env : list Ced.Typ := map fst (map (fun f => denoteTerm f []) genv_terms) in *)
-  (* pure [Ced.CmdData (Ced.DefData name params Ced.KdStar (fmap (denoteCtors name params) ctors))] *)
-
   (* Update this for denoteGenv only use the genvs seen so far *)
   let decls := flattenMaybes (fmap (denoteGenv genv) genv) in
   let t' := Ced.CmdAssgn (Ced.AssgnType "_" (fst (denoteTerm t genv []))) in
