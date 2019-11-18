@@ -62,8 +62,8 @@ Fixpoint denoteTerm (t: term) (genv : global_env) {struct t}: State ctx Ced.Typ 
 let default_name := Ced.TpVar "notimpl" in
 match t with
   | tProd x t1 t2 =>
-    t1' <- ⟦ t1 ⟧ genv ;
     Γ <- get ;
+    t1' <- ⟦ t1 ⟧ genv ;
     match x with
     | nAnon =>
       put ("dummy" :: Γ) ;;
