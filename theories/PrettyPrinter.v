@@ -58,8 +58,6 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-(* ((t ·A) ·(S ·n)) *)
-
 Instance PrettyType : Pretty Typ :=
   (fix pp barr bapp t :=
     match t with
@@ -130,12 +128,6 @@ Definition ppctor params_count data_name ctor :=
   end.
 
 
-(* Instance PrettyCtor : Pretty Ctor := *)
-(*   fun ctor => *)
-(*   match ctor with *)
-(*   | Ctr cname ty => TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty ty *)
-(*   end. *)
-
 Instance PrettyParams : Pretty Params :=
   fix pp params :=
     match params with
@@ -150,11 +142,6 @@ Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list C
   TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
           ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR
           ++ string_of_list (ppctor (List.length params) name) ctors 1 ++ TkDot.
-
-(* Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) := *)
-  (* TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace *)
-          (* ++ pretty kind ++ TkSpace ++ TkAssgn ++ TkCR *)
-          (* ++ string_of_list pretty ctors 1 ++ TkDot. *)
 
 
 Instance PrettyAssgn : Pretty Assgn :=

@@ -84,7 +84,6 @@ match t with
     t1' <- ⟦ t1 ⟧ genv;
     Γ <- get ;
     let ts2' := map (fun t => fst (⟦ t ⟧ genv Γ)) ts2 in
-    (* pure (fold_left (fun p1 p2 => Ced.TpApp p1 p2) ts2' t1') *)
     pure (Ced.TpApp t1' ts2')
   | tInd ind univ => pure (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
@@ -127,8 +126,6 @@ Fixpoint denoteCtors (data_name : Ced.Var)
 let '(name, t, i) := ctor in
 let v := data_name in
 let paramnames := map fst params in
-(* let clean_t := removeBindings t (length paramnames) in *)
-(* let (t', _) := denoteTerm t genv (rev (paramnames ,, v)) in *)
 let (t', _) := denoteTerm t genv [v] in
 Ced.Ctr name t'.
 
