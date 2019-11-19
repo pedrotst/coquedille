@@ -4,3 +4,4 @@
 theories/Ast.v
 theories/DenoteCoq.v
 theories/PrettyPrinter.v
+theories/Utils.v
