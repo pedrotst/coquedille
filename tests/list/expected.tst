@@ -5,4 +5,3 @@ data list (A : ★) : ★ =
 
 _ = list.
 
-

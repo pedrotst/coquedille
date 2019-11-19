@@ -5,4 +5,3 @@ data option (A : ★) : ★ =
 
 _ = option.
 
-

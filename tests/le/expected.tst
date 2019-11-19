@@ -1,4 +1,4 @@
-module nat.
+module le.
 data nat : ★ =
   | O : nat
   | S : nat ➔ nat.
@@ -8,5 +8,4 @@ data le (n : nat) : nat ➔ ★ =
   | le_S : Π m : nat . le m ➔ le (S m).
 
 _ = le.
-
 

@@ -5,4 +5,3 @@ data nat : ★ =
 
 _ = nat.
 
-
