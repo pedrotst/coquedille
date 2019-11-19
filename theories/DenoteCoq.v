@@ -12,6 +12,7 @@ Require Import MetaCoq.Template.AstUtils.
 Require Import MetaCoq.Template.BasicAst.
 
 Require Import Coquedille.Ast.
+Require Import Coquedille.Utils.
 
 (* We use a default term instead of dealing with errors for now *)
 Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT x))].
@@ -21,7 +22,7 @@ Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT
 (* Because in theory the only thing the bruijn indices should refer *)
 (* to would be Vars. *)
 (* In fact I'm not sure if I should not be using de bruijn indices at all *)
-Definition ctx := list Ced.Var.
+Definition ctx := list (Ced.Var).
 
 Reserved Notation "⟦ x ⟧" (at level 0).
 
@@ -58,22 +59,21 @@ match index 0 "." (revStr s) with
   substring (s_len - n) s_len s
 end.
 
+Definition binderName (x : name) : Ced.Var :=
+match x with
+| nAnon => "anon"
+| nNamed name => name
+end.
+
 Fixpoint denoteTerm (t: term) (genv : global_env) {struct t}: State ctx Ced.Typ :=
-let default_name := Ced.TpVar "notimpl" in
+let dummyTy := Ced.TpVar "dummyTy" in
 match t with
   | tProd x t1 t2 =>
     Γ <- get ;
     t1' <- ⟦ t1 ⟧ genv ;
-    match x with
-    | nAnon =>
-      put ("dummy" :: Γ) ;;
-      t2'  <- ⟦ t2 ⟧ genv ;
-      pure (Ced.TpArrowT t1' t2')
-    | nNamed c =>
-      put (c :: Γ) ;;
-          t2'  <- ⟦ t2 ⟧ genv;
-      pure (Ced.TpPi (Ced.Named c) t1' t2')
-    end
+    put ((binderName x) :: Γ) ;;
+    t2'  <- ⟦ t2 ⟧ genv;
+    pure (Ced.TpPi (DenoteName x) t1' t2')
   | tRel n =>
     Γ <- get ;
     match nth_error Γ n with
@@ -81,8 +81,8 @@ match t with
     | Some x => pure (Ced.TpVar x)
     end
   | tApp t1 ts2 =>
-    t1' <- ⟦ t1 ⟧ genv;
     Γ <- get ;
+    t1' <- ⟦ t1 ⟧ genv;
     let ts2' := map (fun t => fst (⟦ t ⟧ genv Γ)) ts2 in
     pure (Ced.TpApp t1' ts2')
   | tInd ind univ => pure (Ced.TpVar (kername_to_qualid (inductive_mind ind)))

@@ -1,11 +1,17 @@
 Require Import Coquedille.Ast.
 Import Ced.
 
-Require Import Coquedille.DenoteCoq.
-
 Require Import List.
 Require Import String.
 Local Open Scope string.
+
+Require Import Hask.Control.Monad.
+Require Import Hask.Control.Monad.State.
+Require Import Hask.Data.List.
+Require Import Hask.Data.Maybe.
+
+Require Import Coquedille.DenoteCoq.
+Require Import Coquedille.Utils.
 
 (* Token Definitions *)
 Definition TkNotImpl   := "ppNotImpl".
@@ -61,7 +67,7 @@ Definition parens (b: bool) (s : string) :=
 Instance PrettyType : Pretty Typ :=
   (fix pp barr bapp t :=
     match t with
-    | TpArrowT t1 t2 => parens barr (pp true false t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false false t2)
+    (* | TpArrowT t1 t2 => parens barr (pp true false t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false false t2) *)
     | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace
                              ++ TkColon ++ TkSpace
                              ++ pp false false t1 ++ TkSpace
@@ -72,14 +78,54 @@ Instance PrettyType : Pretty Typ :=
     | KdStar => TkStar
     end) false false.
 
-Fixpoint removeBindings (t: Typ) (n: nat) : Typ :=
+Fixpoint ppTerm' (barr bapp: bool) (t : Typ): State type_ctx string :=
+    match t with
+    | TpPi x t1 t2 =>
+      match x with
+      | Anon =>
+        Γ <- get ;
+        t1' <- ppTerm' true false t1 ;
+        put Γ ;;
+        t2' <- ppTerm' false false t2 ;
+        pure (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
+      | Named name =>
+        Γ <- get ;
+        t1' <- ppTerm' false false t1 ;
+        put ((name, t1) :: Γ) ;;
+        t2' <- ppTerm' false false t2 ;
+        pure (TkPi ++ TkSpace ++ name ++ TkSpace
+                             ++ TkColon ++ TkSpace
+                             ++ t1' ++ TkSpace
+                             ++ TkDot ++ TkSpace ++ t2')
+      end
+    | TpApp t1 ts2 =>
+      t1' <- ppTerm' false false t1 ;
+      let ts2' := map fst (map (fun t => ppTerm' false true t nil) ts2) in
+      pure (parens bapp (t1' ++ TkSpace ++ TkTpDot ++
+                       string_of_list_aux id (TkSpace ++ TkTpDot) ts2' 0))
+    | TpVar v => pure v
+    | KdStar => pure TkStar
+    end.
+
+Definition ppTerm (t: Typ) (Γ : type_ctx) :=
+  fst (ppTerm' false false t Γ).
+
+
+Fixpoint removeBindings (t: Typ) (n: nat) : State type_ctx Typ :=
 match n with
-| O => t
+| O => pure t
 | S n' =>
   match t with
-  | TpPi x t1 t2 => removeBindings t2 (pred n)
-  | TpArrowT t1 t2 => removeBindings t2 (pred n)
-  | _ => t
+  | TpPi x t1 t2 =>
+    Γ <- get ;
+    t' <- removeBindings t2 (pred n);
+    match x with
+    | Anon => pure t'
+    | Named name =>
+      put ((name, t1) :: Γ) ;;
+      pure t'
+    end
+  | _ => pure t
   end
 end.
 
@@ -113,18 +159,15 @@ Fixpoint removeParams (data_name : Var) params_count (t: Typ) :=
     | _ => TpApp (removeParams' t1) ts2
     end
   | TpPi x t1 t2 => TpPi x (removeParams' t1) (removeParams' t2)
-  | TpArrowT t1 t2 => TpArrowT (removeParams' t1) (removeParams' t2)
   | _ => t
   end.
-
-(* Definition removeParams (t: Type) (data_name: Var) := removeParams' t data_name. *)
 
 Definition ppctor params_count data_name ctor :=
   match ctor with
   | Ctr cname ty =>
-    let no_bindings_t := removeBindings ty params_count in
+    let '(no_bindings_t, Γ) := removeBindings ty params_count nil in
     let no_params_t := removeParams data_name params_count no_bindings_t in
-    TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ pretty no_params_t
+    TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ ppTerm no_params_t Γ
   end.
 
 
