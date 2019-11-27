@@ -2,10 +2,14 @@ Require Import Strings.String.
 Require Import Strings.Ascii.
 Require Import List. Import ListNotations.
 
-Require Import Hask.Control.Monad.
-Require Import Hask.Control.Monad.State.
-Require Import Hask.Data.List.
-Require Import Hask.Data.Maybe.
+Require Import ExtLib.Structures.Monads.
+Require Import ExtLib.Structures.Functor.
+Require Import ExtLib.Structures.Applicative.
+Import MonadNotation.
+
+Require Import ExtLib.Data.Monads.StateMonad.
+Require Import ExtLib.Data.Monads.OptionMonad.
+Require Import ExtLib.Data.Monads.ListMonad.
 
 Require Import MetaCoq.Template.Ast.
 Require Import MetaCoq.Template.AstUtils.
@@ -25,7 +29,6 @@ Definition default_t x : Ced.Program := [Ced.CmdAssgn (Ced.AssgnTerm x (Ced.VarT
 Definition ctx := list (Ced.Var).
 
 Reserved Notation "⟦ x ⟧" (at level 0).
-
 
 Definition DenoteName (n: name): Ced.Name :=
 match n with
@@ -65,48 +68,55 @@ match x with
 | nNamed name => name
 end.
 
-Fixpoint denoteTerm (t: term) (genv : global_env) {struct t}: State ctx Ced.Typ :=
+Section Monadic.
+  Local Open Scope monad_scope.
+
+  (* Definition m := state ctx. *)
+  Context {Monad_m : Monad (state ctx)}.
+  Context {State_m: MonadState Ced.Typ (state ctx)}.
+
+Fixpoint denoteTerm (t: term) (genv : global_env) {struct t}: state ctx Ced.Typ :=
 let dummyTy := Ced.TpVar "dummyTy" in
 match t with
   | tProd x t1 t2 =>
-    Γ <- get ;
-    t1' <- ⟦ t1 ⟧ genv ;
+    Γ <- get ;;
+    t1' <- ⟦ t1 ⟧ genv ;;
     put ((binderName x) :: Γ) ;;
-    t2'  <- ⟦ t2 ⟧ genv;
-    pure (Ced.TpPi (DenoteName x) t1' t2')
+    t2'  <- ⟦ t2 ⟧ genv;;
+    ret (Ced.TpPi (DenoteName x) t1' t2')
   | tRel n =>
-    Γ <- get ;
+    Γ <- get ;;
     match nth_error Γ n with
-    | None => pure (Ced.TpVar "tERR")
-    | Some x => pure (Ced.TpVar x)
+    | None => ret (Ced.TpVar "tERR")
+    | Some x => ret (Ced.TpVar x)
     end
   | tApp t1 ts2 =>
-    Γ <- get ;
-    t1' <- ⟦ t1 ⟧ genv;
-    let ts2' := map (fun t => fst (⟦ t ⟧ genv Γ)) ts2 in
-    pure (Ced.TpApp t1' ts2')
-  | tInd ind univ => pure (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
+    Γ <- get ;;
+    t1' <- ⟦ t1 ⟧ genv;;
+    let ts2' := map (fun t => evalState (⟦ t ⟧ genv) Γ) ts2 in
+    ret (Ced.TpApp t1' ts2')
+  | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
-    (* Can we transform this to the Maybe Monad
-       and then come back to the State Monad? *)
+    (* Can we transform this to the Maybe Monad *)
+(*        and then come back to the State Monad? *)
     (* Perhaps use Monad Transformers *)
     match lookup_mind_decl (inductive_mind ind) genv with
-    | None => pure (Ced.TpVar "NoDecl")
+    | None => ret (Ced.TpVar "NoDecl")
     | Some d =>
       let bodies := ind_bodies d in
       match head bodies with
-      | None => pure (Ced.TpVar "NoBody")
+      | None => ret (Ced.TpVar "NoBody")
       | Some body =>
         let constrs := ind_ctors body in
         match nth_error constrs n with
-        | None => pure (Ced.TpVar "NoConstr")
+        | None => ret (Ced.TpVar "NoConstr")
         | Some x =>
-          let '(ctor, _, _) := x in pure (Ced.TpVar ctor)
+          let '(ctor, _, _) := x in ret (Ced.TpVar ctor)
         end
       end
     end
-  | tSort univ => pure Ced.KdStar
-  | _ => pure (Ced.TpVar "notimpl")
+  | tSort univ => ret Ced.KdStar
+  | _ => ret (Ced.TpVar "notimpl")
 end
 where "⟦ x ⟧" := (denoteTerm x).
 
@@ -126,7 +136,7 @@ Fixpoint denoteCtors (data_name : Ced.Var)
 let '(name, t, i) := ctor in
 let v := data_name in
 let paramnames := map fst params in
-let (t', _) := denoteTerm t genv [v] in
+let t' := evalState (denoteTerm t genv) [v] in
 Ced.Ctr name t'.
 
 Fixpoint denoteParams (genv : global_env) (params : context): Ced.Params :=
@@ -136,49 +146,51 @@ match params with
     let name := decl_name p in
     let t := decl_type p in
     (match name with
-     | nNamed n => [(n, fst (denoteTerm t genv [n]))]
+     | nNamed n => [(n, evalState (denoteTerm t genv) [n])]
      | cAnon => []
      end) ++ denoteParams genv ps
 end.
 
-Instance List_Monad : Monad list :=
-{ join := fun a l => fold_left (@app a) l [] }.
+(* Instance List_Monad : Monad list := *)
+(* { join := fun a l => fold_left (@app a) l [] }. *)
 
-Fixpoint denoteGenv (genv: global_env) (e : global_decl) : Maybe Ced.Cmd :=
+Fixpoint denoteGenv (genv: global_env) (e : global_decl) : option Ced.Cmd :=
 match e with
 | InductiveDecl kern mbody =>
-  body <- head (ind_bodies mbody) ;
+  body <- head (ind_bodies mbody) ;;
   let name := ind_name body in
   let ctors := ind_ctors body in
   let params := rev (denoteParams genv (ind_params mbody)) in
   let full_ty := ind_type body in
   let noparam_ty := removeBindings full_ty (List.length params) in
-  let '(ty, _) := denoteTerm noparam_ty genv [] in
-  pure (Ced.CmdData (Ced.DefData name params ty (fmap (denoteCtors name params genv) ctors)))
+  let ty := evalState (denoteTerm noparam_ty genv) [] in
+  ret (Ced.CmdData (Ced.DefData name params ty (fmap (denoteCtors name params genv) ctors)))
 | ConstantDecl _ _ => None
 end.
 
-Fixpoint maybeList {A} (x : Maybe A) : list A :=
+Fixpoint maybeList {A} (x : option A) : list A :=
 match x with
 | None => []
 | Some a => [a]
 end.
 
-Fixpoint flattenMaybes {A} (x : list (Maybe A)) : list A :=
-join (fmap maybeList x).
+Fixpoint flattenMaybes {A} (x : list (option A)) : list A :=
+fold_left (@app A) (fmap maybeList x) [].
 
 (* We assume that the term is well formed before calling denoteCoq *)
 (* It's probably a good idea to add well formednes checker before calling it *)
 (* TODO: browse metacoq library for well typed term guarantees *)
-Fixpoint denoteCoq (p: program): Maybe Ced.Program :=
+Fixpoint denoteCoq (p: program): option Ced.Program :=
 let (genv, t) := p in
 match t with
 | tInd ind univ =>
   (* Update this for denoteGenv only use the genvs seen so far *)
   let decls := flattenMaybes (fmap (denoteGenv genv) genv) in
-  let t' := Ced.CmdAssgn (Ced.AssgnType "_" (fst (denoteTerm t genv []))) in
+  let t' := Ced.CmdAssgn (Ced.AssgnType "_" (evalState (denoteTerm t genv) [])) in
   pure (decls ++ [t'])
 | _ => None
 end.
 
 Local Close Scope string_scope.
+
+End Monadic.
