@@ -84,12 +84,6 @@ Context {Reader_m: MonadReader (global_env * ctx) m}.
 Context {Either_m: MonadExc string m}.
 (* Context {Maybe_m : MonadMaybe m}. *)
 
-Definition find_err {A B C} (l: list A) (find: list A -> option C)  err (f: C -> B)  : m B :=
-match find l with
-| None => raise err
-| Some x => ret (f x)
-end.
-
 Fixpoint list_m {A} (l : list (m A)) : m (list A) :=
 match l with
 | nil => ret nil
@@ -97,6 +91,12 @@ match l with
   x' <- x ;;
   xs' <- list_m xs ;;
   ret (x' :: xs')
+end.
+
+Definition option_m {A} (x : option A) s : m A :=
+match x with
+| None => raise s
+| Some y => ret y
 end.
 
 Definition join `{M : Monad m} {A: Type} (mon: m (m A)) : m A :=
@@ -111,8 +111,8 @@ match t with
     ret (Ced.TpPi (DenoteName x) t1' t2')
   | tRel n =>
     '(_, Γ) <- ask ;;
-     t <- find_err Γ (fun g => nth_error g n) "variable not in environment" Ced.TpVar;;
-     ret t
+     v <- option_m (nth_error Γ n) "Variable not in environment";;
+     ret (Ced.TpVar v)
   | tApp t ts =>
     env <- ask ;;
     t' <- ⟦ t ⟧ ;;
@@ -121,12 +121,13 @@ match t with
   | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
-     t <- (join (join (find_err genv (fun g => lookup_mind_decl (inductive_mind ind) g) "variable not in environment"
-       (fun d => find_err (ind_bodies d) (@head _) "Could not find declaration body"
-          (fun bodies => find_err (ind_ctors bodies) (fun c => nth_error c n) "Could not find constructor"
-            (fun '(ctor, _, _) => Ced.TpVar ctor
-       )))))) ;;
-       ret t
+     let minds := inductive_mind ind in
+     m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
+     let bodies := ind_bodies m_decl in
+     body <- option_m (head bodies) "Could not find declaration body" ;;
+     let ctors := ind_ctors body in
+     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
+     ret (Ced.TpVar ctor)
   | tSort univ => ret Ced.KdStar
   | _ => raise "Constructor not implemented yet"
 end
