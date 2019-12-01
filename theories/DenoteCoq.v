@@ -90,13 +90,13 @@ match find l with
 | Some x => ret (f x)
 end.
 
-Fixpoint mapErr {A} (l : list (string + A)) : m (list A) :=
+Fixpoint list_m {A} (l : list (m A)) : m (list A) :=
 match l with
 | nil => ret nil
-| (inl x :: xs) => raise x
-| (inr x :: xs) =>
-  xs' <- mapErr xs ;;
-  ret (x :: xs')
+| (x :: xs) =>
+  x' <- x ;;
+  xs' <- list_m xs ;;
+  ret (x' :: xs')
 end.
 
 Definition join `{M : Monad m} {A: Type} (mon: m (m A)) : m A :=
@@ -113,12 +113,11 @@ match t with
     '(_, Γ) <- ask ;;
      t <- find_err Γ (fun g => nth_error g n) "variable not in environment" Ced.TpVar;;
      ret t
-  | tApp t1 ts2 =>
+  | tApp t ts =>
     env <- ask ;;
-    t1' <- ⟦ t1 ⟧ ;;
-    let ts2' := map (fun t => (run_m env ⟦ t ⟧)) ts2 in
-    ts <- mapErr ts2' ;;
-    ret (Ced.TpApp t1' ts)
+    t' <- ⟦ t ⟧ ;;
+    ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
+    ret (Ced.TpApp t' ts')
   | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
