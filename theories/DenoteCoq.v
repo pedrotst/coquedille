@@ -90,10 +90,10 @@ match find l with
 | Some x => ret (f x)
 end.
 
-Fixpoint mapErr {A B} (l : list (A + B)) : A + list B :=
+Fixpoint mapErr {A} (l : list (string + A)) : m (list A) :=
 match l with
-| nil => inr nil
-| (inl x :: xs) => inl x
+| nil => ret nil
+| (inl x :: xs) => raise x
 | (inr x :: xs) =>
   xs' <- mapErr xs ;;
   ret (x :: xs')
@@ -117,10 +117,8 @@ match t with
     env <- ask ;;
     t1' <- ⟦ t1 ⟧ ;;
     let ts2' := map (fun t => (run_m env ⟦ t ⟧)) ts2 in
-    match mapErr ts2' with
-    | inl s => raise s
-    | inr ts => ret (Ced.TpApp t1' ts)
-    end
+    ts <- mapErr ts2' ;;
+    ret (Ced.TpApp t1' ts)
   | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
