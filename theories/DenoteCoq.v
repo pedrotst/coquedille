@@ -13,6 +13,7 @@ Require Import ExtLib.Data.Monads.OptionMonad.
 Require Import ExtLib.Data.Monads.ListMonad.
 Require Import ExtLib.Data.Monads.IdentityMonad.
 Require Import ExtLib.Data.Monads.EitherMonad.
+Require Import ExtLib.Data.Monads.ContMonad.
 
 Require Import MetaCoq.Template.Ast.
 Require Import MetaCoq.Template.AstUtils.
@@ -83,10 +84,10 @@ Context {Reader_m: MonadReader (global_env * ctx) m}.
 Context {Either_m: MonadExc string m}.
 (* Context {Maybe_m : MonadMaybe m}. *)
 
-Definition find_err {A} l v err : string + A :=
-match nth_error l v with
+Definition find_err {A B C} (l: list A) (find: list A -> option C)  err (f: C -> B)  : m B :=
+match find l with
 | None => raise err
-| Some x => ret x
+| Some x => ret (f x)
 end.
 
 Fixpoint mapErr {A B} (l : list (A + B)) : A + list B :=
@@ -98,6 +99,9 @@ match l with
   ret (x :: xs')
 end.
 
+Definition join `{M : Monad m} {A: Type} (mon: m (m A)) : m A :=
+mon >>= id.
+
 Fixpoint denoteTerm (t: term) {struct t}: m Ced.Typ :=
 let dummyTy := Ced.TpVar "dummyTy" in
 match t with
@@ -107,10 +111,8 @@ match t with
     ret (Ced.TpPi (DenoteName x) t1' t2')
   | tRel n =>
     '(_, Γ) <- ask ;;
-    match nth_error Γ n with
-    | None => raise "variable not in environment"
-    | Some x => ret (Ced.TpVar x)
-    end
+     t <- find_err Γ (fun g => nth_error g n) "variable not in environment" Ced.TpVar;;
+     ret t
   | tApp t1 ts2 =>
     env <- ask ;;
     t1' <- ⟦ t1 ⟧ ;;
@@ -122,23 +124,12 @@ match t with
   | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
-    (*     (* Can we transform this to the Maybe Monad *) *)
-    (*        and then come back to the State Monad? *)
-    (*     (* Perhaps use Monad Transformers *) *)
-    match lookup_mind_decl (inductive_mind ind) genv with
-    | None => raise "Declaration not found"
-    | Some d =>
-      let bodies := ind_bodies d in
-      match head bodies with
-      | None => raise "Could not find declaration body"
-      | Some body =>
-        let constrs := ind_ctors body in
-        match nth_error constrs n with
-        | None => raise "Could not find constructor"
-        | Some (ctor, _, _) => ret (Ced.TpVar ctor)
-        end
-      end
-    end
+     t <- (join (join (find_err genv (fun g => lookup_mind_decl (inductive_mind ind) g) "variable not in environment"
+       (fun d => find_err (ind_bodies d) (@head _) "Could not find declaration body"
+          (fun bodies => find_err (ind_ctors bodies) (fun c => nth_error c n) "Could not find constructor"
+            (fun '(ctor, _, _) => Ced.TpVar ctor
+       )))))) ;;
+       ret t
   | tSort univ => ret Ced.KdStar
   | _ => raise "Constructor not implemented yet"
 end
