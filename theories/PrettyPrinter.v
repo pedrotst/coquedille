@@ -251,3 +251,9 @@ Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
 
 Local Close Scope string_scope.
 
+Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
+  fun y =>
+    match y with
+    | inl s =>  s
+    | inr a => pretty a
+    end.

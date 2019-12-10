@@ -15,8 +15,7 @@ Inductive Vec (A : Type) : nat -> Type :=
 .
 
 Quote Recursively Definition vector_syntax := Vec.
-Eval compute in (pretty (denoteCoq vector_syntax)).
-
+Eval compute in (denoteCoq vector_syntax).
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
@@ -30,7 +29,7 @@ ltac:(let t := eval compute in list in exact t).
 Inductive mytry : Type :=
 | foo
 | bar : ((nat -> nat) -> (nat -> list nat)) -> mytry
-| asdf : Vec nat 3 -> mytry
+(* | asdf : Vec nat 3 -> mytry *)
 .
 
 Quote Recursively Definition x1 := (mytry).
@@ -49,7 +48,7 @@ Eval compute in (pretty (denoteCoq le_syntax)).
 
 Inductive myDep (A : Type) : x -> Type :=
 | mynil : myDep A 0
-| mycons : A -> forall x, myDep A x -> myDep A (S x)
+(* | mycons : A -> forall x, myDep A x -> myDep A (S x) *)
 .
 
 Quote Recursively Definition myDep_syntax := myDep.

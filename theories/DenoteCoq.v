@@ -165,7 +165,7 @@ Section monadic.
     ty <- local (fun '(genv, _) => (genv, [])) ⟦ noparam_ty ⟧ ;;
     ctors' <- list_m (map (denoteCtors name params) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ty ctors'))
-  | ConstantDecl _ _ => raise "Only Inductive was implemented so far"
+  | ConstantDecl _ _ => raise "Only Inductives are implemented so far"
   end.
 
   Fixpoint maybeList {A} (x : option A) : list A :=
@@ -180,7 +180,7 @@ Section monadic.
   (* We assume that the term is well formed before calling denoteCoq *)
   (* It's probably a good idea to add well formednes checker before calling it *)
   (* TODO: browse metacoq library for well typed term guarantees *)
-  Fixpoint denoteCoq (p: program): m Ced.Program :=
+  Fixpoint denoteCoq' (p: program): m Ced.Program :=
   let (genv, t) := p in
   match t with
   | tInd ind univ =>
@@ -196,3 +196,23 @@ Section monadic.
   Local Close Scope monad_scope.
 
 End monadic.
+
+Instance m_Monad : Monad m.
+apply Monad_readerT.
+apply Monad_eitherT.
+apply Monad_ident.
+Defined.
+
+Instance m_MonadReader : MonadReader (global_env * ctx) m.
+apply MonadReader_readerT.
+apply Monad_eitherT.
+apply Monad_ident.
+Defined.
+
+Instance m_MonadExc : MonadExc string m.
+apply MonadExc_readerT.
+apply Exception_eitherT.
+apply Monad_ident.
+Defined.
+
+Definition denoteCoq p := run_m (nil, nil) (denoteCoq' p).
