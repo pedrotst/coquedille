@@ -45,7 +45,7 @@ script:
   - |
     docker exec COQ /bin/bash --login -c "
     export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '; set -ex
-    echo "123456789" | sudo -S chown -R coq:coq /home/coq/${CONTRIB_NAME}
+    # echo "123456789" | sudo -S chown -R coq:coq /home/coq/${CONTRIB_NAME}
     ./init_repo.sh
     ( coq_makefile -f _CoqProject -o Makefile && make -j ${NJOBS} && make install && cd tests && ./run_tests.sh)
     " script || exit 1
