@@ -24,8 +24,6 @@ Require Import Coquedille.Utils.
 
 Definition ctx := list (Ced.Var).
 
-Reserved Notation "⟦ x ⟧" (at level 0).
-
 Definition DenoteName (n: name): Ced.Name :=
 match n with
 | nAnon => Ced.Anon
@@ -87,8 +85,8 @@ Section monadic.
   | Some y => ret y
   end.
 
+  Reserved Notation "⟦ x ⟧" (at level 0).
   Fixpoint denoteTerm (t: term): m Ced.Typ :=
-  let dummyTy := Ced.TpVar "dummyTy" in
   match t with
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;;
@@ -153,19 +151,29 @@ Section monadic.
     ret (head ++ ls)
   end.
 
-  Program Fixpoint denoteGenv (e : global_decl) : m Ced.Cmd :=
-  match e with
-  | InductiveDecl kern mbody =>
-    body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
-    let name := ind_name body in
-    let ctors := ind_ctors body in
-    params <- denoteParams (ind_params mbody);;
-    let full_ty := ind_type body in
-    let noparam_ty := removeBindings full_ty (List.length (rev params)) in
-    ty <- local (fun '(genv, _) => (genv, [])) ⟦ noparam_ty ⟧ ;;
-    ctors' <- list_m (map (denoteCtors name params) ctors);;
-    ret (Ced.CmdData (Ced.DefData name params ty ctors'))
-  | ConstantDecl _ _ => raise "Only Inductives are implemented so far"
+  Definition denoteInductive mbody : m Ced.Cmd :=
+  body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
+  let name := ind_name body in
+  let ctors := ind_ctors body in
+  params <- denoteParams (ind_params mbody);;
+  let full_ty := ind_type body in
+  let noparam_ty := removeBindings full_ty (List.length (rev params)) in
+  ty <- local (fun '(genv, _) => (genv, [])) ⟦ noparam_ty ⟧ ;;
+  ctors' <- list_m (map (denoteCtors name params) ctors);;
+  ret (Ced.CmdData (Ced.DefData name params ty ctors')).
+
+  Program Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
+  match es with
+  | nil => ret nil
+  | e :: es' =>
+    ps <- denoteGenv es';;
+    match e with
+    | InductiveDecl kern mbody =>
+      p <- denoteInductive mbody ;;
+      ret (p :: ps)
+    | _ =>
+      ret ps
+    end
   end.
 
   Fixpoint maybeList {A} (x : option A) : list A :=
@@ -180,21 +188,17 @@ Section monadic.
   (* We assume that the term is well formed before calling denoteCoq *)
   (* It's probably a good idea to add well formednes checker before calling it *)
   (* TODO: browse metacoq library for well typed term guarantees *)
-  Fixpoint denoteCoq' (p: program): m Ced.Program :=
-  let (genv, t) := p in
+  Fixpoint denoteCoq' (t: term): m Ced.Program :=
   match t with
   | tInd ind univ =>
     (* TODO: Update this for denoteGenv only use the genvs seen so far *)
-    decls <- list_m (map denoteGenv genv) ;;
-    ty <- local (fun '(genv, _) => (genv, [])) ⟦ t ⟧ ;;
+    '(genv, _) <- ask;;
+    ty <- local (fun _ => (genv, [])) ⟦ t ⟧ ;;
+    decls <- denoteGenv genv;;
     let t' := Ced.CmdAssgn (Ced.AssgnType "_" ty) in
     ret (decls ++ [t'])
   | _ => raise "Kind of program not implemented"
   end.
-
-  Local Close Scope string_scope.
-  Local Close Scope monad_scope.
-
 End monadic.
 
 Instance m_Monad : Monad m.
@@ -215,4 +219,6 @@ apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
-Definition denoteCoq p := run_m (nil, nil) (denoteCoq' p).
+Definition denoteCoq (p: program) :=
+let '(genv, t) := p in
+run_m (genv, nil) (denoteCoq' t).
