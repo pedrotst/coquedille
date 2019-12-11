@@ -45,5 +45,5 @@ Quote Recursively Definition option_syntax := option.
 Quote Recursively Definition vector_syntax := Vectors.Vector.t.
 Quote Recursively Definition le_syntax := le.
 (* We are finally ready to extract the programs we want *)
-Extraction "main.hs" PrettyProgram denoteCoq
+Extraction "main.hs" PrettySum PrettyProgram denoteCoq
            nat_syntax list_syntax option_syntax vector_syntax le_syntax.
