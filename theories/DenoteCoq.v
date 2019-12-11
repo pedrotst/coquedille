@@ -97,7 +97,6 @@ Section monadic.
      v <- option_m (nth_error Γ n) "Variable not in environment";;
      ret (Ced.TpVar v)
   | tApp t ts =>
-    env <- ask ;;
     t' <- ⟦ t ⟧ ;;
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
     ret (Ced.TpApp t' ts')
@@ -112,7 +111,16 @@ Section monadic.
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TpVar ctor)
   | tSort univ => ret Ced.KdStar
-  | _ => raise "Constructor not implemented yet"
+  | tVar _ => raise "tVar not implemented yet"
+  | tEvar _ _ => raise "tEvar not implemented yet"
+  | tFix _ _ => raise "tFix not implemented yet"
+  | tProj _ _ => raise "tProj not implemented yet"
+  | tCoFix _ _ => raise "tCoFix not implemented yet"
+  | tConst _ _ => raise "tConst not implemented yet"
+  | tCast _ _ _ => raise "tCast not implemented yet"
+  | tLambda _ _ _ => raise "tLambda not implemented yet"
+  | tCase _ _ _ _ => raise "tCase not implemented yet"
+  | tLetIn _ _ _ _ => raise "tLetIn not implemented yet"
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
@@ -175,15 +183,6 @@ Section monadic.
       ret ps
     end
   end.
-
-  Fixpoint maybeList {A} (x : option A) : list A :=
-  match x with
-  | None => []
-  | Some a => [a]
-  end.
-
-  Fixpoint flattenMaybes {A} (x : list (option A)) : list A :=
-  fold_left (@app A) (fmap maybeList x) [].
 
   (* We assume that the term is well formed before calling denoteCoq *)
   (* It's probably a good idea to add well formednes checker before calling it *)

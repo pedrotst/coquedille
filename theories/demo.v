@@ -15,7 +15,7 @@ Inductive Vec (A : Type) : nat -> Type :=
 .
 
 Quote Recursively Definition vector_syntax := Vec.
-Eval compute in (denoteCoq vector_syntax).
+Eval compute in (pretty (denoteCoq vector_syntax)).
 
 Quote Recursively Definition nat_syntax := nat.
 Quote Recursively Definition option_syntax := option.
