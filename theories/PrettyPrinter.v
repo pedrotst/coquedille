@@ -5,11 +5,6 @@ Require Import List.
 Require Import String.
 Local Open Scope string.
 
-Require Import Hask.Control.Monad.
-Require Import Hask.Control.Monad.State.
-Require Import Hask.Data.List.
-Require Import Hask.Data.Maybe.
-
 Require Import Coquedille.DenoteCoq.
 Require Import Coquedille.Utils.
 
