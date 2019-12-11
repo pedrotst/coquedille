@@ -8,6 +8,10 @@ Local Open Scope string.
 Require Import Coquedille.DenoteCoq.
 Require Import Coquedille.Utils.
 
+Require Import ExtLib.Structures.Monads.
+Require Import ExtLib.Data.Monads.StateMonad.
+Import MonadNotation.
+
 (* Token Definitions *)
 Definition TkNotImpl   := "ppNotImpl".
 Definition TkStar      := "★".
@@ -59,43 +63,30 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-(* Instance PrettyType : Pretty Typ := *)
-(*   (fix pp barr bapp t := *)
-(*     match t with *)
-(*     (* | TpArrowT t1 t2 => parens barr (pp true false t1 ++ TkSpace ++ TkArrow ++ TkSpace ++ pp false false t2) *) *)
-(*     | TpPi name t1 t2 => TkPi ++ TkSpace ++ pretty name ++ TkSpace *)
-(*                              ++ TkColon ++ TkSpace *)
-(*                              ++ pp false false t1 ++ TkSpace *)
-(*                              ++ TkDot ++ TkSpace ++ pp false false t2 *)
-(*     | TpApp t1 ts2 => parens bapp (pp false false t1 ++ TkSpace *)
-(*                                      ++ TkTpDot ++ string_of_list_aux id (TkSpace ++ TkTpDot) (map (pp false true) ts2) 0) *)
-(*     | TpVar v => v *)
-(*     | KdStar => TkStar *)
-(*     end) false false. *)
-
-Fixpoint ppTerm' (barr bapp: bool) (t : Typ): State type_ctx string :=
+Local Open Scope monad_scope.
+Fixpoint ppTerm' (barr bapp: bool) (t : Typ): state type_ctx string :=
     match t with
     | TpPi x t1 t2 =>
       match x with
       | Anon =>
-        Γ <- get ;
-        t1' <- ppTerm' true false t1 ;
+        Γ <- get ;;
+        t1' <- ppTerm' true false t1 ;;
         put Γ ;;
-        t2' <- ppTerm' false false t2 ;
-        pure (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
+        t2' <- ppTerm' false false t2 ;;
+        ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
       | Named name =>
-        Γ <- get ;
-        t1' <- ppTerm' false false t1 ;
+        Γ <- get ;;
+        t1' <- ppTerm' false false t1 ;;
         put ((name, t1) :: Γ) ;;
-        t2' <- ppTerm' false false t2 ;
-        pure (TkPi ++ TkSpace ++ name ++ TkSpace
+        t2' <- ppTerm' false false t2 ;;
+        ret (TkPi ++ TkSpace ++ name ++ TkSpace
                              ++ TkColon ++ TkSpace
                              ++ t1' ++ TkSpace
                              ++ TkDot ++ TkSpace ++ t2')
       end
     | TpApp t1 ts2 =>
-      Γ <- get ;
-      t1' <- ppTerm' false false t1 ;
+      Γ <- get ;;
+      t1' <- ppTerm' false false t1 ;;
       let ppApp (t: Typ) :=
           (match t with
            | TpVar n =>
@@ -108,33 +99,33 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Typ): State type_ctx string :=
                end
              end
            | _ => ""
-          end) ++ fst (ppTerm' false true t nil) in
+          end) ++ fst (@runState _ _ (ppTerm' false true t) nil) in
       (* let ts2' := map fst (map (fun t => ppTerm' false true t nil) ts2) in *)
       let ts2' := (map ppApp ts2) in
-      pure (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
-    | TpVar v => pure v
-    | KdStar => pure TkStar
+      ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
+    | TpVar v => ret v
+    | KdStar => ret TkStar
     end.
 
 Definition ppTerm (t: Typ) (Γ : type_ctx) :=
-  fst (ppTerm' false false t Γ).
+  fst (@runState _ _ (ppTerm' false false t) Γ).
 
 
-Fixpoint removeBindings (t: Typ) (n: nat) : State type_ctx Typ :=
+Fixpoint removeBindings (t: Typ) (n: nat) : state type_ctx Typ :=
 match n with
-| O => pure t
+| O => ret t
 | S n' =>
   match t with
   | TpPi x t1 t2 =>
-    Γ <- get ;
-    t' <- removeBindings t2 (pred n);
+    Γ <- get ;;
+    t' <- removeBindings t2 (pred n);;
     match x with
-    | Anon => pure t'
+    | Anon => ret t'
     | Named name =>
       put ((name, t1) :: Γ) ;;
-      pure t'
+      ret t'
     end
-  | _ => pure t
+  | _ => ret t
   end
 end.
 
@@ -174,7 +165,7 @@ Fixpoint removeParams (data_name : Var) params_count (t: Typ) :=
 Definition ppctor params_count (Γ: type_ctx) data_name ctor :=
   match ctor with
   | Ctr cname ty =>
-    let '(no_bindings_t, Γ') := removeBindings ty params_count nil in
+    let '(no_bindings_t, Γ') := @runState _ _ (removeBindings ty params_count) nil in
     let no_params_t := removeParams data_name params_count no_bindings_t in
     TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ ppTerm no_params_t (List.app Γ Γ')
   end.
@@ -204,37 +195,27 @@ Instance PrettyAssgn : Pretty Assgn :=
     | AssgnTerm name t => TkNotImpl
     end.
 
-(* Instance PrettyCmd : Pretty Cmd := *)
-(*   fun c => *)
-(*     match c with *)
-(*     | CmdAssgn def => pretty def ++ TkCR *)
-(*     | CmdData (DefData name params kind ctors)  => ppDatatype name params kind ctors ++ TkCR *)
-(*     end. *)
-
-Definition ppCmd (c: Cmd): State type_ctx string :=
+Definition ppCmd (c: Cmd): state type_ctx string :=
     match c with
-    | CmdAssgn def => pure (pretty def)
+    | CmdAssgn def => ret (pretty def)
     | CmdData (DefData name params kind ctors)  =>
-      Γ <- get ;
+      Γ <- get ;;
       let s := ppDatatype name params kind ctors Γ ++ TkCR in
       put ((name, kind) :: Γ) ;;
-      pure s
+      ret s
     end.
 
-Fixpoint ppProgram' (p : Program) : State type_ctx string :=
+Fixpoint ppProgram' (p : Program) : state type_ctx string :=
   match p with
-  | nil => pure ""
+  | nil => ret ""
   | c :: cs =>
-    c' <- ppCmd c;
-    cs' <- ppProgram' cs;
-    pure (c' ++ TkCR ++ cs')
+    c' <- ppCmd c;;
+    cs' <- ppProgram' cs;;
+    ret (c' ++ TkCR ++ cs')
   end.
 
-(* Instance PrettyProgram : Pretty Program := *)
-  (* fun p => string_of_list pretty p 0. *)
-
 Instance PrettyProgram : Pretty Program :=
-  fun p => fst (ppProgram' p nil).
+  fun p => fst (@runState _ _ (ppProgram' p) nil).
 
 Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
   fun o =>
@@ -244,11 +225,12 @@ Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
     | Some x => pretty x
     end.
 
-Local Close Scope string_scope.
-
 Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
   fun y =>
     match y with
     | inl s =>  s
     | inr a => pretty a
     end.
+
+Local Close Scope string_scope.
+Local Close Scope monad_scope.
