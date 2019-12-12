@@ -116,7 +116,7 @@ Section monadic.
   | tFix _ _ => raise "tFix not implemented yet"
   | tProj _ _ => raise "tProj not implemented yet"
   | tCoFix _ _ => raise "tCoFix not implemented yet"
-  | tConst _ _ => raise "tConst not implemented yet"
+  | tConst kern _ => ret (Ced.TpVar (kername_to_qualid kern))
   | tCast _ _ _ => raise "tCast not implemented yet"
   | tLambda _ _ _ => raise "tLambda not implemented yet"
   | tCase _ _ _ _ => raise "tCase not implemented yet"
@@ -170,7 +170,7 @@ Section monadic.
   ctors' <- list_m (map (denoteCtors name params) ctors);;
   ret (Ced.CmdData (Ced.DefData name params ty ctors')).
 
-  Program Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
+  Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with
   | nil => ret nil
   | e :: es' =>
@@ -179,8 +179,13 @@ Section monadic.
     | InductiveDecl kern mbody =>
       p <- denoteInductive mbody ;;
       ret (p :: ps)
-    | _ =>
-      ret ps
+    | ConstantDecl kern cbody =>
+      bdy <- option_m (cst_body cbody) "Constant without a body" ;;
+      t <- ⟦ bdy ⟧;;
+      ty <- ⟦ (cst_type cbody) ⟧;;
+      let name := kername_to_qualid kern in
+      let asgn := Ced.CmdAssgn (Ced.AssgnType name (Some ty) t) in
+      ret (asgn :: ps)
     end
   end.
 
@@ -188,16 +193,13 @@ Section monadic.
   (* It's probably a good idea to add well formednes checker before calling it *)
   (* TODO: browse metacoq library for well typed term guarantees *)
   Fixpoint denoteCoq' (t: term): m Ced.Program :=
-  match t with
-  | tInd ind univ =>
-    (* TODO: Update this for denoteGenv only use the genvs seen so far *)
-    '(genv, _) <- ask;;
-    ty <- local (fun _ => (genv, [])) ⟦ t ⟧ ;;
-    decls <- denoteGenv genv;;
-    let t' := Ced.CmdAssgn (Ced.AssgnType "_" ty) in
-    ret (decls ++ [t'])
-  | _ => raise "Kind of program not implemented"
-  end.
+  (* TODO: Update this for denoteGenv only use the genvs seen so far *)
+  '(genv, _) <- ask;;
+   (* ty <- local (fun _ => (genv, [])) ⟦ t ⟧ ;; *)
+   decls <- denoteGenv genv;;
+   (* let t' := Ced.CmdAssgn (Ced.AssgnType "_" None ty) in *)
+   ret decls.
+
 End monadic.
 
 Instance m_Monad : Monad m.

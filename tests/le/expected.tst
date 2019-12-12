@@ -7,5 +7,4 @@ data le (n : nat) : nat ➔ ★ =
   | le_n : le n
   | le_S : Π m : nat . le m ➔ le (S m).
 
-_ = le.
 

@@ -28,13 +28,13 @@ Module Ced.
   | KdStar
   .
 
-  Inductive Term : Type :=
-  | VarT (_: Var)
-  (* | RelT (_: nat) *)
-  | LamT (_: Var) (_: option Typ) (_: Term)
-  | AppT (_: Term) (_: Term)
-  | ProdT (_: Name) (_: Term) (_: Term)
-  .
+  (* Inductive Term : Type := *)
+  (* | VarT (_: Var) *)
+  (* (* | RelT (_: nat) *) *)
+  (* | LamT (_: Var) (_: option Typ) (_: Term) *)
+  (* | AppT (_: Term) (_: Term) *)
+  (* | ProdT (_: Name) (_: Term) (_: Term) *)
+  (* . *)
 
   Inductive Ctor : Type :=
   | Ctr (_: Var) (_: Typ).
@@ -47,8 +47,8 @@ Module Ced.
   | DefData (_: Var) (_: Params) (_: Typ) (_: Ctors).
 
   Inductive Assgn : Type :=
-  | AssgnType (_: Var) (_: Typ)
-  | AssgnTerm (_: Var) (_: Term)
+  | AssgnType (_: Var) (_: option Typ) (_: Typ)
+  (* | AssgnTerm (_: Var) (_: option Typ) (_: Term) *)
   .
 
   Inductive Cmd : Type :=

@@ -43,6 +43,9 @@ Eval compute in (pretty (denoteCoq vector_syntax)).
 Definition x' := nat.
 Definition x := x'.
 
+Quote Recursively Definition x_syntax := x'.
+Eval compute in (pretty (denoteCoq x_syntax)).
+
 Quote Recursively Definition le_syntax := le.
 Eval compute in (pretty (denoteCoq le_syntax)).
 

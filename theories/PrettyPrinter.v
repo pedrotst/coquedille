@@ -185,14 +185,20 @@ Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list C
           ++ ppTerm kind Γ ++ TkSpace ++ TkAssgn ++ TkCR
           ++ string_of_list (ppctor (List.length params) Γ name) ctors 1 ++ TkDot.
 
+Definition ppType (ty : option Typ) :=
+  match ty with
+  | None => ""
+  | Some t => TkColon ++ TkSpace ++ ppTerm t nil ++ TkSpace
+  end.
+
 
 Instance PrettyAssgn : Pretty Assgn :=
   fun asgn =>
     match asgn with
-    | AssgnType name t => name ++ TkSpace ++ TkAssgn
+    | AssgnType name ty t => name ++ TkSpace ++ ppType ty ++ TkAssgn
                               ++ TkSpace ++ ppTerm t nil
-                              ++ TkDot
-    | AssgnTerm name t => TkNotImpl
+                              ++ TkDot ++ TkCR
+    (* | AssgnTerm name t => TkNotImpl *)
     end.
 
 Definition ppCmd (c: Cmd): state type_ctx string :=
