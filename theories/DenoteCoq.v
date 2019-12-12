@@ -94,7 +94,7 @@ Section monadic.
     ret (Ced.TpPi (DenoteName x) t1' t2')
   | tRel n =>
     '(_, Γ) <- ask ;;
-     v <- option_m (nth_error Γ n) "Variable not in environment";;
+     v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TpVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
@@ -138,36 +138,30 @@ Section monadic.
            (params: Ced.Params)
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
   let '(name, t, i) := ctor in
-  let v := data_name in
   let paramnames := map fst params in
-  t' <- local (fun '(genv, _) => (genv, [v])) ⟦ t ⟧ ;;
+  t' <- local (fun '(genv, _) => (genv, [data_name])) ⟦ t ⟧ ;;
   ret (Ced.Ctr name t').
 
   Fixpoint denoteParams (params : context): m Ced.Params :=
   match params with
   | nil => ret []
   | cons p ps =>
-    let name := decl_name p in
+    let name := get_ident (decl_name p) in
     let t := decl_type p in
-    ls <- denoteParams ps ;;
-    head <- (match name with
-            | nNamed n =>
-              t' <- local id ⟦ t ⟧ ;;
-              ret [(n, t')]
-            | cAnon => ret []
-            end) ;;
-    ret (head ++ ls)
+    t' <- ⟦ t ⟧ ;;
+    ls <- local (fun '(genv, Γ) => (genv, name :: Γ)) (denoteParams ps) ;;
+    ret ((name, t') :: ls)
   end.
 
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
   let ctors := ind_ctors body in
-  params <- denoteParams (ind_params mbody);;
+  params <- denoteParams (rev (ind_params mbody));;
   let full_ty := ind_type body in
-  let noparam_ty := removeBindings full_ty (List.length (rev params)) in
-  ty <- local (fun '(genv, _) => (genv, [])) ⟦ noparam_ty ⟧ ;;
-  ctors' <- list_m (map (denoteCtors name params) ctors);;
+  let noparam_ty := removeBindings full_ty (List.length params) in
+  ty <- local (fun '(genv, _) => (genv, [name])) ⟦ full_ty ⟧ ;;
+  ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
   ret (Ced.CmdData (Ced.DefData name params ty ctors')).
 
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
