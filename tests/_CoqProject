@@ -1,2 +1,1 @@
 -R ../theories Coquedille
--R ../coq-haskell/src Hask
