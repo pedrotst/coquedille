@@ -46,6 +46,13 @@ Quote Recursively Definition vector_syntax := Vectors.Vector.t.
 Quote Recursively Definition le_syntax := le.
 Definition asgn := nat.
 Quote Recursively Definition asgn_syntax := asgn.
+
+Lemma refl1 : 1 = 1.
+Proof.
+  exact eq_refl.
+Qed.
+Quote Recursively Definition refl1_syntax := refl1.
+
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq
-           nat_syntax list_syntax option_syntax vector_syntax le_syntax asgn_syntax.
+           nat_syntax list_syntax option_syntax vector_syntax le_syntax asgn_syntax refl1_syntax.

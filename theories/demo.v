@@ -29,7 +29,7 @@ ltac:(let t := eval compute in list in exact t).
 Inductive mytry : Type :=
 | foo
 | bar : ((nat -> nat) -> (nat -> list nat)) -> mytry
-(* | asdf : Vec nat 3 -> mytry *)
+| asdf : Vec nat 3 -> mytry
 .
 
 Quote Recursively Definition x1 := (mytry).
@@ -51,12 +51,28 @@ Eval compute in (pretty (denoteCoq le_syntax)).
 
 Inductive myDep (A : Type) : x -> Type :=
 | mynil : myDep A 0
-(* | mycons : A -> forall x, myDep A x -> myDep A (S x) *)
+| mycons : A -> forall x, myDep A x -> myDep A (S x)
 .
 
 Quote Recursively Definition myDep_syntax := myDep.
-
 Eval compute in (pretty (denoteCoq myDep_syntax)).
+
+Lemma exlemma : 1 = 1.
+Proof.
+  exact eq_refl.
+Qed.
+
+Quote Recursively Definition eq_syntax := eq.
+Eval compute in (pretty (denoteCoq eq_syntax)).
+
+Quote Recursively Definition exlemma_syntax := exlemma.
+Eval compute in (pretty (denoteCoq exlemma_syntax)).
+
+Eval compute in (let r := (denoteCoq exlemma_syntax) in
+                 match r with
+                 | inr p => showState p
+                 | _ => []
+                 end).
 
 Require Import Vectors.Vector.
 Local Open Scope string_scope.
