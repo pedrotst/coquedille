@@ -70,7 +70,7 @@ Section monadic.
   | nNamed name => name
   end.
 
-  Fixpoint list_m {A} (l : list (m A)) : m (list A) :=
+  Fixpoint list_m {A} {m': Type -> Type} `{Monad m'} (l : list (m' A)) : m' (list A) :=
   match l with
   | nil => ret nil
   | (x :: xs) =>
@@ -124,12 +124,12 @@ Section monadic.
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint removeBindings (t: term) (n: nat) : term :=
+  Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
   match n with
   | O => t
   | S n' =>
     match t with
-    | tProd x t1 t2 => removeBindings t2 (pred n)
+    | Ced.TpPi x t1 t2 => removeBindings t2 (pred n)
     | _ => t
     end
   end.
@@ -159,8 +159,8 @@ Section monadic.
   let ctors := ind_ctors body in
   params <- denoteParams (rev (ind_params mbody));;
   let full_ty := ind_type body in
-  let noparam_ty := removeBindings full_ty (List.length params) in
   ty <- local (fun '(genv, _) => (genv, [name])) ⟦ full_ty ⟧ ;;
+  (* let noparam_ty := removeBindings ty (List.length params) in *)
   ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
   ret (Ced.CmdData (Ced.DefData name params ty ctors')).
 
