@@ -199,20 +199,26 @@ Program Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors 
   Γ <- ask ;;
   let '(k, _) := runState (removeBindings kind (List.length params)) nil in
   ty <- ppTerm' false false k ;;
+  (* Working on the reader monad here makes the mapping trivial *)
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
   ret (TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
           ++ ty ++ TkSpace ++ TkAssgn ++ TkCR
           ++ ctors' ++ TkDot).
 
-Definition ppType (ty : Typ) (Γ: type_ctx) :=
-  TkColon ++ TkSpace ++ ppTerm ty Γ ++ TkSpace.
+Definition ppmType (v: Var) (mty : option Typ) : state type_ctx string :=
+  match mty with
+  | None => ret ""
+  | Some ty =>
+    Γ <- get ;;
+    put (alist_add _ v ty Γ);;
+    ret (TkColon ++ TkSpace ++ ppTerm ty Γ ++ TkSpace)
+  end.
 
 Instance PrettyOption {A} {x: Pretty A}: Pretty (option A) :=
   fun o =>
     match o with
-      (* Maybe signal an error? *)
-    | None => ""
+    | None => "ERR"
     | Some x => pretty x
     end.
 
@@ -223,25 +229,14 @@ Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
     | inr a => pretty a
     end.
 
-(* Definition ppAssgn (name:Var) (mty: option Typ) (ty: Typ) : state type_ctx string := *)
-  (* Γ <- get ;; *)
-  (* ret (name ++ TkSpace ++ ppType mty ++ TkAssgn *)
-            (* ++ TkSpace ++ ppTerm ty Γ *)
-            (* ++ TkDot ++ TkCR). *)
-
 Program Definition ppCmd (c: Cmd): state type_ctx string :=
   Γ <- get ;;
   match c with
   | CmdAssgn (AssgnType v mty t) =>
-    match mty with
-    | None => ret (v ++ TkSpace ++ TkAssgn
-                       ++ TkSpace ++ ppTerm t Γ
-                       ++ TkDot ++ TkCR)
-    | Some ty => put (alist_add _ v ty Γ);;
-                ret (v ++ TkSpace ++ ppType ty Γ ++ TkAssgn
-                          ++ TkSpace ++ ppTerm t Γ
-                          ++ TkDot ++ TkCR)
-    end
+    typ <- ppmType v mty ;;
+    ret (v ++ TkSpace ++ typ ++ TkAssgn
+           ++ TkSpace ++ ppTerm t Γ
+           ++ TkDot ++ TkCR)
   | CmdData (DefData name params kind ctors)  =>
     put (alist_add _ name kind Γ) ;;
     let s := runReader (ppDatatype name params kind ctors) Γ in
