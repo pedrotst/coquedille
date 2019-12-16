@@ -23,7 +23,7 @@ Require Import Coquedille.Ast.
 
 Definition ctx := list (Ced.Var).
 
-Definition DenoteName (n: name): Ced.Name :=
+Definition denoteName (n: name): Ced.Name :=
 match n with
 | nAnon => Ced.Anon
 | nNamed c => Ced.Named c
@@ -90,7 +90,7 @@ Section monadic.
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;;
     t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) ⟦ t2 ⟧;;
-    ret (Ced.TPi (DenoteName x) t1' t2')
+    ret (Ced.TPi (denoteName x) t1' t2')
   | tRel n =>
     '(_, Γ) <- ask ;;
      v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
@@ -109,8 +109,11 @@ Section monadic.
     let ctors := ind_ctors body in
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
-  | tLambda _ _ _ => raise "tLambda not implemented yet"
   | tSort univ => ret Ced.KdStar
+  | tLambda x ty t =>
+    ty' <- ⟦ ty ⟧ ;;
+    t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) ⟦ t ⟧ ;;
+    ret (Ced.TLam (denoteName x) ty' t')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"

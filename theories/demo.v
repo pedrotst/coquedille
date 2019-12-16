@@ -94,12 +94,13 @@ Proof.
   discriminate.
 Qed.
 
+Definition zzzz := (fun x: nat -> nat => x) (fun x: nat => x).
 
 Quote Recursively Definition False_syntax := False.
 Eval compute in (pretty (denoteCoq False_syntax)).
 Quote Recursively Definition True_syntax := True.
 Eval compute in (pretty (denoteCoq True_syntax)).
-Quote Recursively Definition not_syntax := not.
+Quote Recursively Definition not_syntax := zzzz.
 Eval compute in (pretty (denoteCoq not_syntax)).
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq plus_syntax)).

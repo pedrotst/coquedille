@@ -29,8 +29,9 @@ Definition TkPi        := "Π".
 Definition TkAll       := "∀".
 Definition TkOpenPar   := "(".
 Definition TkClosePar  := ")".
-Definition TkTDot     := "·".
+Definition TkTDot      := "·".
 Definition TkData      := "data".
+Definition TkLam       := "λ".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
 ".
@@ -109,13 +110,20 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                 ++ TkDot ++ TkSpace ++ t2')
     end
   | TApp t1 ts2 =>
-    t1' <- ppTerm' false false t1 ;;
+    t1' <- ppTerm' false true t1 ;;
     let ppApp (t: Term) : reader type_ctx string :=
         d <- ppDot t ;;
         t' <- ppTerm' false true t ;;
         ret (d ++ t') in
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
+  | TLam x ty t =>
+    ty' <- ppTerm' false false ty ;;
+    t' <- ppTerm' false false t;;
+    let x' := match x with | Anon => "_" | Named y => y end in
+    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkColon
+               ++ TkSpace ++ ty' ++ TkSpace
+               ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
   | KdStar => ret TkStar
   end.

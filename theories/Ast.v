@@ -18,6 +18,7 @@ Module Ced.
   | TPi (_: Name) (_: Term) (_: Term)
   | TApp (_: Term) (_: list Term)
   | TVar (_: Var)
+  | TLam (_: Name) (_: Term) (_: Term)
   | KdStar
   .
 
