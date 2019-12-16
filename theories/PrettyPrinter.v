@@ -121,9 +121,9 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
     ty' <- ppTerm' false false ty ;;
     t' <- ppTerm' false false t;;
     let x' := match x with | Anon => "_" | Named y => y end in
-    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkColon
-               ++ TkSpace ++ ty' ++ TkSpace
-               ++ TkDot ++ TkSpace ++ t'))
+    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
+                            ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
+                            ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
   | KdStar => ret TkStar
   end.
