@@ -99,8 +99,8 @@ Quote Recursively Definition False_syntax := False.
 Eval compute in (pretty (denoteCoq False_syntax)).
 Quote Recursively Definition True_syntax := True.
 Eval compute in (pretty (denoteCoq True_syntax)).
-Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
-Eval compute in (pretty (denoteCoq plus_syntax)).
+Quote Recursively Definition not_syntax := not.
+Eval compute in (pretty (denoteCoq not_syntax)).
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq plus_syntax)).
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.

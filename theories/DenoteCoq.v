@@ -20,7 +20,6 @@ Require Import MetaCoq.Template.AstUtils.
 Require Import MetaCoq.Template.BasicAst.
 
 Require Import Coquedille.Ast.
-Require Import Coquedille.Utils.
 
 Definition ctx := list (Ced.Var).
 
@@ -86,21 +85,21 @@ Section monadic.
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 0).
-  Fixpoint denoteTerm (t: term): m Ced.Typ :=
+  Fixpoint denoteTerm (t: term): m Ced.Term :=
   match t with
   | tProd x t1 t2 =>
     t1' <- ⟦ t1 ⟧ ;;
     t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) ⟦ t2 ⟧;;
-    ret (Ced.TpPi (DenoteName x) t1' t2')
+    ret (Ced.TPi (DenoteName x) t1' t2')
   | tRel n =>
     '(_, Γ) <- ask ;;
      v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
-     ret (Ced.TpVar v)
+     ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
-    ret (Ced.TpApp t' ts')
-  | tInd ind univ => ret (Ced.TpVar (kername_to_qualid (inductive_mind ind)))
+    ret (Ced.TApp t' ts')
+  | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
     let minds := inductive_mind ind in
@@ -109,27 +108,27 @@ Section monadic.
     body <- option_m (head bodies) "Could not find declaration body" ;;
     let ctors := ind_ctors body in
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
-    ret (Ced.TpVar ctor)
+    ret (Ced.TVar ctor)
+  | tLambda _ _ _ => raise "tLambda not implemented yet"
   | tSort univ => ret Ced.KdStar
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"
   | tProj _ _ => raise "tProj not implemented yet"
   | tCoFix _ _ => raise "tCoFix not implemented yet"
-  | tConst kern _ => ret (Ced.TpVar (kername_to_qualid kern))
+  | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast _ _ _ => raise "tCast not implemented yet"
-  | tLambda _ _ _ => raise "tLambda not implemented yet"
   | tCase _ _ _ _ => raise "tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "tLetIn not implemented yet"
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
+  Fixpoint removeBindings (t: Ced.Term) (n: nat) : Ced.Term :=
   match n with
   | O => t
   | S n' =>
     match t with
-    | Ced.TpPi x t1 t2 => removeBindings t2 (pred n)
+    | Ced.TPi x t1 t2 => removeBindings t2 (pred n)
     | _ => t
     end
   end.
@@ -157,7 +156,7 @@ Section monadic.
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
   if (String.eqb name "False")
-  then (ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TpPi (Ced.Named "X") Ced.KdStar (Ced.TpVar "X")))))
+  then (ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TPi (Ced.Named "X") Ced.KdStar (Ced.TVar "X")))))
   else
     let ctors := ind_ctors body in
     params <- denoteParams (rev (ind_params mbody));;

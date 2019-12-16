@@ -14,41 +14,25 @@ Module Ced.
   | Named (_: Var)
   .
 
-  Inductive PrTerm : Type :=
-  | PrVar (_: nat)
-  | PrRef (_: Var)
-  | PrLam (_: PrTerm)
-  | PrApp (_: PrTerm) (_: PrTerm).
-
-
-  Inductive Typ : Type :=
-  | TpPi (_: Name) (_: Typ) (_: Typ)
-  | TpApp (_: Typ) (_: list Typ)
-  | TpVar (_: Var)
+  Inductive Term : Type :=
+  | TPi (_: Name) (_: Term) (_: Term)
+  | TApp (_: Term) (_: list Term)
+  | TVar (_: Var)
   | KdStar
   .
 
-  (* Inductive Term : Type := *)
-  (* | VarT (_: Var) *)
-  (* (* | RelT (_: nat) *) *)
-  (* | LamT (_: Var) (_: option Typ) (_: Term) *)
-  (* | AppT (_: Term) (_: Term) *)
-  (* | ProdT (_: Name) (_: Term) (_: Term) *)
-  (* . *)
-
   Inductive Ctor : Type :=
-  | Ctr (_: Var) (_: Typ).
+  | Ctr (_: Var) (_: Term).
 
   Definition Ctors := list Ctor.
 
-  Definition Params := list (Var * Typ).
+  Definition Params := list (Var * Term).
 
   Inductive Data : Type :=
-  | DefData (_: Var) (_: Params) (_: Typ) (_: Ctors).
+  | DefData (_: Var) (_: Params) (_: Term) (_: Ctors).
 
   Inductive Assgn : Type :=
-  | AssgnType (_: Var) (_: option Typ) (_: Typ)
-  (* | AssgnTerm (_: Var) (_: option Typ) (_: Term) *)
+  | AssgnType (_: Var) (_: option Term) (_: Term)
   .
 
   Inductive Cmd : Type :=

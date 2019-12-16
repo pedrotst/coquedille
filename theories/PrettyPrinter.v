@@ -29,7 +29,7 @@ Definition TkPi        := "Π".
 Definition TkAll       := "∀".
 Definition TkOpenPar   := "(".
 Definition TkClosePar  := ")".
-Definition TkTpDot     := "·".
+Definition TkTDot     := "·".
 Definition TkData      := "data".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
@@ -39,14 +39,14 @@ Class Pretty (p : Type) :=
   pretty : p -> string.
 
 Local Open Scope monad_scope.
-Definition type_ctx := alist Ced.Var Ced.Typ.
+Definition type_ctx := alist Ced.Var Ced.Term.
 
 Definition string_eq x y := utils.string_compare x y = Eq.
 
 Instance string_RelDec : RelDec.RelDec string_eq :=
   { rel_dec := eqb }.
 
-Definition alist_app (a1 a2: alist Var Typ) : alist Var Typ :=
+Definition alist_app (a1 a2: alist Var Term) : alist Var Term :=
   @fold_alist _ _ _ (@alist_add _ _ _ _) a1 a2.
 
 Fixpoint ppIndentation (n : nat) :=
@@ -77,24 +77,24 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-Definition ppDot (t: Typ) : reader type_ctx string :=
+Definition ppDot (t: Term) : reader type_ctx string :=
   Γ <- ask ;;
   match t with
-  | TpVar v =>
+  | TVar v =>
     match alist_find _ v Γ with
     | None => ret ""
     | Some t =>
       match t with
-      | KdStar => ret TkTpDot
+      | KdStar => ret TkTDot
       | _ => ret ""
       end
     end
   | _ => ret ""
   end.
 
-Fixpoint ppTerm' (barr bapp: bool) (t : Typ): reader type_ctx string :=
+Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
-  | TpPi x t1 t2 =>
+  | TPi x t1 t2 =>
     match x with
     | Anon =>
       t1' <- ppTerm' true false t1 ;;
@@ -108,27 +108,27 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Typ): reader type_ctx string :=
                 ++ t1' ++ TkSpace
                 ++ TkDot ++ TkSpace ++ t2')
     end
-  | TpApp t1 ts2 =>
+  | TApp t1 ts2 =>
     t1' <- ppTerm' false false t1 ;;
-    let ppApp (t: Typ) : reader type_ctx string :=
+    let ppApp (t: Term) : reader type_ctx string :=
         d <- ppDot t ;;
         t' <- ppTerm' false true t ;;
         ret (d ++ t') in
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
-  | TpVar v => ret v
+  | TVar v => ret v
   | KdStar => ret TkStar
   end.
 
-Definition ppTerm (t: Typ) (Γ : type_ctx) :=
+Definition ppTerm (t: Term) (Γ : type_ctx) :=
   (@runReader _ _ (ppTerm' false false t) Γ).
 
-Fixpoint removeBindings (t: Typ) (n: nat) : state type_ctx Typ :=
+Fixpoint removeBindings (t: Term) (n: nat) : state type_ctx Term :=
 match n with
 | O => ret t
 | S n' =>
   match t with
-  | TpPi x t1 t2 =>
+  | TPi x t1 t2 =>
     Γ <- get ;;
     t' <- removeBindings t2 (pred n);;
     match x with
@@ -151,26 +151,26 @@ Fixpoint removeN {A} (l: list A) (n: nat): list A :=
     end
   end.
 
-Definition flattenApp (t: Typ) :=
+Definition flattenApp (t: Term) :=
   match t with
-  | TpApp t nil => t
+  | TApp t nil => t
   | _ => t
   end.
 
-Fixpoint removeParams (data_name : Var) params_count (t: Typ) :=
+Fixpoint removeParams (data_name : Var) params_count (t: Term) :=
   let removeParams' := removeParams data_name params_count in
   match t with
-  | TpApp t1 ts2 =>
+  | TApp t1 ts2 =>
     let rs := map removeParams' ts2 in
     match t1 with
-    | TpVar v =>
+    | TVar v =>
       if (string_dec v data_name)
       then let rs' := removeN rs params_count in
-           flattenApp (TpApp t1 rs')
-      else flattenApp (TpApp t1 rs)
-    | _ => TpApp (removeParams' t1) ts2
+           flattenApp (TApp t1 rs')
+      else flattenApp (TApp t1 rs)
+    | _ => TApp (removeParams' t1) ts2
     end
-  | TpPi x t1 t2 => TpPi x (removeParams' t1) (removeParams' t2)
+  | TPi x t1 t2 => TPi x (removeParams' t1) (removeParams' t2)
   | _ => t
   end.
 
@@ -195,7 +195,7 @@ Instance PrettyParams : Pretty Params :=
               ++ TkClosePar ++ pp ps
     end.
 
-Program Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors : list Ctor) : reader type_ctx string :=
+Program Definition ppDatatype (name : Var) (params: Params) (kind : Term) (ctors : list Ctor) : reader type_ctx string :=
   Γ <- ask ;;
   let '(k, _) := runState (removeBindings kind (List.length params)) nil in
   ty <- ppTerm' false false k ;;
@@ -206,7 +206,7 @@ Program Definition ppDatatype (name : Var) (params: Params) (kind : Typ) (ctors 
           ++ ty ++ TkSpace ++ TkAssgn ++ TkCR
           ++ ctors' ++ TkDot).
 
-Definition ppmType (v: Var) (mty : option Typ) : state type_ctx string :=
+Definition ppmType (v: Var) (mty : option Term) : state type_ctx string :=
   match mty with
   | None => ret ""
   | Some ty =>
