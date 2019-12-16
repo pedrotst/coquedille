@@ -156,13 +156,16 @@ Section monadic.
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
-  let ctors := ind_ctors body in
-  params <- denoteParams (rev (ind_params mbody));;
-  let full_ty := ind_type body in
-  ty <- local (fun '(genv, _) => (genv, [name])) ⟦ full_ty ⟧ ;;
-  (* let noparam_ty := removeBindings ty (List.length params) in *)
-  ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
-  ret (Ced.CmdData (Ced.DefData name params ty ctors')).
+  if (String.eqb name "False")
+  then (ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TpPi (Ced.Named "X") Ced.KdStar (Ced.TpVar "X")))))
+  else
+    let ctors := ind_ctors body in
+    params <- denoteParams (rev (ind_params mbody));;
+    let full_ty := ind_type body in
+    ty <- local (fun '(genv, _) => (genv, [name])) ⟦ full_ty ⟧ ;;
+    (* let noparam_ty := removeBindings ty (List.length params) in *)
+    ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
+    ret (Ced.CmdData (Ced.DefData name params ty ctors')).
 
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with

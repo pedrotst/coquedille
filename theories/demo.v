@@ -6,8 +6,11 @@ Require Import Coquedille.Ast.
 Require Import Coquedille.DenoteCoq.
 Require Import Coquedille.PrettyPrinter.
 
+Require Import Coq.Program.Equality.
 Require Import String.
 Require Import List. Import ListNotations.
+Require Import Coq.Vectors.Vector.
+
 
 Inductive Vec (A : Type) : nat -> Type :=
 | vnil : Vec A 0
@@ -67,6 +70,41 @@ Eval compute in (pretty (denoteCoq eq_syntax)).
 
 Quote Recursively Definition exlemma_syntax := exlemma.
 Eval compute in (pretty (denoteCoq exlemma_syntax)).
+
+Quote Recursively Definition jmeq_syntax := JMeq.
+Eval compute in (pretty (denoteCoq jmeq_syntax)).
+
+Lemma Vector_nil_neq_List_nil {A} (a : A):
+  ~ (@nil A ~= @Datatypes.nil A).
+Proof.
+  intro H.
+  inversion H.
+  clear H0.
+  assert (forall x y : Vector.t A 0, x = y). {
+    clear.
+    intros.
+    pattern y.
+    repeat apply VectorDef.case0.
+    pattern x0.
+    repeat apply VectorDef.case0.
+    reflexivity.
+  }
+  rewrite H1 in H0.
+  pose proof (H0 (@Datatypes.nil A) (Datatypes.cons a Datatypes.nil)).
+  discriminate.
+Qed.
+
+
+Quote Recursively Definition False_syntax := False.
+Eval compute in (pretty (denoteCoq False_syntax)).
+Quote Recursively Definition True_syntax := True.
+Eval compute in (pretty (denoteCoq True_syntax)).
+Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
+Eval compute in (pretty (denoteCoq plus_syntax)).
+Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
+Eval compute in (pretty (denoteCoq plus_syntax)).
+Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
+Eval compute in (pretty (denoteCoq plus_syntax)).
 
 Eval compute in (let r := (denoteCoq exlemma_syntax) in
                  match r with
