@@ -126,6 +126,7 @@ Section monadic.
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
+    (* Have to fix this to check for term/type correctly *)
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
     ret (Ced.TApp t' (Ced.inj1List ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))

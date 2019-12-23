@@ -79,19 +79,25 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-Definition ppDot (t: Term) : reader type_ctx string :=
-  Γ <- ask ;;
+Definition getVar (t: Term + Typ): option Var :=
   match t with
-  | TVar v =>
-    match alist_find _ v Γ with
-    | None => ret ""
-    | Some t =>
-      match t with
-      | inl _ => ret TkTDot
-      | _ => ret ""
+  | inl t' => match t' with | TVar v => Some v | _ => None end
+  | inr t' => match t' with | TyVar v => Some v | _ => None end
+  end.
+
+Definition ppDot (t: Term + Typ) : reader type_ctx string :=
+  Γ <- ask ;;
+  match getVar t with
+  | None => ret ""
+  | Some v =>
+      match alist_find _ v Γ with
+      | None => ret ""
+      | Some t =>
+        match t with
+        | inl _ => ret TkTDot
+        | _ => ret ""
+        end
       end
-    end
-  | _ => ret ""
   end.
 
 Fixpoint ppKind (t : Kind) : reader type_ctx string :=
@@ -108,49 +114,52 @@ Fixpoint ppKind (t : Kind) : reader type_ctx string :=
     end
   end.
 
-Fixpoint ppTyp (barr bapp: bool) (t : Typ) : reader type_ctx string :=
+Fixpoint ppTyp (barr: bool) (t : Typ) : reader type_ctx string :=
   match t with
   | TyPi x t1 t2 =>
     match x with
     | Anon =>
-      t1' <- ppTyp true false t1 ;;
-      t2' <- ppTyp false false t2 ;;
+      t1' <- ppTyp true t1 ;;
+      t2' <- ppTyp false t2 ;;
       ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
     | Named name =>
-      t1' <- ppTyp false false t1 ;;
-      t2' <- local (fun Γ => ((name, inr t1) :: Γ)) (ppTyp false false t2) ;;
+      t1' <- ppTyp false t1 ;;
+      t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp false t2) ;;
       ret (TkPi ++ TkSpace ++ name ++ TkSpace
                 ++ TkColon ++ TkSpace
                 ++ t1' ++ TkSpace
                 ++ TkDot ++ TkSpace ++ t2')
     end
+  | TyAll x t1 t2 =>
+    let name := match x with | Anon => "_" | Named n => n end in
+    k <- ppKind t1 ;;
+    t2' <- local (fun Γ => alist_add _ name (inl t1) Γ) (ppTyp false t2) ;;
+    ret (TkAll ++ TkSpace ++ name ++ TkSpace ++ TkColon
+               ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ t2')
+  | TyLam x t1 t2 =>
+    let name := match x with | Anon => "_" | Named n => n end in
+    t1' <- ppTyp false t1 ;;
+    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp false t2) ;;
+    ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
+               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ t2')
+  | TyVar v => ret v
   | _ => ret ""
   end.
 
-
 Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
-  | TPi x t1 t2 =>
-    match x with
-    | Anon =>
-      t1' <- ppTerm' true false t1 ;;
-      t2' <- ppTerm' false false t2 ;;
-      ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
-    | Named name =>
-      t1' <- ppTerm' false false t1 ;;
-      t2' <- local (fun Γ => ((name, t1) :: Γ)) (ppTerm' false false t2) ;;
-      ret (TkPi ++ TkSpace ++ name ++ TkSpace
-                ++ TkColon ++ TkSpace
-                ++ t1' ++ TkSpace
-                ++ TkDot ++ TkSpace ++ t2')
-    end
-  | TAll x t1 t2 => ret ("forall x smt smt ")
   | TApp t1 ts2 =>
     t1' <- ppTerm' false true t1 ;;
-    let ppApp (t: Term) : reader type_ctx string :=
+    let ppApp (t: Term + Typ) : reader type_ctx string :=
         d <- ppDot t ;;
-        t' <- ppTerm' false true t ;;
-        ret (d ++ t') in
+        match t with
+        | inl t' =>
+          t'' <- ppTerm' false true t' ;;
+          ret (d ++ t'')
+        | inr t' =>
+          t'' <- ppTyp false t' ;;
+          ret (d ++ t'')
+        end in
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TLam x ty t =>
@@ -161,7 +170,8 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                             ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
-  | TULam _ _ _ => ret ("ULam ")
+  | _ => ret ""
+  (* | TULam _ _ _ => ret ("ULam ") *)
   (* | KdStar => ret (TVar "Star")  *)
   end.
 
