@@ -84,7 +84,6 @@ Proof.
     clear.
     intros.
     pattern y.
-    repeat apply VectorDef.case0.
     pattern x0.
     repeat apply VectorDef.case0.
     reflexivity.
@@ -100,10 +99,39 @@ Quote Recursively Definition False_syntax := False.
 Eval compute in (pretty (denoteCoq False_syntax)).
 Quote Recursively Definition True_syntax := True.
 Eval compute in (pretty (denoteCoq True_syntax)).
-Quote Recursively Definition not_syntax := zzzz.
-Eval compute in (pretty (denoteCoq not_syntax)).
+
+Definition tst_parens := (nil).
+
+Quote Recursively Definition tstparens_syntax := tst_parens.
+Eval compute in (pretty (denoteCoq tstparens_syntax)).
+
+Quote Recursively Definition sigT_syntax := sigT.
+Eval compute in (pretty (denoteCoq sigT_syntax)).
+(*      = "data sigT (A : ★) (P : A ➔ ★) : ★ = *)
+(*   | existT : Π x : A . P x ➔ sigT. *)
+
+(* "%string *)
+(*      : string *)
+
+Quote Recursively Definition falseind_syntax := False_ind.
+Eval compute in (pretty (denoteCoq falseind_syntax)).
+
+Definition L : Type -> Type :=
+fun (A: Type) => forall (X: Type), (A -> X -> X) -> X -> X.
+
+Definition Lnil : forall A, L A := fun A X _ n => n.
+
+Definition Lcons : forall A, A -> L A -> L A :=
+fun A h t X c n => c h (t X c n).
+
+Quote Recursively Definition idprop_syntax := VectorDef.case0.
+Eval compute in (pretty (denoteCoq idprop_syntax)).
+
+Quote Recursively Definition L_syntax := L.
+Eval compute in (pretty (denoteCoq L_syntax)).
+
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
-Eval compute in (pretty (denoteCoq plus_syntax)).
+Eval compute in (pretty (denoteCoq nilvenil_syntax)).
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq plus_syntax)).
 

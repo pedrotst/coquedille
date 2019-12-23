@@ -84,13 +84,42 @@ Section monadic.
   | Some y => ret y
   end.
 
+  Fixpoint isKind (t: term): bool :=
+  match t with
+  | tSort _ => true
+  | tProd _ t1 t2 => isKind t1 || isKind t2
+  | _ => false
+  end.
+
+  Fixpoint denoteKind (t: term): m Ced.Kind :=
+  match t with
+  | tSort _ => ret Ced.KdStar
+  | tProd x t1 t2 =>
+    k1 <- denoteKind t1 ;;
+    k2 <- denoteKind t2 ;;
+    ret (Ced.KdAll (denoteName x) k1 k2)
+  | _ => raise "Ill-formed kind"
+  end.
+
+  Fixpoint denoteType (t: term): m Ced.Typ :=
+  match t with
+  | tProd x t1 t2 =>
+    t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) (denoteType t2);;
+    if isKind t1
+    then
+      k <- denoteKind t1 ;;
+      ret (Ced.TyAll (denoteName x) k t2')
+    else
+      t1' <- denoteType t1 ;;
+      ret (Ced.TyPi (denoteName x) t1' t2')
+  | _ => raise "Not Implemented"
+  end.
+
   Reserved Notation "⟦ x ⟧" (at level 0).
   Fixpoint denoteTerm (t: term): m Ced.Term :=
   match t with
-  | tProd x t1 t2 =>
-    t1' <- ⟦ t1 ⟧ ;;
-    t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) ⟦ t2 ⟧;;
-    ret (Ced.TPi (denoteName x) t1' t2')
+  | tProd x t1 t2 => ret (Ced.TVar "tProd")
+  | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ) <- ask ;;
      v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
@@ -98,7 +127,7 @@ Section monadic.
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
-    ret (Ced.TApp t' ts')
+    ret (Ced.TApp t' (Ced.inj1List ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
@@ -109,7 +138,6 @@ Section monadic.
     let ctors := ind_ctors body in
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
-  | tSort univ => ret Ced.KdStar
   | tLambda x ty t =>
     ty' <- ⟦ ty ⟧ ;;
     t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) ⟦ t ⟧ ;;
@@ -126,12 +154,12 @@ Section monadic.
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint removeBindings (t: Ced.Term) (n: nat) : Ced.Term :=
+  Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
   match n with
   | O => t
   | S n' =>
     match t with
-    | Ced.TPi x t1 t2 => removeBindings t2 (pred n)
+    | Ced.TyPi x t1 t2 => removeBindings t2 (pred n)
     | _ => t
     end
   end.
@@ -158,8 +186,8 @@ Section monadic.
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
-  if (String.eqb name "False")
-  then (ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TPi (Ced.Named "X") Ced.KdStar (Ced.TVar "X")))))
+  if String.eqb name "False"
+  then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
     let ctors := ind_ctors body in
     params <- denoteParams (rev (ind_params mbody));;
@@ -179,11 +207,17 @@ Section monadic.
       p <- denoteInductive mbody ;;
       ret (p :: ps)
     | ConstantDecl kern cbody =>
+      if (String.eqb kern "Coq.Init.Logic.False_ind")
+      then ret ((Ced.CmdAssgn (Ced.AssgnTerm "False_ind" (Some (Ced.TyAll (Ced.Named "P") Ced.KdStar
+                                                                       (Ced.TyPi Ced.Anon (Ced.TyVar "False")
+                                                                                (Ced.TyVar "P"))))
+                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLamT (Ced.Named "f") (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TVar "P")]))))) :: ps)
+      else
       bdy <- option_m (cst_body cbody) "Constant without a body" ;;
       t <- ⟦ bdy ⟧;;
-      ty <- ⟦ (cst_type cbody) ⟧;;
+      ty <- denoteType (cst_type cbody) ;;
       let name := kername_to_qualid kern in
-      let asgn := Ced.CmdAssgn (Ced.AssgnType name (Some ty) t) in
+      let asgn := Ced.CmdAssgn (Ced.AssgnTerm name (Some ty) t) in
       ret (asgn :: ps)
     end
   end.

@@ -40,14 +40,15 @@ Class Pretty (p : Type) :=
   pretty : p -> string.
 
 Local Open Scope monad_scope.
-Definition type_ctx := alist Ced.Var Ced.Term.
+(* We can simplify this to a simple list and mark what lives on the kind level *)
+Definition type_ctx := alist Var (Kind + Typ).
 
 Definition string_eq x y := utils.string_compare x y = Eq.
 
 Instance string_RelDec : RelDec.RelDec string_eq :=
   { rel_dec := eqb }.
 
-Definition alist_app (a1 a2: alist Var Term) : alist Var Term :=
+Definition alist_app (a1 a2: type_ctx) : type_ctx :=
   @fold_alist _ _ _ (@alist_add _ _ _ _) a1 a2.
 
 Fixpoint ppIndentation (n : nat) :=
@@ -86,12 +87,46 @@ Definition ppDot (t: Term) : reader type_ctx string :=
     | None => ret ""
     | Some t =>
       match t with
-      | KdStar => ret TkTDot
+      | inl _ => ret TkTDot
       | _ => ret ""
       end
     end
   | _ => ret ""
   end.
+
+Fixpoint ppKind (t : Kind) : reader type_ctx string :=
+  match t with
+  | KdStar => ret TkStar
+  | KdAll x k1 k2 =>
+    k1' <- ppKind k1 ;;
+    k2' <- ppKind k2 ;;
+    match x with
+    | Anon => ret (k1' ++ TkSpace ++ TkArrow ++ TkSpace ++ k2')
+    | Named name => ret (TkAll ++ TkSpace ++ name ++ TkSpace
+                              ++ TkColon ++ TkSpace ++ k1'
+                              ++ TkSpace ++ TkDot ++ TkSpace ++ k2')
+    end
+  end.
+
+Fixpoint ppTyp (barr bapp: bool) (t : Typ) : reader type_ctx string :=
+  match t with
+  | TyPi x t1 t2 =>
+    match x with
+    | Anon =>
+      t1' <- ppTyp true false t1 ;;
+      t2' <- ppTyp false false t2 ;;
+      ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
+    | Named name =>
+      t1' <- ppTyp false false t1 ;;
+      t2' <- local (fun Γ => ((name, inr t1) :: Γ)) (ppTyp false false t2) ;;
+      ret (TkPi ++ TkSpace ++ name ++ TkSpace
+                ++ TkColon ++ TkSpace
+                ++ t1' ++ TkSpace
+                ++ TkDot ++ TkSpace ++ t2')
+    end
+  | _ => ret ""
+  end.
+
 
 Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
@@ -109,6 +144,7 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                 ++ t1' ++ TkSpace
                 ++ TkDot ++ TkSpace ++ t2')
     end
+  | TAll x t1 t2 => ret ("forall x smt smt ")
   | TApp t1 ts2 =>
     t1' <- ppTerm' false true t1 ;;
     let ppApp (t: Term) : reader type_ctx string :=
@@ -125,7 +161,8 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                             ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
-  | KdStar => ret TkStar
+  | TULam _ _ _ => ret ("ULam ")
+  (* | KdStar => ret (TVar "Star")  *)
   end.
 
 Definition ppTerm (t: Term) (Γ : type_ctx) :=
@@ -240,9 +277,14 @@ Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
 Program Definition ppCmd (c: Cmd): state type_ctx string :=
   Γ <- get ;;
   match c with
-  | CmdAssgn (AssgnType v mty t) =>
+  | CmdAssgn (AssgnTerm v mty t) =>
     typ <- ppmType v mty ;;
     ret (v ++ TkSpace ++ typ ++ TkAssgn
+           ++ TkSpace ++ ppTerm t Γ
+           ++ TkDot ++ TkCR)
+  | CmdAssgn (AssgnType v mty t) =>
+    (* typ <- ppmType v mty ;; *)
+    ret (v ++ TkSpace ++ TkAssgn
            ++ TkSpace ++ ppTerm t Γ
            ++ TkDot ++ TkCR)
   | CmdData (DefData name params kind ctors)  =>
