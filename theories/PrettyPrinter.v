@@ -32,6 +32,7 @@ Definition TkClosePar  := ")".
 Definition TkTDot      := "·".
 Definition TkData      := "data".
 Definition TkLam       := "λ".
+Definition TkULam       := "Λ".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
 ".
@@ -170,9 +171,20 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                             ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
-  | _ => ret ""
-  (* | TULam _ _ _ => ret ("ULam ") *)
-  (* | KdStar => ret (TVar "Star")  *)
+  | TLamK x k t =>
+    k' <- ppKind k ;;
+    t' <- ppTerm' false false t ;;
+    let x' := match x with | Anon => "_" | Named y => y end in
+    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
+                            ++ TkColon ++ TkSpace ++ k' ++ TkSpace
+                            ++ TkDot ++ TkSpace ++ t'))
+  | TLamT x ty t =>
+    ty' <- ppTyp false ty ;;
+    t' <- ppTerm' false false t ;;
+    let x' := match x with | Anon => "_" | Named y => y end in
+    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
+                            ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
+                            ++ TkDot ++ TkSpace ++ t'))
   end.
 
 Definition ppTerm (t: Term) (Γ : type_ctx) :=
