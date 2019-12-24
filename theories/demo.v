@@ -166,6 +166,9 @@ Proof.
 Qed.
 
 Quote Recursively Definition eq_syntax := eq.
+(* Inductive eq (A : Type) (x : A) : A -> Prop := *)
+(* eq_refl : x = x *)
+Eval compute in ((denoteCoq eq_syntax)).
 Eval compute in (pretty (denoteCoq eq_syntax)).
 
 Quote Recursively Definition exlemma_syntax := exlemma.

@@ -95,10 +95,13 @@ Section monadic.
 
   Reserved Notation "⟦ x ⟧" (at level 0).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
+  let localDen {A} (x: name) : m A -> m A := local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) in
   match t with
   | tSort _ => ret Ced.KdStar
   | tProd x t1 t2 =>
-    k1 <- (if isKind t1 then fmap inl (denoteKind t1) else fmap inr (denoteType t1)) ;;
+    k1 <- (if isKind t1
+         then fmap inl (localDen x (denoteKind t1))
+         else fmap inr (localDen x (denoteType t1))) ;;
     k2 <-  denoteKind t2 ;;
     ret (Ced.KdAll (denoteName x) k1 k2)
   | _ => raise "Ill-formed kind"
@@ -152,7 +155,7 @@ Section monadic.
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ) <- ask ;;
-     v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
+     v <- option_m (nth_error Γ n) ("Variable! " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
@@ -184,92 +187,6 @@ Section monadic.
   | tLetIn _ _ _ _ => raise "tLetIn not implemented yet"
   end
   where "⟦ x ⟧" := (denoteTerm x).
-
-  (* Reserved Notation "⟦ x ⟧" (at level 0). *)
-  (* Fixpoint denoteKind (t: term): m Ced.Term := *)
-  (* match t with *)
-  (* | tSort _ => ret Ced.KdStar *)
-  (* | tProd x t1 t2 => *)
-  (*   k1 <- (if isKind t1 then fmap inl (denoteKind t1) else fmap inr (denoteType t1)) ;; *)
-  (*   k2 <-  denoteKind t2 ;; *)
-  (*   ret (Ced.KdAll (denoteName x) k1 k2) *)
-  (* | tRel n => *)
-  (*   '(_, Γ) <- ask ;; *)
-  (*    v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");; *)
-  (*    ret (Ced.TyVar v) *)
-  (* | tProd x t1 t2 => *)
-  (*   t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) (denoteType t2);; *)
-  (*   if isKind t1 *)
-  (*   then *)
-  (*     k <- denoteKind t1 ;; *)
-  (*     ret (Ced.TyAll (denoteName x) k t2') *)
-  (*   else *)
-  (*     t1' <- denoteType t1 ;; *)
-  (*     ret (Ced.TyPi (denoteName x) t1' t2') *)
-  (* | tApp t ts => *)
-  (*   t' <- denoteType t ;; *)
-  (*      let denote (t: term): m Ced.TTy := *)
-  (*          if isType t *)
-  (*          then fmap inl (denoteType t) *)
-  (*          else fmap inr (denoteTerm t) in *)
-  (*   ts' <- list_m (map (fun t => denote t) ts) ;; *)
-  (*   ret (Ced.TyApp t' ts') *)
-  (* | tLambda x ty t => *)
-  (*   ty' <- denoteType ty ;; *)
-  (*   t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) (denoteType t) ;; *)
-  (*   ret (Ced.TyLam (denoteName x) ty' t') *)
-  (* | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind))) *)
-  (* | tConstruct ind n _ => raise "type tConstruct not implemented yet" *)
-  (* | tVar _ => raise "type tVar not implemented yet" *)
-  (* | tEvar _ _ => raise "type tEvar not implemented yet" *)
-  (* | tFix _ _ => raise "type tFix not implemented yet" *)
-  (* | tProj _ _ => raise "type tProj not implemented yet" *)
-  (* | tCoFix _ _ => raise "type tCoFix not implemented yet" *)
-  (* | tConst kern _ => ret (Ced.TyVar (kername_to_qualid kern)) *)
-  (* | tCast _ _ _ => raise "type tCast not implemented yet" *)
-  (* | tCase _ _ _ _ => raise "type tCase not implemented yet" *)
-  (* | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet" *)
-  (* | tSort univ => ret (Ced.TyVar "tSort") *)
-  (* end *)
-
-  (* with denoteTerm (t: term): m Ced.Term := *)
-  (* match t with *)
-  (* | tProd x t1 t2 => ret (Ced.TVar "tProd") *)
-  (* | tSort univ => ret (Ced.TVar "tSort") *)
-  (* | tRel n => *)
-  (*   '(_, Γ) <- ask ;; *)
-  (*    v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");; *)
-  (*    ret (Ced.TVar v) *)
-  (* | tApp t ts => *)
-  (*   t' <- ⟦ t ⟧ ;; *)
-  (*   (* Have to fix this to check for term/type correctly *) *)
-  (*   ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;; *)
-  (*   ret (Ced.TApp t' (Ced.inj2List ts')) *)
-  (* | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind))) *)
-  (* | tConstruct ind n _ => *)
-  (*   '(genv, _) <- ask ;; *)
-  (*   let minds := inductive_mind ind in *)
-  (*   m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;; *)
-  (*   let bodies := ind_bodies m_decl in *)
-  (*   body <- option_m (head bodies) "Could not find declaration body" ;; *)
-  (*   let ctors := ind_ctors body in *)
-  (*   '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";; *)
-  (*   ret (Ced.TVar ctor) *)
-  (* | tLambda x ty t => *)
-  (*   ty' <- ⟦ ty ⟧ ;; *)
-  (*   t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) ⟦ t ⟧ ;; *)
-  (*   ret (Ced.TLam (denoteName x) ty' t') *)
-  (* | tVar _ => raise "tVar not implemented yet" *)
-  (* | tEvar _ _ => raise "tEvar not implemented yet" *)
-  (* | tFix _ _ => raise "tFix not implemented yet" *)
-  (* | tProj _ _ => raise "tProj not implemented yet" *)
-  (* | tCoFix _ _ => raise "tCoFix not implemented yet" *)
-  (* | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern)) *)
-  (* | tCast _ _ _ => raise "tCast not implemented yet" *)
-  (* | tCase _ _ _ _ => raise "tCase not implemented yet" *)
-  (* | tLetIn _ _ _ _ => raise "tLetIn not implemented yet" *)
-  (* end *)
-  (* where "⟦ x ⟧" := (denoteTerm x). *)
 
   Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
   match n with
@@ -313,6 +230,8 @@ Section monadic.
     ret ((name, tk) :: ls)
   end.
 
+  Local Notation "f 'o g" := (fun x => f (g x)) (at level 80).
+
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
@@ -320,10 +239,11 @@ Section monadic.
   then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
     let ctors := ind_ctors body in
-    params <- denoteParams (rev (ind_params mbody));;
+    let param_l := (rev (ind_params mbody)) in
+    params <- denoteParams param_l;;
     let full_ki := ind_type body in
     let noparam_ki := removeBindingsTerm full_ki (List.length params) in
-    ki <- local (fun '(genv, _) => (genv, [name])) (denoteKind noparam_ki) ;;
+    ki <- local (fun '(genv, _) => (genv, (map (get_ident 'o decl_name) param_l) )) (denoteKind noparam_ki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
