@@ -112,6 +112,11 @@ Section monadic.
     else
       t1' <- denoteType t1 ;;
       ret (Ced.TyPi (denoteName x) t1' t2')
+  | tApp t ts =>
+    t' <- denoteType t ;;
+    (* Have to fix this to check for term/type correctly *)
+    ts' <- list_m (map (fun t => denoteType t) ts) ;;
+    ret (Ced.TyApp t' ts')
   | _ => raise "Not Implemented"
   end.
 
@@ -128,7 +133,7 @@ Section monadic.
     t' <- ⟦ t ⟧ ;;
     (* Have to fix this to check for term/type correctly *)
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
-    ret (Ced.TApp t' (Ced.inj1List ts'))
+    ret (Ced.TApp t' (Ced.inj2List ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
@@ -170,7 +175,7 @@ Section monadic.
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
   let '(name, t, i) := ctor in
   let paramnames := map fst params in
-  t' <- local (fun '(genv, _) => (genv, [data_name])) ⟦ t ⟧ ;;
+  t' <- local (fun '(genv, _) => (genv, [data_name])) (denoteType t) ;;
   ret (Ced.Ctr name t').
 
   Fixpoint denoteParams (params : context): m Ced.Params :=
@@ -179,9 +184,12 @@ Section monadic.
   | cons p ps =>
     let name := get_ident (decl_name p) in
     let t := decl_type p in
-    t' <- ⟦ t ⟧ ;;
+    (* We may need a better way to tell if its a kind or type *)
+    t' <- denoteType t ;;
+    k' <- denoteKind t ;;
+    let tk := if isKind t then inl k' else inr t' in
     ls <- local (fun '(genv, Γ) => (genv, name :: Γ)) (denoteParams ps) ;;
-    ret ((name, t') :: ls)
+    ret ((name, tk) :: ls)
   end.
 
   Definition denoteInductive mbody : m Ced.Cmd :=
@@ -193,10 +201,10 @@ Section monadic.
     let ctors := ind_ctors body in
     params <- denoteParams (rev (ind_params mbody));;
     let full_ty := ind_type body in
-    ty <- local (fun '(genv, _) => (genv, [name])) ⟦ full_ty ⟧ ;;
+    ki <- local (fun '(genv, _) => (genv, [name])) (denoteKind full_ty) ;;
     (* let noparam_ty := removeBindings ty (List.length params) in *)
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
-    ret (Ced.CmdData (Ced.DefData name params ty ctors')).
+    ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with
@@ -212,7 +220,7 @@ Section monadic.
       then ret ((Ced.CmdAssgn (Ced.AssgnTerm "False_ind" (Some (Ced.TyAll (Ced.Named "P") Ced.KdStar
                                                                        (Ced.TyPi Ced.Anon (Ced.TyVar "False")
                                                                                 (Ced.TyVar "P"))))
-                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLamT (Ced.Named "f") (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TVar "P")]))))) :: ps)
+                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLamT (Ced.Named "f") (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TyVar "P")]))))) :: ps)
       else
       bdy <- option_m (cst_body cbody) "Constant without a body" ;;
       t <- ⟦ bdy ⟧;;

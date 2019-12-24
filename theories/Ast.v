@@ -23,6 +23,8 @@ Module Ced.
   | TyVar (_: Var)
   | TyAll (_: Name) (_: Kind) (_: Typ)
   | TyPi (_: Name) (_: Typ) (_: Typ)
+  (* Should be list  of Typ+Term *)
+  | TyApp (_: Typ) (_: list Typ)
   | TyLam (_: Name) (_: Typ) (_: Typ)
   | TyAllT (_: Name) (_: Typ) (_: Typ)
   | TyIntersec (_: Name) (_: Typ) (_: Typ)
@@ -32,15 +34,20 @@ Module Ced.
   Inductive Term : Type :=
   | TVar (_: Var)
   | TLam (_: Name) (_: Term) (_: Term)
-  | TApp (_: Term) (_: list (Term + Typ))
+  | TApp (_: Term) (_: list (Typ + Term))
   | TLamK (_: Name) (_: Kind) (_: Term)
   | TLamT (_: Name) (_: Typ) (_: Term)
   .
 
   (* Definition TermTy : Type := Term + Typ. *)
   (* Definition ListTermTy : Type := list TermTy. *)
-  Coercion injT x : (Term + Typ) := inl x.
-  Coercion injTy x : (Term + Typ) := inr x.
+  Definition TTy : Type := Typ + Term.
+  Coercion injTTy x : TTy := inr x.
+  Coercion injTyT x : TTy := inl x.
+
+  Definition KTy : Type := Kind + Typ.
+  Coercion injKTy x : KTy := inl x.
+  Coercion injTyK x : KTy := inr x.
 
   Definition inj1List {A B} l : list (A + B) := map inl l.
   Definition inj2List {A B} l : list (A + B) := map inr l.
@@ -48,14 +55,14 @@ Module Ced.
   (* Identity Coercion id : ListTermTy >-> list. *)
 
   Inductive Ctor : Type :=
-  | Ctr (_: Var) (_: Term).
+  | Ctr (_: Var) (_: Typ).
 
   Definition Ctors := list Ctor.
 
-  Definition Params := list (Var * Term).
+  Definition Params := list (Var * KTy).
 
   Inductive Data : Type :=
-  | DefData (_: Var) (_: Params) (_: Term) (_: Ctors).
+  | DefData (_: Var) (_: Params) (_: Kind) (_: Ctors).
 
   Inductive Assgn : Type :=
   | AssgnTerm (_: Var) (_: option Typ) (_: Term)
