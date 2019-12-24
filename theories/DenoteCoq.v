@@ -103,6 +103,10 @@ Section monadic.
 
   Fixpoint denoteType (t: term): m Ced.Typ :=
   match t with
+  | tRel n =>
+    '(_, Γ) <- ask ;;
+     v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
+     ret (Ced.TyVar v)
   | tProd x t1 t2 =>
     t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) (denoteType t2);;
     if isKind t1
@@ -117,7 +121,22 @@ Section monadic.
     (* Have to fix this to check for term/type correctly *)
     ts' <- list_m (map (fun t => denoteType t) ts) ;;
     ret (Ced.TyApp t' ts')
-  | _ => raise "Not Implemented"
+  | tLambda x ty t =>
+    ty' <- denoteType ty ;;
+    t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) (denoteType t) ;;
+    ret (Ced.TyLam (denoteName x) ty' t')
+  | tInd ind univ => raise "type tEvar not implemented yet"
+  | tConstruct ind n _ => raise "type tConstruct not implemented yet"
+  | tVar _ => raise "type tVar not implemented yet"
+  | tEvar _ _ => raise "type tEvar not implemented yet"
+  | tFix _ _ => raise "type tFix not implemented yet"
+  | tProj _ _ => raise "type tProj not implemented yet"
+  | tCoFix _ _ => raise "type tCoFix not implemented yet"
+  | tConst kern _ => ret (Ced.TyVar (kername_to_qualid kern))
+  | tCast _ _ _ => raise "type tCast not implemented yet"
+  | tCase _ _ _ _ => raise "type tCase not implemented yet"
+  | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
+  | tSort univ => ret (Ced.TyVar "tSort")
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 0).

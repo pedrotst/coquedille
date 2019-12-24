@@ -134,17 +134,25 @@ Fixpoint ppKind' (ki : Kind) : reader type_ctx string :=
 Definition ppKind (ki: Kind) (Γ : type_ctx) :=
   (@runReader _ _ (ppKind' ki) Γ).
 
-Fixpoint ppTyp' (barr: bool) (t : Typ) : reader type_ctx string :=
+Fixpoint ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
   match t with
+  | TyApp t1 ts2 =>
+    t1' <- ppTyp' false true t1 ;;
+    let ppApp (t: Typ) : reader type_ctx string :=
+        d <- ppDot (inl t) ;;
+        t' <- ppTyp' false true t ;;
+        ret (d ++ t') in
+    ts2' <- list_m (map ppApp ts2) ;;
+    ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TyPi x t1 t2 =>
     match x with
     | Anon =>
-      t1' <- ppTyp' true t1 ;;
-      t2' <- ppTyp' false t2 ;;
+      t1' <- ppTyp' true false t1 ;;
+      t2' <- ppTyp' false false t2 ;;
       ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
     | Named name =>
-      t1' <- ppTyp' false t1 ;;
-      t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false t2) ;;
+      t1' <- ppTyp' false false t1 ;;
+      t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
       ret (TkPi ++ TkSpace ++ name ++ TkSpace
                 ++ TkColon ++ TkSpace
                 ++ t1' ++ TkSpace
@@ -153,21 +161,21 @@ Fixpoint ppTyp' (barr: bool) (t : Typ) : reader type_ctx string :=
   | TyAll x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
     k <- ppKind' t1 ;;
-    t2' <- local (fun Γ => alist_add _ name (inl t1) Γ) (ppTyp' false t2) ;;
+    t2' <- local (fun Γ => alist_add _ name (inl t1) Γ) (ppTyp' false false t2) ;;
     ret (TkAll ++ TkSpace ++ name ++ TkSpace ++ TkColon
-               ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ t2')
+               ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
-    t1' <- ppTyp' false t1 ;;
-    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false t2) ;;
+    t1' <- ppTyp' false false t1 ;;
+    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
-               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ t2')
+               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
-  | _ => ret ""
+  | _ => ret "?"
   end.
 
 Definition ppTyp (t: Typ) (Γ : type_ctx) :=
-  (@runReader _ _ (ppTyp' false t) Γ).
+  (@runReader _ _ (ppTyp' false false t) Γ).
 
 Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
@@ -180,7 +188,7 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
           t'' <- ppTerm' false true t' ;;
           ret (d ++ t'')
         | inl t' =>
-          t'' <- ppTyp' false t' ;;
+          t'' <- ppTyp' false false t' ;;
           ret (d ++ t'')
         end in
     ts2' <- list_m (map ppApp ts2) ;;
@@ -201,7 +209,7 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                             ++ TkColon ++ TkSpace ++ k' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TLamT x ty t =>
-    ty' <- ppTyp' false ty ;;
+    ty' <- ppTyp' false false ty ;;
     t' <- ppTerm' false false t ;;
     let x' := match x with | Anon => "_" | Named y => y end in
     ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
@@ -288,7 +296,7 @@ Definition ppctor (params_count: nat) (data_name: Var) (ctor: Ctor): reader type
     let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in
     (* Apps with the constructor in cedille doesn't explicitely show the parameters *)
     let no_params_t := removeParams data_name params_count no_bindings_t in
-    t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false no_params_t) ;;
+    t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_params_t) ;;
     ret (TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ t')
   end.
 

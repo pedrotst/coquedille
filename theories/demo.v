@@ -21,7 +21,9 @@ Quote Recursively Definition vector_syntax := Vec.
 Eval compute in (pretty (denoteCoq vector_syntax)).
 
 Quote Recursively Definition nat_syntax := nat.
+Eval compute in (pretty (denoteCoq nat_syntax)).
 Quote Recursively Definition option_syntax := option.
+Eval compute in (pretty (denoteCoq option_syntax)).
 
 Quote Recursively Definition list_syntax :=
 ltac:(let t := eval compute in list in exact t).
