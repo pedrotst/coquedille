@@ -9,6 +9,8 @@ Require Import Coquedille.DenoteCoq.
 (* Require Import Coquedille.Utils. *)
 
 Require Import ExtLib.Structures.Monads.
+Require Import ExtLib.Structures.Monads.
+Require Import ExtLib.Structures.Applicative.
 Require Import ExtLib.Data.Monads.StateMonad.
 Require Import ExtLib.Data.Monads.ReaderMonad.
 Require Import ExtLib.Data.Monads.WriterMonad.
@@ -63,9 +65,9 @@ Definition type_ctx := alist Var (Kind + Typ).
 Definition string_eq x y := utils.string_compare x y = Eq.
 
 Instance string_RelDec : RelDec.RelDec string_eq :=
-  { rel_dec := eqb }.
+  { rel_dec := String.eqb }.
 
-Definition alist_app (a1 a2: type_ctx) : type_ctx :=
+Definition alist_app {B} (a1 a2: alist string B) : alist string B :=
   @fold_alist _ _ _ (@alist_add _ _ _ _) a1 a2.
 
 Fixpoint ppIndentation (n : nat) :=
@@ -121,7 +123,10 @@ Fixpoint ppKind' (ki : Kind) : reader type_ctx string :=
   match ki with
   | KdStar => ret TkStar
   | KdAll x k1 k2 =>
-    k1' <- ppKind' k1 ;;
+    k1' <- match k1 with
+          | inl ki1 => ppKind' ki1
+          | inr ty1 => ppTyp' false false ty1
+          end ;;
     k2' <- ppKind' k2 ;;
     match x with
     | Anon => ret (k1' ++ TkSpace ++ TkArrow ++ TkSpace ++ k2')
@@ -129,19 +134,22 @@ Fixpoint ppKind' (ki : Kind) : reader type_ctx string :=
                               ++ TkColon ++ TkSpace ++ k1'
                               ++ TkSpace ++ TkDot ++ TkSpace ++ k2')
     end
-  end.
+  end
 
-Definition ppKind (ki: Kind) (Γ : type_ctx) :=
-  (@runReader _ _ (ppKind' ki) Γ).
-
-Fixpoint ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
+with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
   match t with
   | TyApp t1 ts2 =>
     t1' <- ppTyp' false true t1 ;;
-    let ppApp (t: Typ) : reader type_ctx string :=
-        d <- ppDot (inl t) ;;
-        t' <- ppTyp' false true t ;;
-        ret (d ++ t') in
+    let ppApp (t: TTy) : reader type_ctx string :=
+        d <- ppDot t ;;
+        match t with
+        | inr t' =>
+          t'' <- ppTerm' false true t' ;;
+          ret (d ++ t'')
+        | inl t' =>
+          t'' <- ppTyp' false false t' ;;
+          ret (d ++ t'')
+        end in
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TyPi x t1 t2 =>
@@ -172,12 +180,9 @@ Fixpoint ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
   | _ => ret "?"
-  end.
+  end
 
-Definition ppTyp (t: Typ) (Γ : type_ctx) :=
-  (@runReader _ _ (ppTyp' false false t) Γ).
-
-Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
+with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
   | TApp t1 ts2 =>
     t1' <- ppTerm' false true t1 ;;
@@ -217,6 +222,12 @@ Fixpoint ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
                             ++ TkDot ++ TkSpace ++ t'))
   end.
 
+Definition ppKind (ki: Kind) (Γ : type_ctx) :=
+  (@runReader _ _ (ppKind' ki) Γ).
+
+Definition ppTyp (t: Typ) (Γ : type_ctx) :=
+  (@runReader _ _ (ppTyp' false false t) Γ).
+
 Definition ppTerm (t: Term) (Γ : type_ctx) :=
   (@runReader _ _ (ppTerm' false false t) Γ).
 
@@ -249,7 +260,7 @@ match n with
     match x with
     | Anon => ret k'
     | Named name =>
-      put ((name, inl k1) :: Γ) ;;
+      put ((name, k1) :: Γ) ;;
       ret k'
     end
   | _ => ret k
@@ -272,31 +283,41 @@ Definition flattenApp (t: Typ) :=
   | _ => t
   end.
 
-Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ) :=
-  let removeParams' := removeParams data_name params_count in
-  match t with
-  | TyApp t1 ts2 =>
-    let rs := map removeParams' ts2 in
-    match t1 with
-    | TyVar v =>
-      if (string_dec v data_name)
-      then let rs' := removeN rs params_count in
-           flattenApp (TyApp t1 rs')
-      else flattenApp (TyApp t1 rs)
-    | _ => TyApp (removeParams' t1) ts2
-    end
-  (* | TyPi x t1 t2 => TPi x (removeParams' t1) (removeParams' t2) *)
-  | _ => t
-  end.
+(* Fixpoint removeParamsK (data_name: Var) (params_count: nat) (k: Kind): Kind := *)
+  (* let removeParamsK' := removeParamsK data_name params_count in *)
+  (* match k with *)
+  (* | KdStar => KdStar *)
+  (* | KdAll x kty k => *)
+
+(* Fixpoint removeParams (data_name : Var) (params_count: nat) (t: KTy): KTy := *)
+(*   let removeParams' := removeParams data_name params_count in *)
+(*   match t with *)
+(*   | inl t' => removeParams *)
+(*   | inr t' => *)
+(*     match t' with *)
+(*     | TyApp t1 ts2 => *)
+(*       let rs := map removeParams' ts2 in *)
+(*       match t1 with *)
+(*       | TyVar v => *)
+(*         if (string_dec v data_name) *)
+(*         then let rs' := removeN rs params_count in *)
+(*              flattenApp (TyApp t1 rs') *)
+(*         else flattenApp (TyApp t1 rs) *)
+(*       | TyPi x t1 t2 => TyPi x (removeParams' (inr t1)) (removeParams' (inr t2)) *)
+(*       | _ => TyApp (removeParams' t1) ts2 *)
+(*       end *)
+(*     end *)
+(*   end. *)
 
 Definition ppctor (params_count: nat) (data_name: Var) (ctor: Ctor): reader type_ctx string :=
   match ctor with
   | Ctr cname ty =>
     Γ <- ask ;;
-    let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in
+    (* let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in *)
     (* Apps with the constructor in cedille doesn't explicitely show the parameters *)
-    let no_params_t := removeParams data_name params_count no_bindings_t in
-    t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_params_t) ;;
+    (* let no_params_t := removeParams data_name params_count no_bindings_t in *)
+    (* t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_bindings_t) ;; *)
+    t' <- ppTyp' false false ty ;;
     ret (TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ t')
   end.
 

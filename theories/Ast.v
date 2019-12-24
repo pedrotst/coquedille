@@ -16,22 +16,17 @@ Module Ced.
 
   Inductive Kind : Type :=
   | KdStar
-      (* Should be Kind+Typ *)
-  | KdAll (_: Name) (_: Kind) (_: Kind).
-
-  Inductive Typ : Type :=
+  | KdAll (_: Name) (_: Kind + Typ) (_: Kind)
+  with Typ : Type :=
   | TyVar (_: Var)
   | TyAll (_: Name) (_: Kind) (_: Typ)
   | TyPi (_: Name) (_: Typ) (_: Typ)
-  (* Should be list  of Typ+Term *)
-  | TyApp (_: Typ) (_: list Typ)
+  | TyApp (_: Typ) (_: list (Typ + Term))
   | TyLam (_: Name) (_: Typ) (_: Typ)
   | TyAllT (_: Name) (_: Typ) (_: Typ)
   | TyIntersec (_: Name) (_: Typ) (_: Typ)
   | TyEq (_: Typ) (_: Typ)
-  .
-
-  Inductive Term : Type :=
+  with Term : Type :=
   | TVar (_: Var)
   | TLam (_: Name) (_: Term) (_: Term)
   | TApp (_: Term) (_: list (Typ + Term))
@@ -39,8 +34,26 @@ Module Ced.
   | TLamT (_: Name) (_: Typ) (_: Term)
   .
 
-  (* Definition TermTy : Type := Term + Typ. *)
-  (* Definition ListTermTy : Type := list TermTy. *)
+  (* Inductive Term : Type := *)
+  (* | KdStar *)
+  (* | KdAll (_: Name) (_: Term) (_: Term) *)
+  (* | TyVar (_: Var) *)
+  (* | TyAll (_: Name) (_: Term) (_: Term) *)
+  (* | TyPi (_: Name) (_: Term) (_: Term) *)
+  (* | TyApp (_: Term) (_: list Term) *)
+  (* | TyLam (_: Name) (_: Term) (_: Term) *)
+  (* | TyAllT (_: Name) (_: Term) (_: Term) *)
+  (* | TyIntersec (_: Name) (_: Term) (_: Term) *)
+  (* | TyEq (_: Term) (_: Term) *)
+  (* | TVar (_: Var) *)
+  (* | TLam (_: Name) (_: Term) (_: Term) *)
+  (* | TApp (_: Term) (_: list Term) *)
+  (* | TLamK (_: Name) (_: Term) (_: Term) *)
+  (* | TLamT (_: Name) (_: Term) (_: Term) *)
+  (* . *)
+
+  Definition TermTy : Type := Term + Typ.
+  Definition ListTermTy : Type := list TermTy.
   Definition TTy : Type := Typ + Term.
   Coercion injTTy x : TTy := inr x.
   Coercion injTyT x : TTy := inl x.
