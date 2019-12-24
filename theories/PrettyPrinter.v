@@ -245,6 +245,15 @@ match n with
       put ((name, inr t1) :: Γ) ;;
       ret t'
     end
+  | TyAll x k t2 =>
+    Γ <- get ;;
+    t' <- removeBindingsTyp t2 (pred n);;
+    match x with
+    | Anon => ret t'
+    | Named name =>
+      put ((name, inl k) :: Γ) ;;
+      ret t'
+    end
   | _ => ret t
   end
 end.
@@ -283,41 +292,32 @@ Definition flattenApp (t: Typ) :=
   | _ => t
   end.
 
-(* Fixpoint removeParamsK (data_name: Var) (params_count: nat) (k: Kind): Kind := *)
-  (* let removeParamsK' := removeParamsK data_name params_count in *)
-  (* match k with *)
-  (* | KdStar => KdStar *)
-  (* | KdAll x kty k => *)
-
-(* Fixpoint removeParams (data_name : Var) (params_count: nat) (t: KTy): KTy := *)
-(*   let removeParams' := removeParams data_name params_count in *)
-(*   match t with *)
-(*   | inl t' => removeParams *)
-(*   | inr t' => *)
-(*     match t' with *)
-(*     | TyApp t1 ts2 => *)
-(*       let rs := map removeParams' ts2 in *)
-(*       match t1 with *)
-(*       | TyVar v => *)
-(*         if (string_dec v data_name) *)
-(*         then let rs' := removeN rs params_count in *)
-(*              flattenApp (TyApp t1 rs') *)
-(*         else flattenApp (TyApp t1 rs) *)
-(*       | TyPi x t1 t2 => TyPi x (removeParams' (inr t1)) (removeParams' (inr t2)) *)
-(*       | _ => TyApp (removeParams' t1) ts2 *)
-(*       end *)
-(*     end *)
-(*   end. *)
+Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ): Typ :=
+  let removeParams' := removeParams data_name params_count in
+  match t with
+  | TyApp t1 ts2 =>
+    (* let rs := map removeParams' ts2 in *)
+    match t1 with
+    | TyVar v =>
+      if (string_dec v data_name)
+      then let rs' := removeN ts2 params_count in
+           flattenApp (TyApp t1 rs')
+      else flattenApp (TyApp t1 ts2)
+    | _ => TyApp (removeParams' t1) ts2
+    end
+  | TyPi x t1 t2 => TyPi x (removeParams' t1) (removeParams' t2)
+  | _ => t
+end.
 
 Definition ppctor (params_count: nat) (data_name: Var) (ctor: Ctor): reader type_ctx string :=
   match ctor with
   | Ctr cname ty =>
     Γ <- ask ;;
-    (* let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in *)
+    let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in
     (* Apps with the constructor in cedille doesn't explicitely show the parameters *)
-    (* let no_params_t := removeParams data_name params_count no_bindings_t in *)
-    (* t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_bindings_t) ;; *)
-    t' <- ppTyp' false false ty ;;
+    let no_params_t := removeParams data_name params_count no_bindings_t in
+    t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_params_t) ;;
+    (* t' <- ppTyp' false false ty ;; *)
     ret (TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ t')
   end.
 
@@ -334,8 +334,8 @@ Instance PrettyParams : Pretty Params :=
 
 Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : reader type_ctx string :=
   Γ <- ask ;;
-  let '(k, _) := runState (removeBindingsK ki (List.length params)) nil in
-  kind <- ppKind' k ;;
+  (* let '(k, _) := runState (removeBindingsK ki (List.length params)) nil in *)
+  kind <- ppKind' ki ;;
   (* Working on the reader monad here makes the mapping trivial *)
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
