@@ -344,11 +344,16 @@ Section monadic.
                                             (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLamT (Ced.Named "f") (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TyVar "P")]))))) :: ps)
       else
       bdy <- option_m (cst_body cbody) "Constant without a body" ;;
-      t <- ⟦ bdy ⟧;;
-      ty <- denoteType (cst_type cbody) ;;
       let name := kername_to_qualid kern in
-      let asgn := Ced.CmdAssgn (Ced.AssgnTerm name (Some ty) t) in
-      ret (asgn :: ps)
+      if isKind (cst_type cbody)
+      then ty <- denoteType bdy ;;
+           k <- denoteKind (cst_type cbody)  ;;
+           let asgn := Ced.CmdAssgn (Ced.AssgnType name (Some k) ty) in
+           ret (asgn :: ps)
+      else t <- ⟦ bdy ⟧;;
+           ty <- denoteType (cst_type cbody) ;;
+           let asgn := Ced.CmdAssgn (Ced.AssgnTerm name (Some ty) t) in
+           ret (asgn :: ps)
     end
   end.
 

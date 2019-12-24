@@ -366,12 +366,12 @@ Program Definition ppCmd (c: Cmd): state type_ctx string :=
   match c with
   | CmdAssgn (AssgnTerm v mty t) =>
     typ <- ppmType v mty ;;
-    ret (v ++ typ ++ TkAssgn
+    ret (v ++ TkSpace ++ typ ++ TkAssgn
            ++ TkSpace ++ ppTerm t Γ
            ++ TkDot ++ TkCR)
   | CmdAssgn (AssgnType v mki t) =>
     ki <- ppmKind v mki ;;
-    ret (v ++ ki ++ TkAssgn
+    ret (v ++ TkSpace ++ ki ++ TkAssgn
            ++ TkSpace ++ ppTyp t Γ
            ++ TkDot ++ TkCR)
   | CmdData (DefData name params kind ctors)  =>
