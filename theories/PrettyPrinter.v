@@ -109,7 +109,7 @@ Definition ppDot (t: TTy) : reader type_ctx string :=
   | None => ret ""
   | Some v =>
       match alist_find _ v Γ with
-      | None => ret "1"
+      | None => ret ""
       | Some t =>
         match t with
         | inl _ => ret TkTDot
