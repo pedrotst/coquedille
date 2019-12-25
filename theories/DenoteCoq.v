@@ -88,10 +88,9 @@ Section monadic.
   Fixpoint isKind (t: term): bool :=
   match t with
   | tSort _ => true
-  | tProd _ t1 t2 => isKind t1 || isKind t2
+  | tProd _ t1 t2 => isKind t1 && isKind t2
   | _ => false
   end.
-
 
   Reserved Notation "⟦ x ⟧" (at level 0).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -104,6 +103,7 @@ Section monadic.
          else fmap inr (localDen x (denoteType t1))) ;;
     k2 <-  denoteKind t2 ;;
     ret (Ced.KdAll (denoteName x) k1 k2)
+  | tApp _ _ => raise "kind with application"
   | _ => raise "Ill-formed kind"
   end
   with denoteType (t: term): m Ced.Typ :=
@@ -131,10 +131,13 @@ Section monadic.
            end in
     ts' <- list_m (map (fun t => den t) ts) ;;
     ret (Ced.TyApp t' ts')
-  | tLambda x ty t =>
-    ty' <- denoteType ty ;;
+  | tLambda x kty t =>
     t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) (denoteType t) ;;
-    ret (Ced.TyLam (denoteName x) ty' t')
+    if isKind t
+    then k <- denoteKind kty ;;
+         ret (Ced.TyLam (denoteName x) (inl k) t')
+    else ty <- denoteType kty ;;
+         ret (Ced.TyLam (denoteName x) (inr ty) t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
@@ -230,7 +233,7 @@ Section monadic.
     ret ((name, tk) :: ls)
   end.
 
-  Local Notation "f 'o g" := (fun x => f (g x)) (at level 80).
+  Local Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
@@ -243,7 +246,7 @@ Section monadic.
     params <- denoteParams param_l;;
     let full_ki := ind_type body in
     let noparam_ki := removeBindingsTerm full_ki (List.length params) in
-    ki <- local (fun '(genv, _) => (genv, (map (get_ident 'o decl_name) param_l) )) (denoteKind noparam_ki) ;;
+    ki <- local (fun '(genv, _) => (genv, (map (get_ident ̊ decl_name) param_l) )) (denoteKind noparam_ki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 

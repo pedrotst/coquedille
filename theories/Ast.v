@@ -22,7 +22,7 @@ Module Ced.
   | TyAll (_: Name) (_: Kind) (_: Typ)
   | TyPi (_: Name) (_: Typ) (_: Typ)
   | TyApp (_: Typ) (_: list (Typ + Term))
-  | TyLam (_: Name) (_: Typ) (_: Typ)
+  | TyLam (_: Name) (_: Kind + Typ) (_: Typ)
   | TyAllT (_: Name) (_: Typ) (_: Typ)
   | TyIntersec (_: Name) (_: Typ) (_: Typ)
   | TyEq (_: Typ) (_: Typ)

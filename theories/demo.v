@@ -233,6 +233,12 @@ Eval compute in (pretty (denoteCoq idprop_syntax)).
 Quote Recursively Definition L_syntax := L.
 Eval compute in (pretty (denoteCoq L_syntax)).
 
+Quote Recursively Definition Lnil_syntax := Lnil.
+Eval compute in (pretty (denoteCoq Lnil_syntax)).
+
+Quote Recursively Definition Lcons_syntax := Lcons.
+Eval compute in (pretty (denoteCoq Lcons_syntax)).
+
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq nilvenil_syntax)).
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.

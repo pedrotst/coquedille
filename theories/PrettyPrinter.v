@@ -173,8 +173,11 @@ with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
                ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
-    t1' <- ppTyp' false false t1 ;;
-    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
+    t1' <- (match t1 with
+          | inr t => ppTyp' false false t
+          | inl k => ppKind' k
+          end) ;;
+    t2' <- local (fun Γ => alist_add _ name t1 Γ) (ppTyp' false false t2) ;;
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
