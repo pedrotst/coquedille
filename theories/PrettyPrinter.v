@@ -6,7 +6,6 @@ Require Import String.
 Local Open Scope string.
 
 Require Import Coquedille.DenoteCoq.
-(* Require Import Coquedille.Utils. *)
 
 Require Import ExtLib.Structures.Monads.
 Require Import ExtLib.Structures.Monads.
