@@ -133,11 +133,11 @@ Section monadic.
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
     t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) (denoteType t) ;;
-    if isKind t
+    if isKind kty
     then k <- denoteKind kty ;;
-         ret (Ced.TyLam (denoteName x) (inl k) t')
+         ret (Ced.TyLamK (denoteName x) k t')
     else ty <- denoteType kty ;;
-         ret (Ced.TyLam (denoteName x) (inr ty) t')
+         ret (Ced.TyLam (denoteName x) ty t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
@@ -149,6 +149,7 @@ Section monadic.
   | tCast _ _ _ => raise "type tCast not implemented yet"
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
+  (* FIXME: raise error *)
   | tSort univ => ret (Ced.TyVar "tSort")
   end
 
@@ -175,10 +176,13 @@ Section monadic.
     let ctors := ind_ctors body in
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
-  | tLambda x ty t =>
-    ty' <- ⟦ ty ⟧ ;;
+  | tLambda x kty t =>
     t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) ⟦ t ⟧ ;;
-    ret (Ced.TLam (denoteName x) ty' t')
+    if isKind kty
+    then k <- denoteKind kty ;;
+         ret (Ced.TLamK (denoteName x) k t')
+    else ty <- denoteType kty ;;
+         ret (Ced.TLam (denoteName x) false ty t')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"
@@ -264,7 +268,7 @@ Section monadic.
       then ret ((Ced.CmdAssgn (Ced.AssgnTerm "False_ind" (Some (Ced.TyAll (Ced.Named "P") Ced.KdStar
                                                                        (Ced.TyPi Ced.Anon (Ced.TyVar "False")
                                                                                 (Ced.TyVar "P"))))
-                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLamT (Ced.Named "f") (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TyVar "P")]))))) :: ps)
+                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLam (Ced.Named "f") false (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TyVar "P")]))))) :: ps)
       else
       bdy <- option_m (cst_body cbody) "Constant without a body" ;;
       let name := kername_to_qualid kern in

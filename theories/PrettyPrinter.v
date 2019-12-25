@@ -109,7 +109,7 @@ Definition ppDot (t: TTy) : reader type_ctx string :=
   | None => ret ""
   | Some v =>
       match alist_find _ v Γ with
-      | None => ret ""
+      | None => ret "1"
       | Some t =>
         match t with
         | inl _ => ret TkTDot
@@ -173,12 +173,16 @@ with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
                ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
-    t1' <- (match t1 with
-          | inr t => ppTyp' false false t
-          | inl k => ppKind' k
-          end) ;;
-    t2' <- local (fun Γ => alist_add _ name t1 Γ) (ppTyp' false false t2) ;;
+    (* let tk := if b then TkULam else TkLam in *)
+    t1' <- ppTyp' false false t1 ;;
+    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
+               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
+  | TyLamK x k t2 =>
+    let name := match x with | Anon => "_" | Named n => n end in
+    t1' <- ppKind' k ;;
+    t2' <- local (fun Γ => alist_add _ name (inl k) Γ) (ppTyp' false false t2) ;;
+    ret (TkULam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
   | _ => ret "?"
@@ -200,27 +204,21 @@ with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
         end in
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
-  | TLam x ty t =>
-    ty' <- ppTerm' false false ty ;;
-    t' <- ppTerm' false false t;;
-    let x' := match x with | Anon => "_" | Named y => y end in
-    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
+  | TLam x b ty t =>
+    ty' <- ppTyp' false false ty ;;
+    let name := match x with | Anon => "_" | Named y => y end in
+    t' <- local (fun Γ => alist_add _ name (inr ty) Γ) (ppTerm' false false t);;
+    let tk := if b then TkULam else TkLam in
+    ret (parens bapp (tk ++ TkSpace ++ name ++ TkSpace
                             ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
   | TLamK x k t =>
     k' <- ppKind' k ;;
-    t' <- ppTerm' false false t ;;
-    let x' := match x with | Anon => "_" | Named y => y end in
-    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
+    let name := match x with | Anon => "_" | Named y => y end in
+    t' <-  local (fun Γ => alist_add _ name (inl k) Γ) (ppTerm' false false t) ;;
+    ret (parens bapp (TkULam ++ TkSpace ++ name ++ TkSpace
                             ++ TkColon ++ TkSpace ++ k' ++ TkSpace
-                            ++ TkDot ++ TkSpace ++ t'))
-  | TLamT x ty t =>
-    ty' <- ppTyp' false false ty ;;
-    t' <- ppTerm' false false t ;;
-    let x' := match x with | Anon => "_" | Named y => y end in
-    ret (parens bapp (TkLam ++ TkSpace ++ x' ++ TkSpace
-                            ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   end.
 
