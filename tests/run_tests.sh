@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # Modify here to add new test cases
-declare -a TESTCASES=("nat" "list" "option" "vector" "le" "asgn" "refl1")
+declare -a TESTCASES=("nat" "list" "option" "vector" "le" "asgn" "refl1" "lnil"
+"lcons")
 
 # Uncomment this line to see each command being run
 # set -o xtrace
