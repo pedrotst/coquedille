@@ -1,6 +1,6 @@
 module lcons.
-L : ★ ➔ ★ = Î A : ★ . ∀ X : ★ . (A ➔ X ➔ X) ➔ X ➔ X.
+L : ★ ➔ ★ = Λ A : ★ . ∀ X : ★ . (A ➔ X ➔ X) ➔ X ➔ X.
 
-lcons : ∀ A : ★ . A ➔ L ·A ➔ L ·A = Î A : ★ . Î» h : A . Î» t : L ·A . Î X : ★ . Î» c : A ➔ X ➔ X . Î» n : X . c h (t ·X c n).
+lcons : ∀ A : ★ . A ➔ L ·A ➔ L ·A = Λ A : ★ . λ h : A . λ t : L ·A . Λ X : ★ . λ c : A ➔ X ➔ X . λ n : X . c h (t ·X c n).
 
 
