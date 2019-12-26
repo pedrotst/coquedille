@@ -61,9 +61,9 @@ Local Open Scope monad_scope.
 (* Can we simplify this to a simple list and mark what lives on the kind level? *)
 Definition type_ctx := alist Var (Kind + Typ).
 
-Definition string_eq x y := utils.string_compare x y = Eq.
+Local Definition string_eq x y := utils.string_compare x y = Eq.
 
-Instance string_RelDec : RelDec.RelDec string_eq :=
+Local Instance string_RelDec : RelDec.RelDec string_eq :=
   { rel_dec := String.eqb }.
 
 Definition alist_app {B} (a1 a2: alist string B) : alist string B :=
@@ -103,8 +103,8 @@ Definition getVar (t: Typ + Term): option Var :=
   | inl t' => match t' with | TyVar v => Some v | _ => None end
   end.
 
-Definition ppDot (t: Typ + Term) : reader type_ctx string :=
-  Γ <- ask ;;
+Definition ppDot (t: Typ + Term) : state type_ctx string :=
+  Γ <- get ;;
   match getVar t with
   | None => ret ""
   | Some v =>
@@ -118,7 +118,20 @@ Definition ppDot (t: Typ + Term) : reader type_ctx string :=
       end
   end.
 
-Fixpoint ppKind' (ki : Kind) : reader type_ctx string :=
+Definition updateState v t act: state type_ctx string :=
+  Γ <- get ;;
+  put (alist_add _ v t Γ) ;;
+  x <- act ;;
+  put Γ ;;
+  ret x.
+
+Definition saveState act: state type_ctx string :=
+  Γ' <- get ;;
+  x <- act ;;
+  put Γ' ;;
+  ret x.
+
+Fixpoint ppKind' (ki : Kind) : state type_ctx string :=
   match ki with
   | KdStar => ret TkStar
   | KdAll x k1 k2 =>
@@ -135,11 +148,11 @@ Fixpoint ppKind' (ki : Kind) : reader type_ctx string :=
     end
   end
 
-with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
+with ppTyp' (barr bapp: bool) (t : Typ) : state type_ctx string :=
   match t with
   | TyApp t1 ts2 =>
     t1' <- ppTyp' false true t1 ;;
-    let ppApp (t: Typ + Term) : reader type_ctx string :=
+    let ppApp (t: Typ + Term) : state type_ctx string :=
         d <- ppDot t ;;
         match t with
         | inr t' =>
@@ -159,7 +172,8 @@ with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
       ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
     | Named name =>
       t1' <- ppTyp' false false t1 ;;
-      t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
+      t2' <- updateState name (inr t1) (ppTyp' false false t2) ;;
+          (* local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;; *)
       ret (TkPi ++ TkSpace ++ name ++ TkSpace
                 ++ TkColon ++ TkSpace
                 ++ t1' ++ TkSpace
@@ -168,31 +182,34 @@ with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
   | TyAll x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
     k <- ppKind' t1 ;;
-    t2' <- local (fun Γ => alist_add _ name (inl t1) Γ) (ppTyp' false false t2) ;;
+    t2' <- updateState name (inl t1) (ppTyp' false false t2) ;;
+      (* local (fun Γ => alist_add _ name (inl t1) Γ) (ppTyp' false false t2) ;; *)
     ret (TkAll ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
     (* let tk := if b then TkULam else TkLam in *)
     t1' <- ppTyp' false false t1 ;;
-    t2' <- local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;;
+    t2' <- updateState name (inr t1) (ppTyp' false false t2) ;;
+        (* local (fun Γ => alist_add _ name (inr t1) Γ) (ppTyp' false false t2) ;; *)
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLamK x k t2 =>
     let name := match x with | Anon => "_" | Named n => n end in
     t1' <- ppKind' k ;;
-    t2' <- local (fun Γ => alist_add _ name (inl k) Γ) (ppTyp' false false t2) ;;
+    t2' <- updateState name (inl k) (ppTyp' false false t2) ;;
+        (* local (fun Γ => alist_add _ name (inl k) Γ) (ppTyp' false false t2) ;; *)
     ret (TkULam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
   | _ => ret "?"
   end
 
-with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
+with ppTerm' (barr bapp: bool) (t : Term): state type_ctx string :=
   match t with
   | TApp t1 ts2 =>
     t1' <- ppTerm' false true t1 ;;
-    let ppApp (t: Typ + Term) : reader type_ctx string :=
+    let ppApp (t: Typ + Term) : state type_ctx string :=
         d <- ppDot t ;;
         match t with
         | inr t' =>
@@ -207,7 +224,8 @@ with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   | TLam x b ty t =>
     ty' <- ppTyp' false false ty ;;
     let name := match x with | Anon => "_" | Named y => y end in
-    t' <- local (fun Γ => alist_add _ name (inr ty) Γ) (ppTerm' false false t);;
+    t' <- updateState name (inr ty) (ppTerm' false false t) ;;
+       (* local (fun Γ => alist_add _ name (inr ty) Γ) (ppTerm' false false t);; *)
     let tk := if b then TkULam else TkLam in
     ret (parens bapp (tk ++ TkSpace ++ name ++ TkSpace
                             ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
@@ -216,20 +234,21 @@ with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   | TLamK x k t =>
     k' <- ppKind' k ;;
     let name := match x with | Anon => "_" | Named y => y end in
-    t' <-  local (fun Γ => alist_add _ name (inl k) Γ) (ppTerm' false false t) ;;
+    t' <-updateState name (inl k) (ppTerm' false false t) ;;
+       (* local (fun Γ => alist_add _ name (inl k) Γ) (ppTerm' false false t) ;; *)
     ret (parens bapp (TkULam ++ TkSpace ++ name ++ TkSpace
                             ++ TkColon ++ TkSpace ++ k' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   end.
 
 Definition ppKind (ki: Kind) (Γ : type_ctx) :=
-  (@runReader _ _ (ppKind' ki) Γ).
+  fst (@runState _ _ (ppKind' ki) Γ).
 
 Definition ppTyp (t: Typ) (Γ : type_ctx) :=
-  (@runReader _ _ (ppTyp' false false t) Γ).
+  fst (@runState _ _ (ppTyp' false false t) Γ).
 
 Definition ppTerm (t: Term) (Γ : type_ctx) :=
-  (@runReader _ _ (ppTerm' false false t) Γ).
+  fst (@runState _ _ (ppTerm' false false t) Γ).
 
 Fixpoint removeBindingsTyp (t: Typ) (n: nat) : state type_ctx Typ :=
 match n with
@@ -309,15 +328,13 @@ Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ): Typ :=
   | _ => t
 end.
 
-Definition ppctor (params_count: nat) (data_name: Var) (ctor: Ctor): reader type_ctx string :=
+Definition ppctor (params_count: nat) (data_name: Var) (ctor: Ctor): state type_ctx string :=
   match ctor with
   | Ctr cname ty =>
-    Γ <- ask ;;
-    let '(no_bindings_t, Γ') := runState (removeBindingsTyp ty params_count) Γ in
+    no_bindings_t <- (removeBindingsTyp ty params_count) ;;
     (* Apps with the constructor in cedille doesn't explicitely show the parameters *)
     let no_params_t := removeParams data_name params_count no_bindings_t in
-    t' <- local (fun _ => (alist_app Γ Γ')) (ppTyp' false false no_params_t) ;;
-    (* t' <- ppTyp' false false ty ;; *)
+    t' <- saveState (ppTyp' false false no_params_t) ;;
     ret (TkPipe ++ TkSpace ++ cname ++ TkSpace ++ TkColon ++ TkSpace ++ t')
   end.
 
@@ -332,11 +349,8 @@ Instance PrettyParams : Pretty Params :=
               ++ TkClosePar ++ pp ps
     end.
 
-Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : reader type_ctx string :=
-  Γ <- ask ;;
-  (* let '(k, _) := runState (removeBindingsK ki (List.length params)) nil in *)
+Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : state type_ctx string :=
   kind <- ppKind' ki ;;
-  (* Working on the reader monad here makes the mapping trivial *)
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
   ret (TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
@@ -376,7 +390,7 @@ Program Definition ppCmd (c: Cmd): state type_ctx string :=
            ++ TkDot ++ TkCR)
   | CmdData (DefData name params kind ctors)  =>
     put (alist_add _ name (inl kind) Γ) ;;
-    let s := runReader (ppDatatype name params kind ctors) Γ in
+    s <- (ppDatatype name params kind ctors) ;;
     ret (s ++ TkCR)
   end.
 

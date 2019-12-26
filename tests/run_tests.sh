@@ -11,7 +11,7 @@ NC='\033[0m'
 YELLOW='\033[1;33m'
 
 echo -e "${YELLOW}Extracting test cases to Haskell...${NC}"
-coqc -Q ../theories Coquedille -Q ../coq-haskell/src Hask Extraction.v
+coqc -Q ../theories Coquedille Extraction.v
 
 # Adds the necessary imports to the top of the file
 sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Bits' main.hs > m.hs
