@@ -58,7 +58,7 @@ Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
 
 
 Local Open Scope monad_scope.
-(* We can simplify this to a simple list and mark what lives on the kind level *)
+(* Can we simplify this to a simple list and mark what lives on the kind level? *)
 Definition type_ctx := alist Var (Kind + Typ).
 
 Definition string_eq x y := utils.string_compare x y = Eq.
@@ -97,13 +97,13 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-Definition getVar (t: TTy): option Var :=
+Definition getVar (t: Typ + Term): option Var :=
   match t with
   | inr t' => match t' with | TVar v => Some v | _ => None end
   | inl t' => match t' with | TyVar v => Some v | _ => None end
   end.
 
-Definition ppDot (t: TTy) : reader type_ctx string :=
+Definition ppDot (t: Typ + Term) : reader type_ctx string :=
   Γ <- ask ;;
   match getVar t with
   | None => ret ""
@@ -139,7 +139,7 @@ with ppTyp' (barr bapp: bool) (t : Typ) : reader type_ctx string :=
   match t with
   | TyApp t1 ts2 =>
     t1' <- ppTyp' false true t1 ;;
-    let ppApp (t: TTy) : reader type_ctx string :=
+    let ppApp (t: Typ + Term) : reader type_ctx string :=
         d <- ppDot t ;;
         match t with
         | inr t' =>
@@ -192,7 +192,7 @@ with ppTerm' (barr bapp: bool) (t : Term): reader type_ctx string :=
   match t with
   | TApp t1 ts2 =>
     t1' <- ppTerm' false true t1 ;;
-    let ppApp (t: TTy) : reader type_ctx string :=
+    let ppApp (t: Typ + Term) : reader type_ctx string :=
         d <- ppDot t ;;
         match t with
         | inr t' =>
