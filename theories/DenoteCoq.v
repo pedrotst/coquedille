@@ -22,6 +22,9 @@ Require Import MetaCoq.Template.BasicAst.
 
 Require Import Coquedille.Ast.
 
+Definition inj1M {A B mon} `{Monad mon} : mon A -> mon (sum A B) := fun m => fmap inl m.
+Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fmap inr m.
+
 Definition ctx := list Ced.Var.
 
 Definition denoteName (n: name): Ced.Name :=
@@ -46,9 +49,11 @@ Definition revStr (s: string) : string :=
 string_of_list_ascii (rev (list_ascii_of_string s)).
 
 Section monadic.
-  Local Open Scope monad_scope.
-  Local Open Scope string_scope.
-  Local Open Scope list_scope.
+  Open Scope monad_scope.
+  Open Scope string_scope.
+  Open Scope list_scope.
+  Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
+
 
   Definition m A := readerT (global_env * ctx) (eitherT string IdentityMonad.ident) A.
   Definition run_m {A} (env: global_env * ctx) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
@@ -56,19 +61,6 @@ Section monadic.
   Context {Reader_m: MonadReader (global_env * ctx) m}.
   Context {Either_m: MonadExc string m}.
 
-  Definition kername_to_qualid (s: string): string :=
-  match index 0 "." (revStr s) with
-  | None => s
-  | Some n =>
-    let s_len := String.length s in
-    substring (s_len - n) s_len s
-  end.
-
-  Definition binderName (x : name) : Ced.Var :=
-  match x with
-  | nAnon => "anon"
-  | nNamed name => name
-  end.
 
   Fixpoint list_m {A} {m': Type -> Type} `{Monad m'} (l : list (m' A)) : m' (list A) :=
   match l with
@@ -85,6 +77,20 @@ Section monadic.
   | Some y => ret y
   end.
 
+  Definition kername_to_qualid (s: string): string :=
+  match index 0 "." (revStr s) with
+  | None => s
+  | Some n =>
+    let s_len := String.length s in
+    substring (s_len - n) s_len s
+  end.
+
+  (* Definition binderName (x : name) : Ced.Var := *)
+  (* match x with *)
+  (* | nAnon => "anon" *)
+  (* | nNamed name => name *)
+  (* end. *)
+
   Fixpoint isKind (t: term): bool :=
   match t with
   | tSort _ => true
@@ -92,18 +98,19 @@ Section monadic.
   | _ => false
   end.
 
+  Definition localDenote {A} (x: name) : m A -> m A :=
+  local (fun '(genv, Γ) => (genv, (get_ident x) :: Γ)).
+
   Reserved Notation "⟦ x ⟧" (at level 0).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
-  let localDen {A} (x: name) : m A -> m A := local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) in
   match t with
   | tSort _ => ret Ced.KdStar
   | tProd x t1 t2 =>
     k1 <- (if isKind t1
-         then fmap inl (localDen x (denoteKind t1))
-         else fmap inr (localDen x (denoteType t1))) ;;
+         then fmap inl (localDenote x (denoteKind t1))
+         else fmap inr (localDenote x (denoteType t1))) ;;
     k2 <-  denoteKind t2 ;;
     ret (Ced.KdAll (denoteName x) k1 k2)
-  | tApp _ _ => raise "kind with application"
   | _ => raise "Ill-formed kind"
   end
   with denoteType (t: term): m Ced.Typ :=
@@ -113,7 +120,7 @@ Section monadic.
      v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
-    t2' <- local (fun '(genv, Γ) => (genv, ((binderName x) :: Γ))) (denoteType t2);;
+    t2' <- localDenote x (denoteType t2) ;;
     if isKind t1
     then
       k <- denoteKind t1 ;;
@@ -123,16 +130,16 @@ Section monadic.
       ret (Ced.TyPi (denoteName x) t1' t2')
   | tApp t ts =>
     t' <- denoteType t ;;
-       let den (t: term): m Ced.TTy :=
+       let denApp (t: term) :=
            match t with
-           | tConstruct _ _ _ => fmap inr (denoteTerm t)
-           | tApp _ _ => fmap inr (denoteTerm t)
-           | _ => fmap inl (denoteType t)
+           | tConstruct _ _ _ | tApp _ _ =>
+                                inj2M (denoteTerm t)
+           | _ => inj1M (denoteType t)
            end in
-    ts' <- list_m (map (fun t => den t) ts) ;;
+    ts' <- list_m (map (fun t => denApp t) ts) ;;
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
-    t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) (denoteType t) ;;
+    t'  <- localDenote x (denoteType t) ;;
     if isKind kty
     then k <- denoteKind kty ;;
          ret (Ced.TyLamK (denoteName x) k t')
@@ -149,8 +156,7 @@ Section monadic.
   | tCast _ _ _ => raise "type tCast not implemented yet"
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
-  (* FIXME: raise error *)
-  | tSort univ => ret (Ced.TyVar "tSort")
+  | tSort univ => raise "type tSort not implemented yet"
   end
 
   with denoteTerm (t: term): m Ced.Term :=
@@ -163,9 +169,9 @@ Section monadic.
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
-    (* Have to fix this to check for term/type correctly *)
+    (* FIXME: We'll eventually have to actually check for term/type *)
     ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
-    ret (Ced.TApp t' (Ced.inj2List ts'))
+    ret (Ced.TApp t' (inj2M ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     '(genv, _) <- ask ;;
@@ -177,7 +183,7 @@ Section monadic.
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
   | tLambda x kty t =>
-    t'  <- local (fun '(genv, Γ) => (genv, ((binderName x)) :: Γ)) ⟦ t ⟧ ;;
+    t'  <- localDenote x ⟦ t ⟧ ;;
     if isKind kty
     then k <- denoteKind kty ;;
          ret (Ced.TLamK (denoteName x) k t')
@@ -227,17 +233,12 @@ Section monadic.
   match params with
   | nil => ret []
   | cons p ps =>
-    let name := get_ident (decl_name p) in
+    let x := decl_name p in
     let t := decl_type p in
-    (* We may need a better way to tell if its a kind or type *)
-    (* t' <- denoteType t ;; *)
-    (* k' <- denoteKind t ;; *)
-    tk <- (if isKind t then fmap inl (denoteKind t) else fmap inr (denoteType t)) ;;
-    ls <- local (fun '(genv, Γ) => (genv, name :: Γ)) (denoteParams ps) ;;
-    ret ((name, tk) :: ls)
+    tk <- (if isKind t then inj1M (denoteKind t) else inj2M (denoteType t)) ;;
+    ls <- localDenote x (denoteParams ps) ;;
+    ret ((get_ident x, tk) :: ls)
   end.
-
-  Local Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
@@ -246,13 +247,30 @@ Section monadic.
   then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
     let ctors := ind_ctors body in
-    let param_l := (rev (ind_params mbody)) in
+    let param_l := rev (ind_params mbody) in
+    let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let full_ki := ind_type body in
     let noparam_ki := removeBindingsTerm full_ki (List.length params) in
-    ki <- local (fun '(genv, _) => (genv, (map (get_ident ̊ decl_name) param_l) )) (denoteKind noparam_ki) ;;
+    ki <- local (fun '(genv, _) => (genv, param_names)) (denoteKind noparam_ki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
+
+  Definition False_ind_term : Ced.Assgn :=
+  Ced.AssgnTerm "False_ind"
+                (Some (Ced.TyAll
+                         (Ced.Named "P")
+                         Ced.KdStar
+                         (Ced.TyPi Ced.Anon (Ced.TyVar "False")
+                                   (Ced.TyVar "P"))))
+                (Ced.TLamK (Ced.Named "P")
+                           Ced.KdStar
+                           (Ced.TLam (Ced.Named "f")
+                                     false
+                                     (Ced.TyPi Ced.Anon (Ced.TyVar "False")
+                                               (Ced.TyVar "P"))
+                                     (Ced.TApp (Ced.TVar "f")
+                                               [inl (Ced.TyVar "P")]))).
 
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with
@@ -265,10 +283,7 @@ Section monadic.
       ret (p :: ps)
     | ConstantDecl kern cbody =>
       if (String.eqb kern "Coq.Init.Logic.False_ind")
-      then ret ((Ced.CmdAssgn (Ced.AssgnTerm "False_ind" (Some (Ced.TyAll (Ced.Named "P") Ced.KdStar
-                                                                       (Ced.TyPi Ced.Anon (Ced.TyVar "False")
-                                                                                (Ced.TyVar "P"))))
-                                            (Ced.TLamK (Ced.Named "P") Ced.KdStar (Ced.TLam (Ced.Named "f") false (Ced.TyPi Ced.Anon (Ced.TyVar "False") (Ced.TyVar "P")) (Ced.TApp (Ced.TVar "f") [inl (Ced.TyVar "P")]))))) :: ps)
+      then ret ((Ced.CmdAssgn False_ind_term) :: ps)
       else
       bdy <- option_m (cst_body cbody) "Constant without a body" ;;
       let name := kername_to_qualid kern in
@@ -290,9 +305,7 @@ Section monadic.
   Fixpoint denoteCoq' (t: term): m Ced.Program :=
   (* TODO: Update this for denoteGenv only use the genvs seen so far *)
   '(genv, _) <- ask;;
-   (* ty <- local (fun _ => (genv, [])) ⟦ t ⟧ ;; *)
    decls <- denoteGenv genv;;
-   (* let t' := Ced.CmdAssgn (Ced.AssgnType "_" None ty) in *)
    ret decls.
 
 End monadic.
