@@ -234,13 +234,13 @@ with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
   end.
 
 Definition runPpKind (ki: Kind) (Γ : type_ctx) :=
-  fst (@runState _ _ (ppKind ki) Γ).
+  fst (runState (ppKind ki) Γ).
 
 Definition runPpTyp (t: Typ) (Γ : type_ctx) :=
-  fst (@runState _ _ (ppTyp false false t) Γ).
+  fst (runState (ppTyp false false t) Γ).
 
 Definition runPpTerm (t: Term) (Γ : type_ctx) :=
-  fst (@runState _ _ (ppTerm false false t) Γ).
+  fst (runState (ppTerm false false t) Γ).
 
 Definition appendNamed (x: Name) (kty : Kind + Typ): state type_ctx unit :=
   match x with
