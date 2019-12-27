@@ -29,7 +29,10 @@ Definition TkAnon      := "anon".
 Definition TkPi        := "Π".
 Definition TkAll       := "∀".
 Definition TkOpenPar   := "(".
+Definition TkOpenBrac  := "[".
+Definition TkCloseBrac := "]".
 Definition TkClosePar  := ")".
+Definition TkDash      := "-".
 Definition TkTDot      := "·".
 Definition TkData      := "data".
 Definition TkLam       := "λ".
@@ -231,6 +234,29 @@ with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
     ret (parens bapp (TkULam ++ TkSpace ++ name ++ TkSpace
                             ++ TkColon ++ TkSpace ++ k' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
+  | TLetTy x k ty bdy =>
+    k' <- ppKind k;;
+    let name := getName x in
+    ty' <- ppTyp false false ty ;;
+    appendCtx name (inl k) ;;
+    bdy' <- ppTerm false false bdy ;;
+    ret (TkOpenBrac ++ TkSpace ++ name ++ TkSpace
+                    ++ TkColon ++ TkSpace ++ k' ++ TkSpace
+                    ++ TkAssgn ++ TkSpace ++ ty' ++ TkSpace
+                    ++ TkCloseBrac ++ TkSpace ++ TkDash
+                    ++ TkSpace ++ bdy')
+  | TLetTm x _ ty t bdy =>
+    ty' <- ppTyp false false ty ;;
+    let name := getName x in
+    t' <- ppTerm false false t ;;
+    appendCtx name (inr ty) ;;
+    bdy' <- ppTerm false false bdy ;;
+    ret (TkOpenBrac ++ TkSpace ++ name ++ TkSpace
+                    ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
+                    ++ TkAssgn ++ TkSpace ++ t' ++ TkSpace
+                    ++ TkCloseBrac ++ TkSpace ++ TkDash
+                    ++ TkSpace ++ bdy')
+  | TMu _ _ _ _ => ret ""
   end.
 
 Definition runPpKind (ki: Kind) (Γ : type_ctx) :=

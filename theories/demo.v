@@ -216,7 +216,35 @@ Eval compute in (pretty (denoteCoq sigT_syntax)).
 (* "%string *)
 (*      : string *)
 
+Definition let_ex := let x := 1 in S x.
+Quote Recursively Definition letex_syntax := let_ex.
+Eval compute in (pretty (denoteCoq letex_syntax)).
+
+
+Quote Recursively Definition IsSucc_syntax := IsSucc.
+(* IsSucc =  *)
+(* fun n : nat => match n with *)
+(*                | 0 => False *)
+(*                | S _ => True *)
+(*                end *)
+(*      : nat -> Prop *)
+
+(* Argument scope is [nat_scope] *)
+
+
+Eval compute in (pretty (denoteCoq IsSucc_syntax)).
+  (* | tCase : inductive * nat -> *)
+            (* term -> term -> list (nat * term) -> term *)
+
 Quote Recursively Definition falseind_syntax := False_ind.
+(* False_ind =  *)
+(* fun (P : Prop) (f : False) => match f return P with *)
+(*                               end *)
+(*      : forall P : Prop, False -> P *)
+
+(* Argument scopes are [type_scope _] *)
+
+
 Eval compute in (pretty (denoteCoq falseind_syntax)).
 
 Definition L : Type -> Type :=

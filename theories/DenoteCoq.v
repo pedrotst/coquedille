@@ -147,7 +147,7 @@ Section monadic.
   | tProj _ _ => raise "type tProj not implemented yet"
   | tCoFix _ _ => raise "type tCoFix not implemented yet"
   | tConst kern _ => ret (Ced.TyVar (kername_to_qualid kern))
-  | tCast _ _ _ => raise "type tCast not implemented yet"
+  | tCast t _ _ => denoteType t
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
   | tSort univ => raise "type tSort not implemented yet"
@@ -177,21 +177,31 @@ Section monadic.
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
   | tLambda x kty t =>
-    t'  <- localDenote x ⟦ t ⟧ ;;
+    t' <- localDenote x ⟦ t ⟧ ;;
     if isKind kty
     then k <- denoteKind kty ;;
          ret (Ced.TLamK (denoteName x) k t')
     else ty <- denoteType kty ;;
          ret (Ced.TLam (denoteName x) false ty t')
+  | tLetIn v t kty bdy =>
+    let v' := denoteName v in
+    bdy' <- localDenote v ⟦ bdy ⟧ ;;
+    if isKind kty
+    then k <- denoteKind kty ;;
+         t' <- denoteType t ;;
+         ret (Ced.TLetTy v' k t' bdy')
+    else ty <- denoteType kty ;;
+         t' <- denoteTerm t ;;
+         ret (Ced.TLetTm v' false ty t' bdy')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"
   | tProj _ _ => raise "tProj not implemented yet"
   | tCoFix _ _ => raise "tCoFix not implemented yet"
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
-  | tCast _ _ _ => raise "tCast not implemented yet"
+  | tCast t _ _ => ⟦ t ⟧
   | tCase _ _ _ _ => raise "tCase not implemented yet"
-  | tLetIn _ _ _ _ => raise "tLetIn not implemented yet"
+(* | tLetIn (na : name) (def : term) (def_ty : term) (body : term) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
