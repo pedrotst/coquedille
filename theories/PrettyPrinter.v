@@ -283,16 +283,6 @@ match n with
   end
 end.
 
-Fixpoint removeN {A} (l: list A) (n: nat): list A :=
-  match n with
-  | O => l
-  | S n' =>
-    match l with
-    | cons _ xs => removeN xs n'
-    | nil => nil
-    end
-  end.
-
 Definition flattenApp (t: Typ) :=
   match t with
   | TyApp t' nil => t'
@@ -306,7 +296,7 @@ Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ): Typ :=
     match t1 with
     | TyVar v =>
       if (string_dec v data_name)
-      then let rs' := removeN ts2 params_count in
+      then let rs' := skipn params_count ts2 in
            flattenApp (TyApp t1 rs')
       else flattenApp (TyApp t1 ts2)
     | _ => TyApp (removeParams' t1) ts2
