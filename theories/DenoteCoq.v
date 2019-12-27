@@ -85,12 +85,6 @@ Section monadic.
     substring (s_len - n) s_len s
   end.
 
-  (* Definition binderName (x : name) : Ced.Var := *)
-  (* match x with *)
-  (* | nAnon => "anon" *)
-  (* | nNamed name => name *)
-  (* end. *)
-
   Fixpoint isKind (t: term): bool :=
   match t with
   | tSort _ => true
@@ -101,7 +95,7 @@ Section monadic.
   Definition localDenote {A} (x: name) : m A -> m A :=
   local (fun '(genv, Γ) => (genv, (get_ident x) :: Γ)).
 
-  Reserved Notation "⟦ x ⟧" (at level 0).
+  Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
   | tSort _ => ret Ced.KdStar
@@ -201,26 +195,6 @@ Section monadic.
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint removeBindings (t: Ced.Typ) (n: nat) : Ced.Typ :=
-  match n with
-  | O => t
-  | S n' =>
-    match t with
-    | Ced.TyPi x t1 t2 => removeBindings t2 (pred n)
-    | _ => t
-    end
-  end.
-
-  Fixpoint removeBindingsTerm (t: term) (n: nat) : term :=
-  match n with
-  | O => t
-  | S n' =>
-    match t with
-    | tProd x t1 t2 => removeBindingsTerm t2 (pred n)
-    | _ => t
-    end
-  end.
-
   Fixpoint denoteCtors (data_name : Ced.Var)
            (params: Ced.Params)
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
@@ -251,7 +225,7 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let full_ki := ind_type body in
-    let noparam_ki := removeBindingsTerm full_ki (List.length params) in
+    let noparam_ki := remove_arity (List.length params) full_ki in
     ki <- local (fun '(genv, _) => (genv, param_names)) (denoteKind noparam_ki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).

@@ -56,7 +56,6 @@ Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
     | inr a => pretty a
     end.
 
-
 Local Open Scope monad_scope.
 (* Can we simplify this to a simple list and mark what lives on the kind level? *)
 Definition type_ctx := alist Var (Kind + Typ).
@@ -251,7 +250,7 @@ match n with
     match x with
     | Anon => ret t'
     | Named name =>
-      put ((name, inr t1) :: Γ) ;;
+      appendCtx name (inr t1) ;;
       ret t'
     end
   | TyAll x k t2 =>
@@ -260,7 +259,7 @@ match n with
     match x with
     | Anon => ret t'
     | Named name =>
-      put ((name, inl k) :: Γ) ;;
+      appendCtx name (inl k) ;;
       ret t'
     end
   | _ => ret t
@@ -273,12 +272,11 @@ match n with
 | S n' =>
   match k with
   | KdAll x k1 k2 =>
-    Γ <- get ;;
     k' <- removeBindingsK k2 (pred n);;
     match x with
     | Anon => ret k'
     | Named name =>
-      put ((name, k1) :: Γ) ;;
+      appendCtx name (inl k) ;;
       ret k'
     end
   | _ => ret k
@@ -297,7 +295,7 @@ Fixpoint removeN {A} (l: list A) (n: nat): list A :=
 
 Definition flattenApp (t: Typ) :=
   match t with
-  | TyApp t nil => t
+  | TyApp t' nil => t'
   | _ => t
   end.
 
@@ -353,8 +351,7 @@ Definition ppmKind (v: Var) (mki : option Kind) : state type_ctx string :=
   | None => ret ""
   | Some ki =>
     ki' <- ppKind ki ;;
-    Γ <- get ;;
-    put (alist_add _ v (inl ki) Γ);;
+    appendCtx v (inl ki) ;;
     ret (TkColon ++ TkSpace ++ ki' ++ TkSpace)
   end.
 
@@ -363,8 +360,7 @@ Definition ppmType (v: Var) (mty : option Typ) : state type_ctx string :=
   | None => ret ""
   | Some ty =>
     ty' <- ppTyp false false ty ;;
-    Γ <- get ;;
-    put (alist_add _ v (inr ty) Γ);;
+    appendCtx v (inr ty) ;;
     ret (TkColon ++ TkSpace ++ ty' ++ TkSpace)
   end.
 
@@ -384,7 +380,7 @@ Program Definition ppCmd (c: Cmd): state type_ctx string :=
            ++ TkSpace ++ t'
            ++ TkDot ++ TkCR)
   | CmdData (DefData name params kind ctors)  =>
-    put (alist_add _ name (inl kind) Γ) ;;
+    appendCtx name (inl kind) ;;
     s <- (ppDatatype name params kind ctors) ;;
     ret (s ++ TkCR)
   end.
@@ -393,8 +389,8 @@ Fixpoint ppProgram' (p : Program) : state type_ctx string :=
   match p with
   | nil => ret ""
   | c :: cs =>
-    c' <- ppCmd c;;
-    cs' <- ppProgram' cs;;
+    c' <- ppCmd c ;;
+    cs' <- ppProgram' cs ;;
     ret (c' ++ TkCR ++ cs')
   end.
 
@@ -403,6 +399,3 @@ Instance PrettyProgram : Pretty Program :=
 
 Definition showState :=
   fun p => snd (@runState _ _ (ppProgram' p) nil).
-
-Local Close Scope string_scope.
-Local Close Scope monad_scope.
