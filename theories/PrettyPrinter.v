@@ -121,6 +121,9 @@ Definition appendCtx v t : state type_ctx unit :=
   Γ <- get ;;
   put (alist_add _ v t Γ).
 
+Definition getName (x: Name) : Var :=
+  match x with | Anon => "_" | Named n => n end.
+
 Fixpoint ppKind (ki : Kind) : state type_ctx string :=
   match ki with
   | KdStar => ret TkStar
@@ -170,21 +173,21 @@ with ppTyp (barr bapp: bool) (t : Typ) : state type_ctx string :=
                 ++ TkDot ++ TkSpace ++ t2')
     end
   | TyAll x t1 t2 =>
-    let name := match x with | Anon => "_" | Named n => n end in
+    let name := getName x in
     k <- ppKind t1 ;;
     appendCtx name (inl t1) ;;
     t2' <- ppTyp false false t2 ;;
     ret (TkAll ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
-    let name := match x with | Anon => "_" | Named n => n end in
+    let name := getName x in
     t1' <- ppTyp false false t1 ;;
     appendCtx name (inr t1) ;;
     t2' <- ppTyp false false t2 ;;
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLamK x k t2 =>
-    let name := match x with | Anon => "_" | Named n => n end in
+    let name := getName x in
     t1' <- ppKind k ;;
     appendCtx name (inl k) ;;
     t2' <- ppTyp false false t2 ;;
@@ -212,7 +215,7 @@ with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TLam x b ty t =>
     ty' <- ppTyp false false ty ;;
-    let name := match x with | Anon => "_" | Named y => y end in
+    let name := getName x in
     appendCtx name (inr ty) ;;
     t' <- ppTerm false false t ;;
     let tk := if b then TkULam else TkLam in
@@ -222,7 +225,7 @@ with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
   | TVar v => ret v
   | TLamK x k t =>
     k' <- ppKind k ;;
-    let name := match x with | Anon => "_" | Named y => y end in
+    let name := getName x in
     appendCtx name (inl k) ;;
     t' <- ppTerm false false t ;;
     ret (parens bapp (TkULam ++ TkSpace ++ name ++ TkSpace
@@ -239,29 +242,25 @@ Definition runPpTyp (t: Typ) (Γ : type_ctx) :=
 Definition runPpTerm (t: Term) (Γ : type_ctx) :=
   fst (@runState _ _ (ppTerm false false t) Γ).
 
+Definition appendNamed (x: Name) (kty : Kind + Typ): state type_ctx unit :=
+  match x with
+  | Anon => ret tt
+  | Named name => appendCtx name kty
+  end.
+
 Fixpoint removeBindingsTyp (t: Typ) (n: nat) : state type_ctx Typ :=
 match n with
 | O => ret t
 | S n' =>
   match t with
   | TyPi x t1 t2 =>
-    Γ <- get ;;
     t' <- removeBindingsTyp t2 (pred n);;
-    match x with
-    | Anon => ret t'
-    | Named name =>
-      appendCtx name (inr t1) ;;
-      ret t'
-    end
+    appendNamed x (inr t1) ;;
+    ret t'
   | TyAll x k t2 =>
-    Γ <- get ;;
     t' <- removeBindingsTyp t2 (pred n);;
-    match x with
-    | Anon => ret t'
-    | Named name =>
-      appendCtx name (inl k) ;;
-      ret t'
-    end
+    appendNamed x (inl k) ;;
+    ret t'
   | _ => ret t
   end
 end.
@@ -273,12 +272,8 @@ match n with
   match k with
   | KdAll x k1 k2 =>
     k' <- removeBindingsK k2 (pred n);;
-    match x with
-    | Anon => ret k'
-    | Named name =>
-      appendCtx name (inl k) ;;
-      ret k'
-    end
+    appendNamed x (inl k) ;;
+    ret k'
   | _ => ret k
   end
 end.
