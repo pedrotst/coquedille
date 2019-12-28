@@ -135,13 +135,16 @@ Section monadic.
     end
   end.
 
+  Definition ctor_typ := ((ident × term) × nat).
+
   (* FIXME: Ignore parameters first *)
-  Definition take_args (params: nat) (nt : (ident * term * nat) * (nat * term)) :=
+  Definition take_args (params: nat) (nt : ctor_typ * (nat * term)) :=
     (* : list (name * bool) := *)
   let '(ctor, brch) :=  nt in
   let '(name1, typ, nargs1) := ctor in
   let '(nargs2, t) := brch in
-  take_args' nil (params + nargs2) typ t.
+  let n := params + nargs2 in
+  take_args' nil n typ t.
 
   Definition get_ctors ind : m (list (ident * term * nat)) :=
     '(genv, _) <- ask ;;
@@ -150,6 +153,11 @@ Section monadic.
     let bodies := ind_bodies m_decl in
     body <- option_m (head bodies) "Could not find declaration body" ;;
     ret (ind_ctors body).
+
+  Definition build_tApp (nts: ctor_typ * list (Ced.Typ + Ced.Term)) :=
+  let '(ctor, ts) := nts in
+  let '(n, _, _) := ctor in
+  Ced.TApp (Ced.TVar n) ts.
 
   Definition get_ctor_name : ident * term * nat -> ident :=
   fun x => fst (fst x).
@@ -223,7 +231,7 @@ Section monadic.
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
     (* FIXME: We'll eventually have to actually check for term/type *)
-    ts' <- list_m (map (fun t => ⟦ t ⟧) ts) ;;
+    ts' <- list_m (map denoteTerm ts) ;;
     ret (Ced.TApp t' (inj2M ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
@@ -257,16 +265,13 @@ Section monadic.
   | tCase (ind, npars) mot c brchs =>
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
-    let args := map (take_args npars) (combine ctors brchs) in
-    ret (Ced.TMu false c' None nil)
+    args <- list_m (map (take_args npars) (combine ctors brchs)) ;;
+    ts' <- list_m (map (fun '(_, t) => denoteTerm t) brchs) ;;
+    let constrs := map build_tApp (combine ctors args) in
+    ret (Ced.TMu false c' None (combine constrs ts'))
+                 (* (combine constrs ts')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
-  (* Obligation 1 of denoteTerm. *)
-  (* refine ( *)
-    (* let args := map (take_args npars) brchs in *)
-    (* _). *)
-  (* admit. *)
-  (* Admitted. *)
 
   Fixpoint denoteCtors (data_name : Ced.Var)
            (params: Ced.Params)
