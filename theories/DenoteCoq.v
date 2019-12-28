@@ -19,6 +19,7 @@ Require Import ExtLib.Data.Map.FMapAList.
 Require Import MetaCoq.Template.Ast.
 Require Import MetaCoq.Template.AstUtils.
 Require Import MetaCoq.Template.BasicAst.
+Require Import MetaCoq.Template.utils.
 
 Require Import Coquedille.Ast.
 
@@ -92,8 +93,66 @@ Section monadic.
   | _ => false
   end.
 
+  Fixpoint lookup_constant (id : ident) (decls : global_env)
+    := match decls with
+       | nil => None
+       | ConstantDecl kn d :: tl =>
+         if String.eqb kn id then Some d else lookup_constant id tl
+       | _ :: tl => lookup_constant id tl
+       end.
+
+  Fixpoint isType (t: term) : m bool :=
+  '(genv, Γ) <- ask ;;
+   match t with
+   | tInd _ _ => ret true
+   | tProd _ t1 t2 =>
+     b1 <- isType t1 ;;
+     b2 <- isType t2 ;;
+     ret (andb b1 b2)
+   | tConst kern _ =>
+     (* let cdecl := lookup_constant kern genv in *)
+     cdecl <- option_m (lookup_constant kern genv) "Couldn't find cdecl body" ;;
+     let cdecl_ty := (cst_type cdecl) in
+     ret (isKind cdecl_ty)
+   | _ => ret false
+   end.
+
   Definition localDenote {A} (x: name) : m A -> m A :=
   local (fun '(genv, Γ) => (genv, (get_ident x) :: Γ)).
+
+  Fixpoint take_args' (acc: list (Ced.Typ + Ced.Term)) (n : nat) (typ t: term)
+    : m (list (Ced.Typ + Ced.Term)) :=
+  match n with
+  | O => ret acc
+  | S n' =>
+    match typ, t with
+    | tProd _ ty' body, tLambda x ty t' =>
+      b <- isType ty' ;;
+      if b
+      then take_args' (inl (Ced.TyVar (get_ident x)) :: acc) n' body t'
+      else take_args' (inr (Ced.TVar (get_ident x)) :: acc) n' body t'
+    | _, _ => ret acc
+    end
+  end.
+
+  (* FIXME: Ignore parameters first *)
+  Definition take_args (params: nat) (nt : (ident * term * nat) * (nat * term)) :=
+    (* : list (name * bool) := *)
+  let '(ctor, brch) :=  nt in
+  let '(name1, typ, nargs1) := ctor in
+  let '(nargs2, t) := brch in
+  take_args' nil (params + nargs2) typ t.
+
+  Definition get_ctors ind : m (list (ident * term * nat)) :=
+    '(genv, _) <- ask ;;
+    let minds := inductive_mind ind in
+    m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
+    let bodies := ind_bodies m_decl in
+    body <- option_m (head bodies) "Could not find declaration body" ;;
+    ret (ind_ctors body).
+
+  Definition get_ctor_name : ident * term * nat -> ident :=
+  fun x => fst (fst x).
 
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -168,12 +227,7 @@ Section monadic.
     ret (Ced.TApp t' (inj2M ts'))
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
-    '(genv, _) <- ask ;;
-    let minds := inductive_mind ind in
-    m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
-    let bodies := ind_bodies m_decl in
-    body <- option_m (head bodies) "Could not find declaration body" ;;
-    let ctors := ind_ctors body in
+    ctors <- get_ctors ind ;;
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
   | tLambda x kty t =>
@@ -200,10 +254,19 @@ Section monadic.
   | tCoFix _ _ => raise "tCoFix not implemented yet"
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast t _ _ => ⟦ t ⟧
-  | tCase _ _ _ _ => raise "tCase not implemented yet"
-(* | tLetIn (na : name) (def : term) (def_ty : term) (body : term) *)
+  | tCase (ind, npars) mot c brchs =>
+    ctors <- get_ctors ind ;;
+    c' <- ⟦ c ⟧ ;;
+    let args := map (take_args npars) (combine ctors brchs) in
+    ret (Ced.TMu false c' None nil)
   end
   where "⟦ x ⟧" := (denoteTerm x).
+  (* Obligation 1 of denoteTerm. *)
+  (* refine ( *)
+    (* let args := map (take_args npars) brchs in *)
+    (* _). *)
+  (* admit. *)
+  (* Admitted. *)
 
   Fixpoint denoteCtors (data_name : Ced.Var)
            (params: Ced.Params)

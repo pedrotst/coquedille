@@ -21,7 +21,6 @@ Module Ced.
   (* Mu : is-mu → term → maybe type → *)
        (* datatype-info → cases → term *)
 
-
   Inductive Kind : Type :=
   | KdStar
   | KdAll (_: Name) (_: Kind + Typ) (_: Kind)
@@ -42,11 +41,7 @@ Module Ced.
   | TApp (_: Term) (_: list (Typ + Term))
   | TLetTm (_: Name) (erased: bool) (ty: Typ) (_: Term) (body: Term)
   | TLetTy (_: Name) (k: Kind) (ty: Typ) (body: Term)
-  | TMu (is_rec: bool) (_: Term) (_: option Typ) (_: list Case)
-  with CaseArg : Type :=
-  | CArg (_ : bool) (_ : Var) (_ : option (Kind + Typ))
-  with Case : Type :=
-  | CCase (_: Var) (_: list CaseArg) (_: Term) (_: list (Typ + Term))
+  | TMu (is_rec: bool) (_: Term) (_: option Typ) (branches: list (Term * Term))
   .
 
   Inductive Ctor : Type :=

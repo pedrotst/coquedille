@@ -152,6 +152,17 @@ Eval compute in ((denoteCoq x_syntax)).
 Quote Recursively Definition le_syntax := le.
 Eval compute in (pretty (denoteCoq le_syntax)).
 
+Definition isZero (n : nat) : bool :=
+match n with
+| O => true
+| S _ => false
+end.
+
+Quote Recursively Definition isZero_syntax := isZero.
+Eval compute in (pretty (denoteCoq isZero_syntax)).
+
+(* μ' n { O ➔ true | S _ ➔ false }. *)
+
 Inductive myDep (A : Type) : x -> Type :=
 | mynil : myDep A 0
 | mycons : A -> forall x, myDep A x -> myDep A (S x)
@@ -160,7 +171,7 @@ Inductive myDep (A : Type) : x -> Type :=
 Quote Recursively Definition myDep_syntax := myDep.
 Eval compute in (pretty (denoteCoq myDep_syntax)).
 
-Lemma exlemma : 1 = 1.
+Lemma exlemma : [1] = [1].
 Proof.
   exact eq_refl.
 Qed.
@@ -173,6 +184,7 @@ Eval compute in (pretty (denoteCoq eq_syntax)).
 
 Quote Recursively Definition exlemma_syntax := exlemma.
 Eval compute in (pretty (denoteCoq exlemma_syntax)).
+Eval compute in ((denoteCoq exlemma_syntax)).
 
 Quote Recursively Definition jmeq_syntax := JMeq.
 Eval compute in (pretty (denoteCoq jmeq_syntax)).
