@@ -99,10 +99,25 @@ Instance PrettyName : Pretty Name :=
 Definition parens (b: bool) (s : string) :=
   if b then TkOpenPar ++ s ++ TkClosePar else s.
 
-Definition getVar (t: Typ + Term): option Var :=
+
+Fixpoint getVarTyp (t: Typ): option Var :=
   match t with
-  | inr t' => match t' with | TVar v => Some v | _ => None end
-  | inl t' => match t' with | TyVar v => Some v | _ => None end
+  | TyVar v => Some v
+  | TyApp t _ => getVarTyp t
+  | _ => None
+  end.
+
+Fixpoint getVarTerm (t: Term): option Var :=
+  match t with
+  | TVar v => Some v
+  | TApp t' _ => getVarTerm t'
+  | _ => None
+  end.
+
+Fixpoint getVar (t: Typ + Term): option Var :=
+  match t with
+  | inr t' => getVarTerm t'
+  | inl t' => getVarTyp t'
   end.
 
 Definition ppDot (t: Typ + Term) : state type_ctx string :=
