@@ -30,13 +30,16 @@ Definition TkPi        := "Π".
 Definition TkAll       := "∀".
 Definition TkOpenPar   := "(".
 Definition TkOpenBrac  := "[".
+Definition TkOpenCBrac := "{".
+Definition TkCloseCBrac:= "}".
 Definition TkCloseBrac := "]".
 Definition TkClosePar  := ")".
 Definition TkDash      := "-".
 Definition TkTDot      := "·".
 Definition TkData      := "data".
 Definition TkLam       := "λ".
-Definition TkULam       := "Λ".
+Definition TkULam      := "Λ".
+Definition TkMu        := "μ".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
 ".
@@ -142,7 +145,13 @@ Definition appendCtx v t : state type_ctx unit :=
 Definition getName (x: Name) : Var :=
   match x with | Anon => "_" | Named n => n end.
 
-Fixpoint ppKind (ki : Kind) : state type_ctx string :=
+Definition appSize (t: Term) :=
+  match t with
+  | TApp _ ts => Datatypes.length ts
+  | _ => 0
+  end.
+
+Fixpoint ppKind (ki : Kind) {struct ki}: state type_ctx string :=
   match ki with
   | KdStar => ret TkStar
   | KdAll x k1 k2 =>
@@ -159,7 +168,7 @@ Fixpoint ppKind (ki : Kind) : state type_ctx string :=
     end
   end
 
-with ppTyp (barr bapp: bool) (t : Typ) : state type_ctx string :=
+with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
   match t with
   | TyApp t1 ts2 =>
     t1' <- ppTyp false true t1 ;;
@@ -215,7 +224,7 @@ with ppTyp (barr bapp: bool) (t : Typ) : state type_ctx string :=
   | _ => ret "?"
   end
 
-with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
+with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
   match t with
   | TApp t1 ts2 =>
     t1' <- ppTerm false true t1 ;;
@@ -271,7 +280,23 @@ with ppTerm (barr bapp: bool) (t : Term): state type_ctx string :=
                     ++ TkAssgn ++ TkSpace ++ t' ++ TkSpace
                     ++ TkCloseBrac ++ TkSpace ++ TkDash
                     ++ TkSpace ++ bdy')
-  | TMu _ _ _ _ => ret ""
+  | TMu b t _ brchs =>
+    let printBranch (brch : Term * Term) : state type_ctx string :=
+        let '(t1, t2) := brch in
+        t1' <- ppTerm false false t1 ;;
+        t2' <- ppTerm false false t2 ;;
+        ret (TkPipe ++ TkSpace ++ t1' ++ TkSpace
+                    ++ TkArrow ++ TkSpace ++ t2' ++ TkSpace) in
+    t' <- ppTerm false false t ;;
+    let prime := if b then "'" else "" in
+    (* let brch_pat := map fst brchs in *)
+    (* let brch_terms := map snd brchs in *)
+    (* let ns := map appSize brch_terms in *)
+    (* let trim_brchs := map (fun '(n, t) => removeLambdas n t) (combine ns brch_terms) in *)
+    brchs' <- list_m (map printBranch brchs) ;;
+               ret (TkMu ++ prime ++ TkSpace ++ t' ++ TkSpace ++ TkOpenCBrac
+                         ++ TkCR ++ (string_of_list id brchs' 1)
+              ++ TkCR ++ TkSpace ++ TkCloseCBrac)
   end.
 
 Definition runPpKind (ki: Kind) (Γ : type_ctx) :=

@@ -162,6 +162,18 @@ Section monadic.
   Definition get_ctor_name : ident * term * nat -> ident :=
   fun x => fst (fst x).
 
+
+  Fixpoint removeLambdas (n: nat) (t: Ced.Term) :=
+  match n with
+  | O => t
+  | S n' =>
+    match t with
+    | Ced.TLamK _ _ t' | Ced.TLam _ _ _ t' => removeLambdas n' t'
+    | _ => t
+    end
+  end.
+
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -267,8 +279,9 @@ Section monadic.
     c' <- ⟦ c ⟧ ;;
     args <- list_m (map (take_args npars) (combine ctors brchs)) ;;
     ts' <- list_m (map (fun '(_, t) => denoteTerm t) brchs) ;;
+    let trimmed_ts' := map (fun '(n, t) => removeLambdas (n+npars) t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
-    ret (Ced.TMu false c' None (combine constrs ts'))
+    ret (Ced.TMu false c' None (combine constrs trimmed_ts'))
                  (* (combine constrs ts')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
