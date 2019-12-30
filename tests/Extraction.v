@@ -66,7 +66,14 @@ fun A h t X c n => c h (t X c n).
 Quote Recursively Definition lnil_syntax := lnil.
 Quote Recursively Definition lcons_syntax := lcons.
 
+Lemma nileqnil : cons 1 nil = cons 1 nil.
+Proof.
+  exact eq_refl.
+Qed.
+
+Quote Recursively Definition nileqnil_syntax := nileqnil.
+
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq
            nat_syntax list_syntax option_syntax vector_syntax le_syntax
-           asgn_syntax refl1_syntax lnil_syntax lcons_syntax.
+           asgn_syntax refl1_syntax lnil_syntax lcons_syntax nileqnil_syntax.

@@ -288,11 +288,7 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
         ret (TkPipe ++ TkSpace ++ t1' ++ TkSpace
                     ++ TkArrow ++ TkSpace ++ t2' ++ TkSpace) in
     t' <- ppTerm false false t ;;
-    let prime := if b then "'" else "" in
-    (* let brch_pat := map fst brchs in *)
-    (* let brch_terms := map snd brchs in *)
-    (* let ns := map appSize brch_terms in *)
-    (* let trim_brchs := map (fun '(n, t) => removeLambdas n t) (combine ns brch_terms) in *)
+    let prime := if b then "" else "'" in
     brchs' <- list_m (map printBranch brchs) ;;
                ret (TkMu ++ prime ++ TkSpace ++ t' ++ TkSpace ++ TkOpenCBrac
                          ++ TkCR ++ (string_of_list id brchs' 1)
