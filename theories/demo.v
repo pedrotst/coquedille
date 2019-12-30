@@ -182,12 +182,39 @@ Quote Recursively Definition eq_syntax := eq.
 Eval compute in ((denoteCoq eq_syntax)).
 Eval compute in (pretty (denoteCoq eq_syntax)).
 
+Quote Recursively Definition eqrect_syntax := eq_rect.
+Eval compute in ((denoteCoq eqrect_syntax)).
+Eval compute in (pretty (denoteCoq eq_syntax)).
+
 Quote Recursively Definition exlemma_syntax := exlemma.
 Eval compute in (pretty (denoteCoq exlemma_syntax)).
 Eval compute in ((denoteCoq exlemma_syntax)).
 
 Quote Recursively Definition jmeq_syntax := JMeq.
 Eval compute in (pretty (denoteCoq jmeq_syntax)).
+
+Lemma vector_0_nil {A} :
+ forall {n : nat} (v : t A n),
+   n = 0 -> JMeq v (@nil A).
+Proof.
+ destruct v; intro.
+ - reflexivity.
+ - discriminate.
+Qed.
+
+Definition case0' {A}
+          (P : t A 0 -> Type)
+          (H : P (nil A))
+          (v : t A 0)
+ : P v.
+Proof.
+ eapply eq_rect.
+ - apply H.
+ - eapply JMeq_eq.
+   symmetry.
+   eapply vector_0_nil.
+   reflexivity.
+Defined.
 
 Lemma Vector_nil_neq_List_nil {A} (a : A):
   ~ (@nil A ~= @Datatypes.nil A).
@@ -200,7 +227,7 @@ Proof.
     intros.
     pattern y.
     pattern x0.
-    repeat apply VectorDef.case0.
+    repeat apply case0'.
     reflexivity.
   }
   rewrite H1 in H0.
