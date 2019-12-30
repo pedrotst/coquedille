@@ -89,7 +89,7 @@ Section monadic.
   Fixpoint isKind (t: term): bool :=
   match t with
   | tSort _ => true
-  | tProd _ t1 t2 => isKind t1 && isKind t2
+  | tProd _ t1 t2 => isKind t2
   | _ => false
   end.
 
