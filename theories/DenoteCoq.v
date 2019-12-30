@@ -173,6 +173,14 @@ Section monadic.
     end
   end.
 
+  Fixpoint showList' (ls : list string) : string :=
+  match ls with
+  | nil => ""
+  | cons x xs => x ++ ", " ++ showList' xs
+  end.
+
+  Fixpoint showList (ls : list string) : string :=
+  "[ " ++ showList' ls ++ "]".
 
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -180,9 +188,9 @@ Section monadic.
   | tSort _ => ret Ced.KdStar
   | tProd x t1 t2 =>
     k1 <- (if isKind t1
-         then fmap inl (localDenote x (denoteKind t1))
-         else fmap inr (localDenote x (denoteType t1))) ;;
-    k2 <-  denoteKind t2 ;;
+         then fmap inl (denoteKind t1)
+         else fmap inr (denoteType t1)) ;;
+    k2 <-  localDenote x (denoteKind t2) ;;
     ret (Ced.KdAll (denoteName x) k1 k2)
   | _ => raise "Ill-formed kind"
   end
@@ -190,7 +198,7 @@ Section monadic.
   match t with
   | tRel n =>
     '(_, Γ) <- ask ;;
-     v <- option_m (nth_error Γ n) ("Variable " ++ utils.string_of_nat n ++ " not in environment");;
+     v <- option_m (nth_error Γ n) ("ty tRel " ++ utils.string_of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
     t2' <- localDenote x (denoteType t2) ;;
@@ -238,7 +246,7 @@ Section monadic.
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ) <- ask ;;
-     v <- option_m (nth_error Γ n) ("Variable! " ++ utils.string_of_nat n ++ " not in environment");;
+     v <- option_m (nth_error Γ n) ("term Variable " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
