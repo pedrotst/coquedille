@@ -162,7 +162,7 @@ Fixpoint ppKind (ki : Kind) {struct ki}: state type_ctx string :=
     k2' <- ppKind k2 ;;
     match x with
     | Anon => ret (k1' ++ TkSpace ++ TkArrow ++ TkSpace ++ k2')
-    | Named name => ret (TkAll ++ TkSpace ++ name ++ TkSpace
+    | Named name => ret (TkPi ++ TkSpace ++ name ++ TkSpace
                               ++ TkColon ++ TkSpace ++ k1'
                               ++ TkSpace ++ TkDot ++ TkSpace ++ k2')
     end
@@ -218,7 +218,7 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
     t1' <- ppKind k ;;
     appendCtx name (inl k) ;;
     t2' <- ppTyp false false t2 ;;
-    ret (TkULam ++ TkSpace ++ name ++ TkSpace ++ TkColon
+    ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
   | _ => ret "?"
@@ -385,12 +385,20 @@ Instance PrettyParams : Pretty Params :=
               ++ TkClosePar ++ pp ps
     end.
 
-Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : state type_ctx string :=
-  kind <- ppKind ki ;;
+Program Definition ppDatatype (name : Var) (params: Params) (tki : (Kind + Typ)) (ctors : list Ctor) : state type_ctx string :=
+  (* kind <- ppKind ki ;; *)
+  (* noparams_kind <- removeBindingsK ki (Datatypes.length params) ;; *)
+  (* ki' <- ppKind noparams_kind ;; *)
+  tki' <- (match tki with
+          | inl k => noparams_ki <- removeBindingsK k (Datatypes.length params) ;;
+                    ppKind noparams_ki
+          | inr ty => noparams_typ <- removeBindingsTyp ty (Datatypes.length params) ;;
+                    ppTyp false false noparams_typ
+          end );;
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
   ret (TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
-          ++ kind ++ TkSpace ++ TkAssgn ++ TkCR
+          ++ tki' ++ TkSpace ++ TkAssgn ++ TkCR
           ++ ctors' ++ TkDot).
 
 Definition ppmKind (v: Var) (mki : option Kind) : state type_ctx string :=
@@ -426,9 +434,9 @@ Program Definition ppCmd (c: Cmd): state type_ctx string :=
     ret (v ++ TkSpace ++ ki ++ TkAssgn
            ++ TkSpace ++ t'
            ++ TkDot ++ TkCR)
-  | CmdData (DefData name params kind ctors)  =>
-    appendCtx name (inl kind) ;;
-    s <- (ppDatatype name params kind ctors) ;;
+  | CmdData (DefData name params kty ctors)  =>
+    appendCtx name kty ;;
+    s <- (ppDatatype name params kty ctors) ;;
     ret (s ++ TkCR)
   end.
 
