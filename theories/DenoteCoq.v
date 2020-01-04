@@ -313,6 +313,7 @@ Section monadic.
     ret ((get_ident x, tk) :: ls)
   end.
 
+
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
@@ -323,9 +324,11 @@ Section monadic.
     let param_l := rev (ind_params mbody) in
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
-    let full_ki := ind_type body in
-    let noparam_ki := remove_arity (List.length params) full_ki in
-    ki <- local (fun '(genv, _) => (genv, param_names)) (denoteKind noparam_ki) ;;
+    let tki := ind_type body in
+    ki <- local (fun '(genv, _) => (genv, param_names))
+       (if isKind tki
+        then fmap inl (denoteKind tki)
+        else fmap inr (denoteType tki));;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
