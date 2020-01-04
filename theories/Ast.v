@@ -52,7 +52,7 @@ Module Ced.
   Definition Params := list (Var * (Kind + Typ)).
 
   Inductive Data : Type :=
-  | DefData (_: Var) (_: Params) (_: (Kind + Typ)) (_: Ctors).
+  | DefData (_: Var) (_: Params) (_: Kind) (_: Ctors).
 
   Inductive Assgn : Type :=
   | AssgnTerm (_: Var) (_: option Typ) (_: Term)

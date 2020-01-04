@@ -385,20 +385,21 @@ Instance PrettyParams : Pretty Params :=
               ++ TkClosePar ++ pp ps
     end.
 
-Program Definition ppDatatype (name : Var) (params: Params) (tki : (Kind + Typ)) (ctors : list Ctor) : state type_ctx string :=
-  (* kind <- ppKind ki ;; *)
-  (* noparams_kind <- removeBindingsK ki (Datatypes.length params) ;; *)
-  (* ki' <- ppKind noparams_kind ;; *)
-  tki' <- (match tki with
-          | inl k => noparams_ki <- removeBindingsK k (Datatypes.length params) ;;
-                    ppKind noparams_ki
-          | inr ty => noparams_typ <- removeBindingsTyp ty (Datatypes.length params) ;;
-                    ppTyp false false noparams_typ
-          end );;
+Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : state type_ctx string :=
+  noparams_kind <- removeBindingsK ki (Datatypes.length params) ;;
+  ki' <- ppKind noparams_kind ;;
+  (* tki' <- noparams_ki <- removeBindingsK k (Datatypes.length params) ;; *)
+       (* ppKind noparams_ki ;; *)
+       (* (match tki with *)
+          (* | inl k => noparams_ki <- removeBindingsK k (Datatypes.length params) ;; *)
+                    (* ppKind noparams_ki *)
+          (* | inr ty => noparams_typ <- removeBindingsTyp ty (Datatypes.length params) ;; *)
+                    (* ppTyp false false noparams_typ *)
+          (* end );; *)
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
   ret (TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
-          ++ tki' ++ TkSpace ++ TkAssgn ++ TkCR
+          ++ ki' ++ TkSpace ++ TkAssgn ++ TkCR
           ++ ctors' ++ TkDot).
 
 Definition ppmKind (v: Var) (mki : option Kind) : state type_ctx string :=
@@ -435,7 +436,7 @@ Program Definition ppCmd (c: Cmd): state type_ctx string :=
            ++ TkSpace ++ t'
            ++ TkDot ++ TkCR)
   | CmdData (DefData name params kty ctors)  =>
-    appendCtx name kty ;;
+    appendCtx name (inl kty) ;;
     s <- (ppDatatype name params kty ctors) ;;
     ret (s ++ TkCR)
   end.

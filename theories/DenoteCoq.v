@@ -325,10 +325,7 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
-    ki <- local (fun '(genv, _) => (genv, param_names))
-       (if isKind tki
-        then fmap inl (denoteKind tki)
-        else fmap inr (denoteType tki));;
+    ki <- local (fun '(genv, _) => (genv, param_names)) (denoteKind tki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
