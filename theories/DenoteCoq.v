@@ -340,8 +340,7 @@ Section monadic.
                            Ced.KdStar
                            (Ced.TLam (Ced.Named "f")
                                      false
-                                     (Ced.TyPi Ced.Anon (Ced.TyVar "False")
-                                               (Ced.TyVar "P"))
+                                     (Ced.TyVar "False")
                                      (Ced.TApp (Ced.TVar "f")
                                                [inl (Ced.TyVar "P")]))).
 
