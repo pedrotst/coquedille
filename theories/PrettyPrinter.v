@@ -388,14 +388,6 @@ Instance PrettyParams : Pretty Params :=
 Program Definition ppDatatype (name : Var) (params: Params) (ki : Kind) (ctors : list Ctor) : state type_ctx string :=
   noparams_kind <- removeBindingsK ki (Datatypes.length params) ;;
   ki' <- ppKind noparams_kind ;;
-  (* tki' <- noparams_ki <- removeBindingsK k (Datatypes.length params) ;; *)
-       (* ppKind noparams_ki ;; *)
-       (* (match tki with *)
-          (* | inl k => noparams_ki <- removeBindingsK k (Datatypes.length params) ;; *)
-                    (* ppKind noparams_ki *)
-          (* | inr ty => noparams_typ <- removeBindingsTyp ty (Datatypes.length params) ;; *)
-                    (* ppTyp false false noparams_typ *)
-          (* end );; *)
   ctorlist <- list_m (map (ppctor (List.length params) name) ctors) ;;
   let ctors' := string_of_list id ctorlist 1 in
   ret (TkData ++ TkSpace ++ name ++ pretty params ++ TkSpace ++ TkColon ++ TkSpace
