@@ -120,31 +120,27 @@ Section monadic.
   Definition localDenote {A} (x: name) : m A -> m A :=
   local (fun '(genv, Γ) => (genv, (get_ident x) :: Γ)).
 
-  Fixpoint take_args' (acc: list (Ced.Typ + Ced.Term)) (n : nat) (typ t: term)
+  Fixpoint take_args' (acc: list (Ced.Typ + Ced.Term)) (n : nat) (t: term)
     : m (list (Ced.Typ + Ced.Term)) :=
   match n with
   | O => ret acc
   | S n' =>
-    match typ, t with
-    | tProd _ ty' body, tLambda x ty t' =>
-      b <- isType ty' ;;
+    match t with
+    | tLambda x ty t' =>
+      b <- isType ty ;;
       if b
-      then take_args' (inl (Ced.TyVar (get_ident x)) :: acc) n' body t'
-      else take_args' (inr (Ced.TVar (get_ident x)) :: acc) n' body t'
-    | _, _ => ret acc
+      then take_args' (inl (Ced.TyVar (get_ident x)) :: acc) n' t'
+      else take_args' (inr (Ced.TVar (get_ident x)) :: acc) n' t'
+    | _ => ret acc
     end
   end.
 
   Definition ctor_typ := ((ident × term) × nat).
 
-  (* FIXME: Ignore parameters first *)
-  Definition take_args (params: nat) (nt : ctor_typ * (nat * term)) :=
-    (* : list (name * bool) := *)
-  let '(ctor, brch) :=  nt in
-  let '(name1, typ, nargs1) := ctor in
-  let '(nargs2, t) := brch in
-  let n := params + nargs2 in
-  take_args' nil n typ t.
+  Definition take_args (brch : nat * term) :=
+  let '(nargs, t) := brch in
+  args <- take_args' nil nargs t;;
+  ret (rev args).
 
   Definition get_ctors ind : m (list (ident * term * nat)) :=
     '(genv, _) <- ask ;;
@@ -285,9 +281,9 @@ Section monadic.
   | tCase (ind, npars) mot c brchs =>
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
-    args <- list_m (map (take_args npars) (combine ctors brchs)) ;;
+    args <- list_m (map take_args brchs) ;;
     ts' <- list_m (map (fun '(_, t) => denoteTerm t) brchs) ;;
-    let trimmed_ts' := map (fun '(n, t) => removeLambdas (n+npars) t) (combine (map fst brchs) ts') in
+    let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
     ret (Ced.TMu false c' None (combine constrs trimmed_ts'))
                  (* (combine constrs ts')) *)
