@@ -1,0 +1,33 @@
+module eqthms.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data t (A : ★) : nat ➔ ★ =
+  | nil : t O
+  | cons : Π h : A . Π n : nat . t n ➔ t (S n).
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data JMeq (A : ★) (x : A) : Π B : ★ . B ➔ ★ =
+  | JMeq_refl : JMeq ·A x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y =
+Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . μ' e {
+  | eq_refl  ➔ f
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+data True : ★ =
+  | I : True.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_heq : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ { x ≃ y } = Λ A . λ x . λ y . λ e . μ' e {
+         | eq_refl ➔ β
+         }.
+
+eq_false : Π n : nat . eq ·nat (S n) O ➔ False  = λ n . λ e . δ - (eq_heq (S n) O e) .
