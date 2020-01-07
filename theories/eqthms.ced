@@ -30,4 +30,24 @@ eq_heq : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ { x ≃ y } = Λ A .
          | eq_refl ➔ β
          }.
 
-eq_false : Π n : nat . eq ·nat (S n) O ➔ False  = λ n . λ e . δ - (eq_heq (S n) O e) .
+
+-- eq_false : Π n : nat . eq ·nat (S n) O ➔ False  = λ n . λ e . δ - (eq_heq (S n) O e) .
+
+eq_false : Π n : nat . eq ·nat (S n) O ➔ False
+         = λ n . λ e .
+         δ - (μ' e @ (λ x : nat . λ _ : eq ·nat (S n) x . { S n ≃ x })
+         { eq_refl ➔ β } ).
+
+
+JMeq_heq : ∀ A : ★ . ∀ B: ★ . Π x : A . Π y : B . JMeq ·A x ·B y ➔ { x ≃ y } = Λ A . Λ B . λ x . λ y . λ e . μ' e {
+         | JMeq_refl ➔ β
+         }.
+
+-- JMeq_false : Π n : nat . JMeq ·nat (S n) ·nat O ➔ False  = λ n . λ e . δ - (JMeq_heq (S n) O e) .
+
+JMeq_false : Π n : nat . JMeq ·nat (S n) ·nat O ➔ False
+           = λ n . λ e .
+           [ H1 : False =
+                δ - ((μ' e @ (λ A : ★ . λ x : A . λ _ : JMeq ·nat (S n) ·A x . { S n ≃ x })
+                { JMeq_refl ➔ β }))
+           ] - False_ind H1.
