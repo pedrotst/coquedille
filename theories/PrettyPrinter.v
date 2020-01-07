@@ -40,6 +40,7 @@ Definition TkData      := "data".
 Definition TkLam       := "λ".
 Definition TkULam      := "Λ".
 Definition TkMu        := "μ".
+Definition TkAt        := "@".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
 ".
@@ -280,17 +281,25 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
                     ++ TkAssgn ++ TkSpace ++ t' ++ TkSpace
                     ++ TkCloseBrac ++ TkSpace ++ TkDash
                     ++ TkSpace ++ bdy')
-  | TMu b t _ brchs =>
+  | TMu b t mot brchs =>
     let printBranch (brch : Term * Term) : state type_ctx string :=
         let '(t1, t2) := brch in
         t1' <- ppTerm false false t1 ;;
         t2' <- ppTerm false false t2 ;;
         ret (TkPipe ++ TkSpace ++ t1' ++ TkSpace
                     ++ TkArrow ++ TkSpace ++ t2' ++ TkSpace) in
+    let printMotive (mmot : option Typ) : state type_ctx string :=
+        match mmot with
+        | None => ret ""
+        | Some mot =>
+          mot' <- ppTyp false false mot ;;
+               ret (TkAt ++ TkSpace ++ TkOpenPar ++ mot' ++ TkClosePar ++ TkSpace)
+        end in
     t' <- ppTerm false false t ;;
+    mot' <- printMotive mot ;;
     let prime := if b then "" else "'" in
     brchs' <- list_m (map printBranch brchs) ;;
-               ret (TkMu ++ prime ++ TkSpace ++ t' ++ TkSpace ++ TkOpenCBrac
+               ret (TkMu ++ prime ++ TkSpace ++ mot' ++ t' ++ TkSpace ++ TkOpenCBrac
                          ++ TkCR ++ (string_of_list id brchs' 1)
               ++ TkCR ++ TkSpace ++ TkCloseCBrac)
   end.
