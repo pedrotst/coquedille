@@ -33,7 +33,7 @@ Module Ced.
   | TyLamK (_: Name) (_: Kind) (_: Typ)
   | TyAllT (_: Name) (_: Typ) (_: Typ)
   | TyIntersec (_: Name) (_: Typ) (_: Typ)
-  | TyEq (_: Typ) (_: Typ)
+  | TyEq (_: Term) (_: Term)
   with Term : Type :=
   | TVar (_: Var)
   | TLam (_: Name) (erased: bool) (_: Typ) (_: Term)
@@ -42,6 +42,8 @@ Module Ced.
   | TLetTm (_: Name) (erased: bool) (ty: Typ) (_: Term) (body: Term)
   | TLetTy (_: Name) (k: Kind) (ty: Typ) (body: Term)
   | TMu (is_rec: bool) (_: Term) (_: option Typ) (branches: list (Term * Term))
+  | TDelta (_ : Term)
+  | TBeta
   .
 
   Inductive Ctor : Type :=

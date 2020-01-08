@@ -31,6 +31,10 @@ Quote Recursively Definition list_syntax :=
 ltac:(let t := eval compute in list in exact t).
 Eval compute in (pretty (denoteCoq list_syntax)).
 
+Quote Recursively Definition t_syntax :=
+ltac:(let t' := eval compute in t in exact t').
+Eval compute in (pretty (denoteCoq t_syntax)).
+
 (* Test intricate datatype *)
 
 Inductive mytry : Type :=
@@ -53,14 +57,23 @@ Eval compute in ((denoteCoq x_syntax)).
 Quote Recursively Definition le_syntax := le.
 Eval compute in (pretty (denoteCoq le_syntax)).
 
-Definition isZero (n : nat) : bool :=
+Definition isZeroFun (n : nat) : nat -> bool :=
 match n with
-| O => true
-| S _ => false
+| O => fun _ => true
+| S _ => fun _ => false
 end.
 
-Quote Recursively Definition isZero_syntax := isZero.
+Quote Recursively Definition isZero_syntax := isZeroFun.
 Eval compute in (pretty (denoteCoq isZero_syntax)).
+
+Definition isVnil {A n} (v : t A n) : nat -> bool :=
+match v with
+| nil => fun H1 => true
+| cons x n' v' =>  fun H2 => false
+end.
+
+Quote Recursively Definition isVnil_syntax := isVnil.
+Eval compute in (pretty (denoteCoq isVnil_syntax)).
 
 (* Test a straightforward lemma *)
 Lemma exlemma : [1] = [1].
@@ -92,10 +105,52 @@ Lemma vector_0_nil {A} :
 Proof.
  destruct v; intro.
  - reflexivity.
- - discriminate.
+ - inversion H.
 Qed.
 
+Lemma OS' : forall n, 0 <> S n.
+Proof.
+  discriminate.
+Defined.
+
+Quote Recursively Definition OS_syntax := O_S.
+Eval compute in ((denoteCoq OS_syntax)).
+Eval compute in (pretty (denoteCoq OS_syntax)).
+
 Quote Recursively Definition v0nil_syntax := vector_0_nil.
+
+Inductive foo' : nat -> Prop :=
+| bar1 : foo' 0
+| bar2 : foo' 1.
+
+Lemma asodf : foo' 20 -> False.
+Proof.
+  intro H.
+  inversion H.
+Defined.
+
+Lemma asdfasdf : bool = nat -> False.
+Proof.
+  intros.
+  discriminate.
+  inversion H.
+
+Definition vector_0_nil' :=
+fun (A : Type) (n : nat) (v : t A n) =>
+match v with
+| @nil _ => fun _ : 0 = 0 => JMeq_refl
+| @cons _ h n0 v0 =>
+    fun H : S n0 = 0 =>
+    let H0 : False :=
+      Logic.eq_ind (S n0)
+        (fun e : nat => match e with
+                        | 0 => False
+                        | S _ => True
+                        end) I 0 H in
+    False_ind (cons A h n0 v0 ~= nil A) H0
+end.
+
+Eval compute in ((denoteCoq v0nil_syntax)).
 Eval compute in (pretty (denoteCoq v0nil_syntax)).
 
 

@@ -178,6 +178,126 @@ Section monadic.
   Fixpoint showList (ls : list string) : string :=
   "[ " ++ showList' ls ++ "]".
 
+(* (tLetIn (nNamed "H0"%string) *)
+(*         (tApp *)
+(*            (tConst *)
+(*               "Coq.Init.Logic.eq_ind"%string *)
+(*               []) *)
+(*            [tInd *)
+(*               {| *)
+(*                 inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                 inductive_ind := 0 |} []; *)
+(*             tConstruct *)
+(*               {| *)
+(*                 inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                 inductive_ind := 0 |} 0 []; *)
+(*             tLambda (nNamed "e"%string) *)
+(*                     (tInd *)
+(*                        {| *)
+(*                          inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                          inductive_ind := 0 |} []) *)
+(*                     (tCase *)
+(*                        ({| *)
+(*                            inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                            inductive_ind := 0 |}, 0) *)
+(*                        (tLambda  *)
+(*                           (nNamed "n"%string) *)
+(*                           (tInd *)
+(*                              {| *)
+(*                                inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                                inductive_ind := 0 |} []) *)
+(*                           (tSort *)
+(*                              (Universe.make'' *)
+(*                                 (Level.lProp, false) []))) *)
+(*                        (tRel 0) *)
+(*                        [(0, *)
+(*                          tInd *)
+(*                            {| *)
+(*                              inductive_mind := "Coq.Init.Logic.True"; *)
+(*                              inductive_ind := 0 |} []); *)
+(*                         (1, *)
+(*                          tLambda nAnon *)
+(*                                  (tInd *)
+(*                                     {| *)
+(*                                       inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                                       inductive_ind := 0 |} []) *)
+(*                                  (tInd *)
+(*                                     {| *)
+(*                                       inductive_mind := "Coq.Init.Logic.False"; *)
+(*                                       inductive_ind := 0 |} []))]); *)
+(*             tConstruct *)
+(*               {| *)
+(*                 inductive_mind := "Coq.Init.Logic.True"; *)
+(*                 inductive_ind := 0 |} 0 []; *)
+(*             tApp *)
+(*               (tConstruct *)
+(*                  {| *)
+(*                    inductive_mind := "Coq.Init.Datatypes.nat"; *)
+(*                    inductive_ind := 0 |} 1 []) *)
+(*               [tRel 1];  *)
+(*             tRel 0]) *)
+(*         (tInd *)
+(*            {| *)
+(*              inductive_mind := "Coq.Init.Logic.False"; *)
+(*              inductive_ind := 0 |} []) *)
+(*         (tApp *)
+(*            (tConst *)
+(*               "Coq.Init.Logic.False_ind"%string *)
+(*               []) *)
+(*            [tInd *)
+(*               {| *)
+(*                 inductive_mind := "Coq.Init.Logic.False"; *)
+(*                 inductive_ind := 0 |} []; *)
+(*             tRel 0])) *)
+
+  (* Next step is to build the delta term *)
+  (* in order to do this it is necessary to denote part of the term *)
+  (* to figure out the name of the variables building the equality *)
+
+  Definition is_delta (t: term) : bool :=
+  match t with
+  | tLetIn v t' kty bdy =>
+    match kty with
+    | tInd s _ =>
+      if String.eqb "Coq.Init.Logic.False" (inductive_mind s)
+      then match t' with
+           | tApp (tConst s' _) _ =>
+             if String.eqb "Coq.Init.Logic.eq_ind" s'
+             then true
+             else false
+           | _ => true
+           end
+      else false
+
+    | _ => false
+    end
+  | _ => false
+  end.
+
+  (* | TMu (is_rec: bool) (_: Term) (_: option Typ)
+     (branches: list (Term * Term)) *)
+
+(* (μ' e @ (λ x : nat . λ _ : eq ·nat (S n) x . { S n ≃ x }) *)
+         (* { eq_refl ➔ β } ) *)
+  (* | TLam (_: Name) (erased: bool) (_: Typ) (_: Term) *)
+  Definition eq_elim (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term :=
+  Ced.TMu false eq
+          (Some
+             (Ced.TyLam
+                (Ced.Named "x")
+                eqty
+                (Ced.TyLam
+                   Ced.Anon
+                   (Ced.TyApp
+                      (Ced.TyVar "eq")
+                      [inl eqty ;
+                       inr y;
+                       inr (Ced.TVar "x")])
+                   (Ced.TyEq y (Ced.TVar "x")))
+             )
+          )
+          [(Ced.TVar "eq_refl", Ced.TBeta)].
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -246,9 +366,12 @@ Section monadic.
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
-    (* FIXME: We'll eventually have to actually check for term/type *)
-    ts' <- list_m (map denoteTerm ts) ;;
-    ret (Ced.TApp t' (inj2M ts'))
+    ts' <- list_m (map (fun e => b <- isType e ;;
+                             if b
+                             then fmap inl (denoteType e)
+                             else fmap inr (denoteTerm e))
+                      ts) ;;
+    ret (Ced.TApp t' ts')
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     ctors <- get_ctors ind ;;
@@ -261,16 +384,27 @@ Section monadic.
          ret (Ced.TLamK (denoteName x) k t')
     else ty <- denoteType kty ;;
          ret (Ced.TLam (denoteName x) false ty t')
-  | tLetIn v t kty bdy =>
-    let v' := denoteName v in
-    bdy' <- localDenote v ⟦ bdy ⟧ ;;
-    if isKind kty
-    then k <- denoteKind kty ;;
-         t' <- denoteType t ;;
-         ret (Ced.TLetTy v' k t' bdy')
-    else ty <- denoteType kty ;;
-         t' <- denoteTerm t ;;
-         ret (Ced.TLetTm v' false ty t' bdy')
+  | tLetIn v t' kty bdy =>
+    if is_delta t
+    then
+      t'' <- denoteTerm t' ;;
+      match t'' with
+      | Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) =>
+        ret (Ced.TDelta (eq_elim eq eqty x))
+      | _ => raise "something went wrong translating delta"
+      end
+    else
+
+
+      let v' := denoteName v in
+      bdy' <- localDenote v ⟦ bdy ⟧ ;;
+      if isKind kty
+      then k <- denoteKind kty ;;
+           t'' <- denoteType t' ;;
+           ret (Ced.TLetTy v' k t'' bdy')
+      else ty <- denoteType kty ;;
+           t'' <- denoteTerm t' ;;
+           ret (Ced.TLetTm v' false ty t'' bdy')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"

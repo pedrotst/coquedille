@@ -40,6 +40,9 @@ Definition TkData      := "data".
 Definition TkLam       := "λ".
 Definition TkULam      := "Λ".
 Definition TkMu        := "μ".
+Definition TkDelta     := "δ".
+Definition TkBeta      := "β".
+Definition TkEq        := "≃".
 Definition TkAt        := "@".
 Definition TkAssgn     := "=".
 Definition TkCR        := "
@@ -222,6 +225,12 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
     ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
                ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
+  | TyEq t1 t2 =>
+    t1' <- ppTerm false false t1 ;;
+    t2' <- ppTerm false false t2 ;;
+    ret (TkOpenCBrac ++ TkSpace ++ t1' ++ TkSpace ++ TkEq
+                    ++ TkSpace ++ t2'
+                    ++ TkSpace ++ TkCloseCBrac)
   | _ => ret "?"
   end
 
@@ -293,15 +302,20 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
         | None => ret ""
         | Some mot =>
           mot' <- ppTyp false false mot ;;
-               ret (TkAt ++ TkSpace ++ TkOpenPar ++ mot' ++ TkClosePar ++ TkSpace)
+               ret (TkAt ++ TkOpenPar ++ mot' ++ TkClosePar ++ TkSpace)
         end in
     t' <- ppTerm false false t ;;
     mot' <- printMotive mot ;;
     let prime := if b then "" else "'" in
     brchs' <- list_m (map printBranch brchs) ;;
-               ret (TkMu ++ prime ++ TkSpace ++ mot' ++ t' ++ TkSpace ++ TkOpenCBrac
+               ret (TkMu ++ prime ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac
                          ++ TkCR ++ (string_of_list id brchs' 1)
               ++ TkCR ++ TkSpace ++ TkCloseCBrac)
+  | TDelta t =>
+    t' <- ppTerm false false t ;;
+    ret (TkDelta ++ TkSpace ++ TkDash ++ TkSpace ++ TkOpenPar
+                 ++ TkSpace ++ t' ++ TkClosePar)
+  | TBeta => ret TkBeta
   end.
 
 Definition runPpKind (ki: Kind) (Γ : type_ctx) :=
