@@ -2,7 +2,7 @@
 
 # Modify here to add new test cases
 declare -a TESTCASES=("nat" "list" "option" "vector" "le" "asgn" "refl1" "lnil"
-"lcons" "nileqnil")
+"lcons" "nileqnil" "zeroneqS")
 
 # Uncomment this line to see each command being run
 # set -o xtrace

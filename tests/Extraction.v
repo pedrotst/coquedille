@@ -30,6 +30,10 @@ Extract Constant TkAll     => "['∀']".
 Extract Constant TkTDot    => "['·']".
 Extract Constant TkULam    => "['Λ']".
 Extract Constant TkLam     => "['λ']".
+Extract Constant TkMu      => "['μ']".
+Extract Constant TkDelta   => "['δ']".
+Extract Constant TkBeta    => "['β']".
+Extract Constant TkEq      => "['≃']".
 
 Extract Inductive ascii => "Prelude.Char"
   [ "(\b0 b1 b2 b3 b4 b5 b6 b7 -> Data.Char.chr ( (if b0 then Data.Bits.shiftL 1 0 else 0) Prelude.+ (if b1 then Data.Bits.shiftL 1 1 else 0) Prelude.+ (if b2 then Data.Bits.shiftL 1 2 else 0) Prelude.+ (if b3 then Data.Bits.shiftL 1 3 else 0) Prelude.+ (if b4 then Data.Bits.shiftL 1 4 else 0) Prelude.+ (if b5 then Data.Bits.shiftL 1 5 else 0) Prelude.+ (if b6 then Data.Bits.shiftL 1 6 else 0) Prelude.+ (if b7 then Data.Bits.shiftL 1 7 else 0)))" ]
@@ -72,8 +76,9 @@ Proof.
 Qed.
 
 Quote Recursively Definition nileqnil_syntax := nileqnil.
+Quote Recursively Definition zeroneqS_syntax := O_S.
 
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq
            nat_syntax list_syntax option_syntax vector_syntax le_syntax
-           asgn_syntax refl1_syntax lnil_syntax lcons_syntax nileqnil_syntax.
+           asgn_syntax refl1_syntax lnil_syntax lcons_syntax nileqnil_syntax zeroneqS_syntax.
