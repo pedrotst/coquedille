@@ -105,7 +105,7 @@ Lemma vector_0_nil {A} :
 Proof.
  destruct v; intro.
  - reflexivity.
- - inversion H.
+ - discriminate.
 Qed.
 
 Lemma OS' : forall n, 0 <> S n.
@@ -113,27 +113,26 @@ Proof.
   discriminate.
 Defined.
 
+Quote Recursively Definition False_syntax := False_ind.
+Eval compute in (pretty (denoteCoq False_syntax)).
+
 Quote Recursively Definition OS_syntax := O_S.
 Eval compute in ((denoteCoq OS_syntax)).
 Eval compute in (pretty (denoteCoq OS_syntax)).
 
 Quote Recursively Definition v0nil_syntax := vector_0_nil.
+Eval compute in ((denoteCoq v0nil_syntax)).
+Eval compute in (pretty (denoteCoq v0nil_syntax)).
 
-Inductive foo' : nat -> Prop :=
-| bar1 : foo' 0
-| bar2 : foo' 1.
+Definition t_isnil {A n} (v: t A n) : bool :=
+match v with
+| nil => true
+| cons v' n' t => false
+end.
 
-Lemma asodf : foo' 20 -> False.
-Proof.
-  intro H.
-  inversion H.
-Defined.
-
-Lemma asdfasdf : bool = nat -> False.
-Proof.
-  intros.
-  discriminate.
-  inversion H.
+Quote Recursively Definition isnil_syntax := t_isnil.
+Eval compute in ((denoteCoq isnil_syntax)).
+Eval compute in (pretty (denoteCoq isnil_syntax)).
 
 Definition vector_0_nil' :=
 fun (A : Type) (n : nat) (v : t A n) =>
@@ -150,8 +149,6 @@ match v with
     False_ind (cons A h n0 v0 ~= nil A) H0
 end.
 
-Eval compute in ((denoteCoq v0nil_syntax)).
-Eval compute in (pretty (denoteCoq v0nil_syntax)).
 
 
 Definition case0' {A}

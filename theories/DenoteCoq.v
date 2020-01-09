@@ -78,12 +78,17 @@ Section monadic.
   | Some y => ret y
   end.
 
+  (* TODO: Implement a smarter technique to deal with name desambiguation *)
+  (* The whole problem comes down to the fact that metacoq can clash binder names *)
+  (* with datatypes. (Check the example t_isnil without this _ hack) *)
+  (* My idea to solve this more elegantly is to put the full name in the env *)
+  (* And perform lookup on kername_to_qualid *)
   Definition kername_to_qualid (s: string): string :=
   match index 0 "." (revStr s) with
   | None => s
   | Some n =>
     let s_len := String.length s in
-    substring (s_len - n) s_len s
+    append (substring (s_len - n) s_len s) "_"
   end.
 
   Fixpoint isKind (t: term): bool :=
@@ -289,7 +294,7 @@ Section monadic.
                 (Ced.TyLam
                    Ced.Anon
                    (Ced.TyApp
-                      (Ced.TyVar "eq")
+                      (Ced.TyVar "eq_")
                       [inl eqty ;
                        inr y;
                        inr (Ced.TVar "x")])
@@ -444,11 +449,12 @@ Section monadic.
   end.
 
 
-  Definition denoteInductive mbody : m Ced.Cmd :=
+  Definition denoteInductive n mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
-  let name := ind_name body in
-  if String.eqb name "False"
-  then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
+  (* let name := ind_name body in *)
+  let name := kername_to_qualid n in
+  if String.eqb name "False_"
+  then ret (Ced.CmdAssgn (Ced.AssgnType "False_" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
     let ctors := ind_ctors body in
     let param_l := rev (ind_params mbody) in
@@ -464,13 +470,13 @@ Section monadic.
                 (Some (Ced.TyAll
                          (Ced.Named "P")
                          Ced.KdStar
-                         (Ced.TyPi Ced.Anon (Ced.TyVar "False")
+                         (Ced.TyPi Ced.Anon (Ced.TyVar "False_")
                                    (Ced.TyVar "P"))))
                 (Ced.TLamK (Ced.Named "P")
                            Ced.KdStar
                            (Ced.TLam (Ced.Named "f")
                                      false
-                                     (Ced.TyVar "False")
+                                     (Ced.TyVar "False_")
                                      (Ced.TApp (Ced.TVar "f")
                                                [inl (Ced.TyVar "P")]))).
 
@@ -481,7 +487,7 @@ Section monadic.
     ps <- denoteGenv es';;
     match e with
     | InductiveDecl kern mbody =>
-      p <- denoteInductive mbody ;;
+      p <- denoteInductive kern mbody ;;
       ret (p :: ps)
     | ConstantDecl kern cbody =>
       if (String.eqb kern "Coq.Init.Logic.False_ind")
