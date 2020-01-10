@@ -140,10 +140,9 @@ Definition case0' {A}
           (v : t A 0)
  : P v.
 Proof.
- eapply eq_rect.
+ eapply JMeq_rect.
  - apply H.
- - apply JMeq_eq.
-   symmetry.
+ - symmetry.
    eapply vector_0_nil.
    reflexivity.
 Defined.
@@ -153,20 +152,26 @@ Eval compute in ((denoteCoq case0'_syntax)).
 Eval compute in (pretty (denoteCoq case0'_syntax)).
 
 
+Lemma eq_vnil {A} : forall x y : Vector.t A 0, x = y.
+Proof.
+    intros.
+    pattern y.
+    pattern x0.
+    repeat apply case0'.
+    reflexivity.
+Qed.
+
+Quote Recursively Definition eqvnil_syntax := eq_vnil.
+Eval compute in ((denoteCoq eqvnil_syntax)).
+Eval compute in (pretty (denoteCoq eqvnil_syntax)).
+
+
 Lemma Vector_nil_neq_List_nil {A} (a : A):
   ~ (@nil A ~= @Datatypes.nil A).
 Proof.
   intro H.
   inversion H.
   clear H0.
-  assert (forall x y : Vector.t A 0, x = y). {
-    clear.
-    intros.
-    pattern y.
-    pattern x0.
-    repeat apply case0'.
-    reflexivity.
-  }
   rewrite H1 in H0.
   pose proof (H0 (@Datatypes.nil A) (Datatypes.cons a Datatypes.nil)).
   discriminate.

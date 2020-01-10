@@ -43,6 +43,7 @@ Module Ced.
   | TLetTy (_: Name) (k: Kind) (ty: Typ) (body: Term)
   | TMu (is_rec: bool) (_: Term) (_: option Typ) (branches: list (Term * Term))
   | TDelta (_ : Term)
+  | TRho (lhs rhs : Term)
   | TBeta
   .
 

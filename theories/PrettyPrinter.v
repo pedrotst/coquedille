@@ -42,6 +42,7 @@ Definition TkULam      := "Λ".
 Definition TkMu        := "μ".
 Definition TkDelta     := "δ".
 Definition TkBeta      := "β".
+Definition TkRho       := "ρ".
 Definition TkEq        := "≃".
 Definition TkAt        := "@".
 Definition TkAssgn     := "=".
@@ -315,6 +316,10 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
     t' <- ppTerm false false t ;;
     ret (TkDelta ++ TkSpace ++ TkDash ++ TkSpace ++ TkOpenPar
                  ++ TkSpace ++ t' ++ TkClosePar)
+  | TRho t1 t2 =>
+    lhs <- ppTerm false false t1 ;;
+    rhs <- ppTerm false false t2 ;;
+    ret (TkRho ++ TkSpace ++ lhs ++ TkSpace ++ TkDash ++ TkSpace ++ rhs)
   | TBeta => ret TkBeta
   end.
 

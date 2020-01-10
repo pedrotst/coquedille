@@ -514,6 +514,108 @@ Section monadic.
                                      (Ced.TApp (Ced.TVar "f")
                                                [inl (Ced.TyVar "P")]))).
 
+  (* JMeq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A .
+JMeq_ ·A x ·A y ➔ P y *)
+  (* = Λ A . λ x . Λ P . λ p . λ y . λ j . *)
+  (* μ' j @(λ A1 : ★ . λ y1 : A1 . λ _ : JMeq_ ·A x ·A1 y1 . P y){ *)
+  (* | JMeq_refl ➔ [H : { y ≃ x } = μ' j { JMeq_refl ➔ β } ] *)
+  (* - ρ H - p *)
+  (* }. *)
+
+  Definition JMeq_rect_term : Ced.Assgn :=
+           (Ced.AssgnTerm "JMeq_rect"
+              (Some
+                 (Ced.TyAll (Ced.Named "A") Ced.KdStar
+                    (Ced.TyPi (Ced.Named "x")
+                       (Ced.TyVar "A")
+                       (Ced.TyAll (Ced.Named "P")
+                          (Ced.KdAll Ced.Anon
+                             (inr (Ced.TyVar "A"))
+                             Ced.KdStar)
+                          (Ced.TyPi Ced.Anon
+                             (Ced.TyApp
+                                (Ced.TyVar "P")
+                                [inl (Ced.TyVar "x")])
+                             (Ced.TyPi
+                                (Ced.Named "y")
+                                (Ced.TyVar "A")
+                                (Ced.TyPi
+                                   (Ced.Anon)
+                                   (Ced.TyApp
+                                      (Ced.TyVar "JMeq")
+                                      [
+                                      inl (Ced.TyVar "A");
+                                      inl (Ced.TyVar "x");
+                                      inl (Ced.TyVar "A");
+                                      inl (Ced.TyVar "y")])
+                                   (Ced.TyApp
+                                      (Ced.TyVar "P")
+                                      [inl (Ced.TyVar "y")]
+                                   )
+              )))))))
+              (Ced.TLamK (Ced.Named "A") Ced.KdStar
+                 (Ced.TLam (Ced.Named "x") false
+                    (Ced.TyVar "A")
+                    (Ced.TLamK (Ced.Named "P")
+                       (Ced.KdAll Ced.Anon
+                          (inr (Ced.TyVar "A")) Ced.KdStar)
+                       (Ced.TLam (Ced.Named "p") false
+                          (Ced.TyApp (Ced.TyVar "P")
+                             [inl (Ced.TyVar "x")])
+                          (Ced.TLam (Ced.Named "y") false
+                             (Ced.TyVar "A")
+                             (Ced.TLam
+                                (Ced.Named "H") false
+                                (Ced.TyApp
+                                   (Ced.TyVar "JMeq")
+                                   [inl (Ced.TyVar "A");
+                                   inl (Ced.TyVar "x");
+                                   inl (Ced.TyVar "A");
+                                   inl (Ced.TyVar "y")])
+                                (Ced.TMu
+                                   false
+                                   (Ced.TVar "H")
+                                   (Some (Ced.TyLamK
+                                            (Ced.Named "A1")
+                                            Ced.KdStar
+                                            (Ced.TyLam
+                                               (Ced.Named "y1")
+                                               (Ced.TyVar "A1")
+                                               (Ced.TyLam
+                                                  Ced.Anon
+                                                  (Ced.TyApp
+                                                     (Ced.TyVar "JMeq")
+                                                     [inl (Ced.TyVar "A");
+                                                      inl (Ced.TyVar "x");
+                                                      inl (Ced.TyVar "A1");
+                                                      inl (Ced.TyVar "y1")
+                                                  ])
+                                                  (Ced.TyApp
+                                                     (Ced.TyVar "P")
+                                                     [inl (Ced.TyVar "y")])
+                                            ))))
+                                   [(Ced.TVar "JMeq_refl",
+                                     Ced.TLetTm
+                                       (Ced.Named "H")
+                                       false
+                                       (Ced.TyEq
+                                          (Ced.TVar "y")
+                                          (Ced.TVar "x"))
+                                       (Ced.TMu
+                                          false
+                                          (Ced.TVar "H")
+                                          None
+                                          [(Ced.TVar "JMeq_refl",
+                                            Ced.TBeta
+                                          )]
+                                       )
+                                       (Ced.TRho
+                                          (Ced.TVar "H")
+                                          (Ced.TVar "p")
+                                       )
+                                )])
+           ))))))).
+
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with
   | nil => ret nil
@@ -524,8 +626,17 @@ Section monadic.
       p <- denoteInductive mbody ;;
       ret (p :: ps)
     | ConstantDecl kern cbody =>
-      if (String.eqb kern "Coq.Init.Logic.False_ind")
+      if (String.eqb kern
+                     "Coq.Init.Logic.False_ind")
       then ret ((Ced.CmdAssgn False_ind_term) :: ps)
+      else
+      if (String.eqb kern "Coq.Logic.JMeq.JMeq_rect")
+      then ret ((Ced.CmdAssgn JMeq_rect_term) :: ps)
+      else
+        (* Ignore JMeq_eq because it is an axiom *)
+        (* TODO: Find better ways to deal with axioms *)
+      if (String.eqb kern "Coq.Logic.JMeq.JMeq_eq")
+      then ret ps
       else
       bdy <- option_m (cst_body cbody) ("Constant " ++ kern ++ " does not have a body defined") ;;
       let name := kername_to_qualid kern in
