@@ -28,11 +28,6 @@ Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fma
 
 Definition ctx := list Ced.Var.
 
-Definition denoteName (n: name): Ced.Name :=
-match n with
-| nAnon => Ced.Anon
-| nNamed c => Ced.Named c
-end.
 
 Fixpoint string_of_list_ascii (s : list ascii) : string
   := match s with
@@ -62,6 +57,17 @@ Section monadic.
   Context {Reader_m: MonadReader (global_env * ctx) m}.
   Context {Either_m: MonadExc string m}.
 
+  Definition denoteName (n: name): Ced.Name :=
+  match n with
+  | nAnon => Ced.Anon
+  | nNamed c => Ced.Named c
+  end.
+
+  Definition getName (n: Ced.Name): Ced.Var :=
+  match n with
+  | Ced.Anon => "_"
+  | Ced.Named c => c
+  end.
 
   Fixpoint list_m {A} {m': Type -> Type} `{Monad m'} (l : list (m' A)) : m' (list A) :=
   match l with
@@ -88,7 +94,7 @@ Section monadic.
   | None => s
   | Some n =>
     let s_len := String.length s in
-    append (substring (s_len - n) s_len s) "_"
+    substring (s_len - n) s_len s
   end.
 
   Fixpoint isKind (t: term): bool :=
@@ -122,8 +128,38 @@ Section monadic.
    | _ => ret false
    end.
 
-  Definition localDenote {A} (x: name) : m A -> m A :=
-  local (fun '(genv, Γ) => (genv, (get_ident x) :: Γ)).
+  Fixpoint decl_exists (id : ident) (decls : global_env) : bool :=
+  match decls with
+  | [] => false
+  | ConstantDecl kn d :: tl =>
+      match string_compare (kername_to_qualid kn) id with
+      | Eq => true
+      | _ => decl_exists id tl
+      end
+  | InductiveDecl kn d :: tl =>
+      match string_compare (kername_to_qualid kn) id with
+      | Eq => true
+      | _ => decl_exists id tl
+      end
+  end.
+
+  Definition fresh (x: ident) : m ident :=
+  '(genv, _) <- ask ;;
+  if (decl_exists x genv)
+  (* TODO: Implement a smarter / nicer fresh generator *)
+  then ret (append x "'")
+  else ret x.
+
+  Definition localDenote {A} (x: name) (r: m A): m (A * Ced.Name):=
+  match x with
+  | nAnon =>
+    r' <- local (fun '(genv, Γ) => (genv, "_" :: Γ)) r ;;
+    ret (r', Ced.Anon)
+  | nNamed n =>
+    x' <- fresh n ;;
+    r' <- local (fun '(genv, Γ) => (genv, x' :: Γ)) r ;;
+    ret (r' , Ced.Named x')
+  end.
 
   Fixpoint take_args' (acc: list (Ced.Typ + Ced.Term)) (n : nat) (t: term)
     : m (list (Ced.Typ + Ced.Term)) :=
@@ -132,10 +168,11 @@ Section monadic.
   | S n' =>
     match t with
     | tLambda x ty t' =>
+      x' <- fresh (get_ident x) ;;
       b <- isType ty ;;
       if b
-      then take_args' (inl (Ced.TyVar (get_ident x)) :: acc) n' t'
-      else take_args' (inr (Ced.TVar (get_ident x)) :: acc) n' t'
+      then take_args' (inl (Ced.TyVar x') :: acc) n' t'
+      else take_args' (inr (Ced.TVar x') :: acc) n' t'
     | _ => ret acc
     end
   end.
@@ -294,7 +331,7 @@ Section monadic.
                 (Ced.TyLam
                    Ced.Anon
                    (Ced.TyApp
-                      (Ced.TyVar "eq_")
+                      (Ced.TyVar "eq")
                       [inl eqty ;
                        inr y;
                        inr (Ced.TVar "x")])
@@ -311,8 +348,8 @@ Section monadic.
     k1 <- (if isKind t1
          then fmap inl (denoteKind t1)
          else fmap inr (denoteType t1)) ;;
-    k2 <-  localDenote x (denoteKind t2) ;;
-    ret (Ced.KdAll (denoteName x) k1 k2)
+    '(k2, x') <-  localDenote x (denoteKind t2) ;;
+    ret (Ced.KdAll x' k1 k2)
   | _ => raise "Ill-formed kind"
   end
   with denoteType (t: term): m Ced.Typ :=
@@ -322,14 +359,14 @@ Section monadic.
      v <- option_m (nth_error Γ n) ("ty tRel " ++ utils.string_of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
-    t2' <- localDenote x (denoteType t2) ;;
+    '(t2', x') <- localDenote x (denoteType t2) ;;
     if isKind t1
     then
       k <- denoteKind t1 ;;
-      ret (Ced.TyAll (denoteName x) k t2')
+      ret (Ced.TyAll x' k t2')
     else
       t1' <- denoteType t1 ;;
-      ret (Ced.TyPi (denoteName x) t1' t2')
+      ret (Ced.TyPi x' t1' t2')
   | tApp t ts =>
     t' <- denoteType t ;;
        let denApp (t: term) :=
@@ -341,12 +378,12 @@ Section monadic.
     ts' <- list_m (map (fun t => denApp t) ts) ;;
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
-    t'  <- localDenote x (denoteType t) ;;
+    '(t', x') <- localDenote x (denoteType t) ;;
     if isKind kty
     then k <- denoteKind kty ;;
-         ret (Ced.TyLamK (denoteName x) k t')
+         ret (Ced.TyLamK x' k t')
     else ty <- denoteType kty ;;
-         ret (Ced.TyLam (denoteName x) ty t')
+         ret (Ced.TyLam x' ty t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
@@ -383,13 +420,13 @@ Section monadic.
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
   | tLambda x kty t =>
-    t' <- localDenote x ⟦ t ⟧ ;;
+    '(t', x') <- localDenote x ⟦ t ⟧ ;;
     if isKind kty
     then k <- denoteKind kty ;;
-         ret (Ced.TLamK (denoteName x) k t')
+         ret (Ced.TLamK x' k t')
     else ty <- denoteType kty ;;
-         ret (Ced.TLam (denoteName x) false ty t')
-  | tLetIn v t' kty bdy =>
+         ret (Ced.TLam x' false ty t')
+  | tLetIn x t' kty bdy =>
     if is_delta t
     then
       t'' <- denoteTerm t' ;;
@@ -399,17 +436,14 @@ Section monadic.
       | _ => raise "something went wrong translating delta"
       end
     else
-
-
-      let v' := denoteName v in
-      bdy' <- localDenote v ⟦ bdy ⟧ ;;
+      '(bdy', x') <- localDenote x ⟦ bdy ⟧ ;;
       if isKind kty
       then k <- denoteKind kty ;;
            t'' <- denoteType t' ;;
-           ret (Ced.TLetTy v' k t'' bdy')
+           ret (Ced.TLetTy x' k t'' bdy')
       else ty <- denoteType kty ;;
            t'' <- denoteTerm t' ;;
-           ret (Ced.TLetTm v' false ty t'' bdy')
+           ret (Ced.TLetTm x' false ty t'' bdy')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
   | tFix _ _ => raise "tFix not implemented yet"
@@ -444,17 +478,17 @@ Section monadic.
     let x := decl_name p in
     let t := decl_type p in
     tk <- (if isKind t then inj1M (denoteKind t) else inj2M (denoteType t)) ;;
-    ls <- localDenote x (denoteParams ps) ;;
-    ret ((get_ident x, tk) :: ls)
+    '(ls, x') <- localDenote x (denoteParams ps) ;;
+    ret ((getName x', tk) :: ls)
   end.
 
 
-  Definition denoteInductive n mbody : m Ced.Cmd :=
+  Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
-  (* let name := ind_name body in *)
-  let name := kername_to_qualid n in
-  if String.eqb name "False_"
-  then ret (Ced.CmdAssgn (Ced.AssgnType "False_" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
+  let name := ind_name body in
+  (* let name := kername_to_qualid n in *)
+  if String.eqb name "False"
+  then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
     let ctors := ind_ctors body in
     let param_l := rev (ind_params mbody) in
@@ -470,13 +504,13 @@ Section monadic.
                 (Some (Ced.TyAll
                          (Ced.Named "P")
                          Ced.KdStar
-                         (Ced.TyPi Ced.Anon (Ced.TyVar "False_")
+                         (Ced.TyPi Ced.Anon (Ced.TyVar "False")
                                    (Ced.TyVar "P"))))
                 (Ced.TLamK (Ced.Named "P")
                            Ced.KdStar
                            (Ced.TLam (Ced.Named "f")
                                      false
-                                     (Ced.TyVar "False_")
+                                     (Ced.TyVar "False")
                                      (Ced.TApp (Ced.TVar "f")
                                                [inl (Ced.TyVar "P")]))).
 
@@ -487,13 +521,13 @@ Section monadic.
     ps <- denoteGenv es';;
     match e with
     | InductiveDecl kern mbody =>
-      p <- denoteInductive kern mbody ;;
+      p <- denoteInductive mbody ;;
       ret (p :: ps)
     | ConstantDecl kern cbody =>
       if (String.eqb kern "Coq.Init.Logic.False_ind")
       then ret ((Ced.CmdAssgn False_ind_term) :: ps)
       else
-      bdy <- option_m (cst_body cbody) "Constant without a body" ;;
+      bdy <- option_m (cst_body cbody) ("Constant " ++ kern ++ " does not have a body defined") ;;
       let name := kername_to_qualid kern in
       if isKind (cst_type cbody)
       then ty <- denoteType bdy ;;

@@ -134,23 +134,6 @@ Quote Recursively Definition isnil_syntax := t_isnil.
 Eval compute in ((denoteCoq isnil_syntax)).
 Eval compute in (pretty (denoteCoq isnil_syntax)).
 
-Definition vector_0_nil' :=
-fun (A : Type) (n : nat) (v : t A n) =>
-match v with
-| @nil _ => fun _ : 0 = 0 => JMeq_refl
-| @cons _ h n0 v0 =>
-    fun H : S n0 = 0 =>
-    let H0 : False :=
-      Logic.eq_ind (S n0)
-        (fun e : nat => match e with
-                        | 0 => False
-                        | S _ => True
-                        end) I 0 H in
-    False_ind (cons A h n0 v0 ~= nil A) H0
-end.
-
-
-
 Definition case0' {A}
           (P : t A 0 -> Type)
           (H : P (nil A))
@@ -159,11 +142,16 @@ Definition case0' {A}
 Proof.
  eapply eq_rect.
  - apply H.
- - eapply JMeq_eq.
+ - apply JMeq_eq.
    symmetry.
    eapply vector_0_nil.
    reflexivity.
 Defined.
+
+Quote Recursively Definition case0'_syntax := case0'.
+Eval compute in ((denoteCoq case0'_syntax)).
+Eval compute in (pretty (denoteCoq case0'_syntax)).
+
 
 Lemma Vector_nil_neq_List_nil {A} (a : A):
   ~ (@nil A ~= @Datatypes.nil A).
@@ -184,12 +172,16 @@ Proof.
   discriminate.
 Qed.
 
+
+Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
+Eval compute in (pretty (denoteCoq nilvenil_syntax)).
+
 Definition zzzz := (fun x: nat -> nat => x) (fun x: nat => x).
 
-Quote Recursively Definition False_syntax := False.
-Eval compute in (pretty (denoteCoq False_syntax)).
-Quote Recursively Definition True_syntax := True.
-Eval compute in (pretty (denoteCoq True_syntax)).
+(* Quote Recursively Definition False_syntax := False. *)
+(* Eval compute in (pretty (denoteCoq False_syntax)). *)
+(* Quote Recursively Definition True_syntax := True. *)
+(* Eval compute in (pretty (denoteCoq True_syntax)). *)
 
 Definition tst_parens := (nil).
 
@@ -224,7 +216,7 @@ Eval compute in (pretty (denoteCoq IsSucc_syntax)).
   (* | tCase : inductive * nat -> *)
             (* term -> term -> list (nat * term) -> term *)
 
-Quote Recursively Definition falseind_syntax := False_ind.
+(* Quote Recursively Definition falseind_syntax := False_ind. *)
 (* False_ind =  *)
 (* fun (P : Prop) (f : False) => match f return P with *)
 (*                               end *)
@@ -233,7 +225,7 @@ Quote Recursively Definition falseind_syntax := False_ind.
 (* Argument scopes are [type_scope _] *)
 
 
-Eval compute in (pretty (denoteCoq falseind_syntax)).
+(* Eval compute in (pretty (denoteCoq falseind_syntax)). *)
 
 Definition L : Type -> Type :=
 fun (A: Type) => forall (X: Type), (A -> X -> X) -> X -> X.
@@ -257,8 +249,6 @@ Eval compute in (pretty (denoteCoq Lnil_syntax)).
 Quote Recursively Definition Lcons_syntax := Lcons.
 Eval compute in (pretty (denoteCoq Lcons_syntax)).
 
-Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
-Eval compute in (pretty (denoteCoq nilvenil_syntax)).
 (* Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil. *)
 (* Eval compute in (pretty (denoteCoq plus_syntax)). *)
 
