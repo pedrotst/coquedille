@@ -111,7 +111,12 @@ Definition parens (b: bool) (s : string) :=
 Fixpoint getVarTyp (t: Typ): option Var :=
   match t with
   | TyVar v => Some v
-  | TyApp t _ => getVarTyp t
+  | TyApp t' _ => getVarTyp t'
+  | TyLam _ _ t'
+  | TyLamK _ _ t'
+  | TyPi _ _ t'
+  | TyAll _ _ t'
+  | TyAllT _ _ t' => getVarTyp t'
   | _ => None
   end.
 
@@ -119,6 +124,10 @@ Fixpoint getVarTerm (t: Term): option Var :=
   match t with
   | TVar v => Some v
   | TApp t' _ => getVarTerm t'
+  | TLam _ _ _ t'
+  | TLamK _ _ t'
+  | TLetTy _ _ _ t'
+  | TLetTm _ _ _ _ t' => getVarTerm t'
   | _ => None
   end.
 
