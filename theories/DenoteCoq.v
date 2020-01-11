@@ -125,6 +125,7 @@ Section monadic.
      cdecl <- option_m (lookup_constant kern genv) "Couldn't find cdecl body" ;;
      let cdecl_ty := (cst_type cdecl) in
      ret (isKind cdecl_ty)
+   | tApp t _ => isType t
    | _ => ret false
    end.
 
@@ -295,6 +296,9 @@ Section monadic.
   (* Next step is to build the delta term *)
   (* in order to do this it is necessary to denote part of the term *)
   (* to figure out the name of the variables building the equality *)
+  Definition defaultK : Ced.Kind := Ced.KdStar.
+  Definition defaultTy : Ced.Typ := Ced.TyVar "xx".
+  Definition defaultTer : Ced.Term := Ced.TVar "xx".
 
   Definition is_delta (t: term) : bool :=
   match t with
@@ -395,7 +399,8 @@ Section monadic.
   | tCast t _ _ => denoteType t
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
-  | tSort univ => raise "type tSort not implemented yet"
+  | tSort univ => ret defaultTy
+    (* raise "type tSort not implemented yet" *)
   end
 
   with denoteTerm (t: term): m Ced.Term :=
@@ -433,7 +438,10 @@ Section monadic.
       match t'' with
       | Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) =>
         ret (Ced.TDelta (eq_elim eq eqty x))
-      | _ => raise "something went wrong translating delta"
+      | Ced.TApp _ ([(inr eqty); (inr x); _; _; (inr y); (inr eq)]) =>
+        ret (Ced.TVar "got eqterm")
+      | _ => ret (Ced.TVar "delwrong")
+        (* raise "something went wrong translating delta" *)
       end
     else
       '(bdy', x') <- localDenote x ⟦ bdy ⟧ ;;

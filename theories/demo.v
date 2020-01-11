@@ -165,21 +165,26 @@ Quote Recursively Definition eqvnil_syntax := eq_vnil.
 Eval compute in ((denoteCoq eqvnil_syntax)).
 Eval compute in (pretty (denoteCoq eqvnil_syntax)).
 
-
+(* vnil <> vcons *)
 Lemma Vector_nil_neq_List_nil {A} (a : A):
   ~ (@nil A ~= @Datatypes.nil A).
 Proof.
   intro H.
-  inversion H.
-  clear H0.
-  rewrite H1 in H0.
+  pose proof (@eq_vnil A).
+  symmetry in H.
+  destruct H.
+  (* inversion H. *)
+  (* clear H0. *)
+  (* rewrite H1 in H0. *)
   pose proof (H0 (@Datatypes.nil A) (Datatypes.cons a Datatypes.nil)).
   discriminate.
 Qed.
 
 
+(* Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) => *)
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq nilvenil_syntax)).
+Eval compute in ((denoteCoq nilvenil_syntax)).
 
 Definition zzzz := (fun x: nat -> nat => x) (fun x: nat => x).
 
