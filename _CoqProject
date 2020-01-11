@@ -1,5 +1,6 @@
 -R theories Coquedille
 
 theories/Ast.v
+theories/Hardcoded.v
 theories/DenoteCoq.v
 theories/PrettyPrinter.v

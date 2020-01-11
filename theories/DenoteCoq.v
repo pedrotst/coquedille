@@ -22,6 +22,7 @@ Require Import MetaCoq.Template.BasicAst.
 Require Import MetaCoq.Template.utils.
 
 Require Import Coquedille.Ast.
+Require Import Coquedille.Hardcoded.
 
 Definition inj1M {A B mon} `{Monad mon} : mon A -> mon (sum A B) := fun m => fmap inl m.
 Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fmap inr m.
@@ -85,11 +86,6 @@ Section monadic.
   | Some y => ret y
   end.
 
-  (* TODO: Implement a smarter technique to deal with name desambiguation *)
-  (* The whole problem comes down to the fact that metacoq can clash binder names *)
-  (* with datatypes. (Check the example t_isnil without this _ hack) *)
-  (* My idea to solve this more elegantly is to put the full name in the env *)
-  (* And perform lookup on kername_to_qualid *)
   Definition kername_to_qualid (s: string): string :=
   match index 0 "." (revStr s) with
   | None => s
@@ -122,7 +118,6 @@ Section monadic.
      b2 <- isType t2 ;;
      ret (andb b1 b2)
    | tConst kern _ =>
-     (* let cdecl := lookup_constant kern genv in *)
      cdecl <- option_m (lookup_constant kern genv) "Couldn't find cdecl body" ;;
      let cdecl_ty := (cst_type cdecl) in
      ret (isKind cdecl_ty)
@@ -159,7 +154,6 @@ Section monadic.
   Definition fresh (x: ident) : m ident :=
   '(genv, Γ) <- ask ;;
   if (bound_var x Γ) || (decl_exists x genv)
-  (* if (decl_exists x genv) *)
   (* TODO: Implement a smarter / nicer fresh generator *)
   then ret (append x "'")
   else ret x.
@@ -214,7 +208,6 @@ Section monadic.
   Definition get_ctor_name : ident * term * nat -> ident :=
   fun x => fst (fst x).
 
-
   Fixpoint removeLambdas (n: nat) (t: Ced.Term) :=
   match n with
   | O => t
@@ -258,24 +251,6 @@ Section monadic.
   | _ => false
   end.
 
-  Definition eq_elim (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term :=
-  Ced.TMu false eq
-          (Some
-             (Ced.TyLam
-                (Ced.Named "x")
-                eqty
-                (Ced.TyLam
-                   Ced.Anon
-                   (Ced.TyApp
-                      (Ced.TyVar "eq")
-                      [inl eqty ;
-                       inr y;
-                       inr (Ced.TVar "x")])
-                   (Ced.TyEq y (Ced.TVar "x")))
-             )
-          )
-          [(Ced.TVar "eq_refl", Ced.TBeta)].
-
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -305,13 +280,6 @@ Section monadic.
       ret (Ced.TyPi x' t1' t2')
   | tApp t ts =>
     t' <- denoteType t ;;
-    (* let denApp (t: term) := *)
-        (* match t with *)
-        (* | tConstruct _ _ _ | tApp _ _ => *)
-                             (* inj2M (denoteTerm t) *)
-        (* | _ => inj1M (denoteType t) *)
-        (* end in *)
-    (* ts' <- list_m (map (fun t => denApp t) ts) ;; *)
     ts' <- list_m (map (fun e => b <- isType e ;;
                              if b
                              then fmap inl (denoteType e)
@@ -374,11 +342,8 @@ Section monadic.
       t'' <- denoteTerm t' ;;
       match t'' with
       | Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) =>
-        ret (Ced.TDelta (eq_elim eq eqty x))
-      | Ced.TApp _ ([(inr eqty); (inr x); _; _; (inr y); (inr eq)]) =>
-        ret (Ced.TVar "got eqterm")
+        ret (Ced.TDelta (eq_elim_term eq eqty x))
       | _ => ret (Ced.TVar "delwrong")
-        (* raise "something went wrong translating delta" *)
       end
     else
       '(bdy', x') <- localDenote x ⟦ bdy ⟧ ;;
@@ -428,11 +393,9 @@ Section monadic.
     ret ((getName x', tk) :: ls)
   end.
 
-
   Definition denoteInductive mbody : m Ced.Cmd :=
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
-  (* let name := kername_to_qualid n in *)
   if String.eqb name "False"
   then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
   else
@@ -444,115 +407,6 @@ Section monadic.
     ki <- local (fun '(genv, _) => (genv, nil)) (denoteKind tki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
-
-  Definition False_ind_term : Ced.Assgn :=
-  Ced.AssgnTerm "False_ind"
-                (Some (Ced.TyAll
-                         (Ced.Named "P")
-                         Ced.KdStar
-                         (Ced.TyPi Ced.Anon (Ced.TyVar "False")
-                                   (Ced.TyVar "P"))))
-                (Ced.TLamK (Ced.Named "P")
-                           Ced.KdStar
-                           (Ced.TLam (Ced.Named "f")
-                                     false
-                                     (Ced.TyVar "False")
-                                     (Ced.TApp (Ced.TVar "f")
-                                               [inl (Ced.TyVar "P")]))).
-
-  Definition JMeq_rect_term : Ced.Assgn :=
-           (Ced.AssgnTerm "JMeq_rect"
-              (Some
-                 (Ced.TyAll (Ced.Named "A") Ced.KdStar
-                    (Ced.TyPi (Ced.Named "x")
-                       (Ced.TyVar "A")
-                       (Ced.TyAll (Ced.Named "P")
-                          (Ced.KdAll Ced.Anon
-                             (inr (Ced.TyVar "A"))
-                             Ced.KdStar)
-                          (Ced.TyPi Ced.Anon
-                             (Ced.TyApp
-                                (Ced.TyVar "P")
-                                [inl (Ced.TyVar "x")])
-                             (Ced.TyPi
-                                (Ced.Named "y")
-                                (Ced.TyVar "A")
-                                (Ced.TyPi
-                                   (Ced.Anon)
-                                   (Ced.TyApp
-                                      (Ced.TyVar "JMeq")
-                                      [
-                                      inl (Ced.TyVar "A");
-                                      inl (Ced.TyVar "x");
-                                      inl (Ced.TyVar "A");
-                                      inl (Ced.TyVar "y")])
-                                   (Ced.TyApp
-                                      (Ced.TyVar "P")
-                                      [inl (Ced.TyVar "y")]
-                                   )
-              )))))))
-              (Ced.TLamK (Ced.Named "A") Ced.KdStar
-                 (Ced.TLam (Ced.Named "x") false
-                    (Ced.TyVar "A")
-                    (Ced.TLamK (Ced.Named "P")
-                       (Ced.KdAll Ced.Anon
-                          (inr (Ced.TyVar "A")) Ced.KdStar)
-                       (Ced.TLam (Ced.Named "p") false
-                          (Ced.TyApp (Ced.TyVar "P")
-                             [inl (Ced.TyVar "x")])
-                          (Ced.TLam (Ced.Named "y") false
-                             (Ced.TyVar "A")
-                             (Ced.TLam
-                                (Ced.Named "H") false
-                                (Ced.TyApp
-                                   (Ced.TyVar "JMeq")
-                                   [inl (Ced.TyVar "A");
-                                   inl (Ced.TyVar "x");
-                                   inl (Ced.TyVar "A");
-                                   inl (Ced.TyVar "y")])
-                                (Ced.TMu
-                                   false
-                                   (Ced.TVar "H")
-                                   (Some (Ced.TyLamK
-                                            (Ced.Named "A1")
-                                            Ced.KdStar
-                                            (Ced.TyLam
-                                               (Ced.Named "y1")
-                                               (Ced.TyVar "A1")
-                                               (Ced.TyLam
-                                                  Ced.Anon
-                                                  (Ced.TyApp
-                                                     (Ced.TyVar "JMeq")
-                                                     [inl (Ced.TyVar "A");
-                                                      inl (Ced.TyVar "x");
-                                                      inl (Ced.TyVar "A1");
-                                                      inl (Ced.TyVar "y1")
-                                                  ])
-                                                  (Ced.TyApp
-                                                     (Ced.TyVar "P")
-                                                     [inl (Ced.TyVar "y")])
-                                            ))))
-                                   [(Ced.TVar "JMeq_refl",
-                                     Ced.TLetTm
-                                       (Ced.Named "H")
-                                       false
-                                       (Ced.TyEq
-                                          (Ced.TVar "y")
-                                          (Ced.TVar "x"))
-                                       (Ced.TMu
-                                          false
-                                          (Ced.TVar "H")
-                                          None
-                                          [(Ced.TVar "JMeq_refl",
-                                            Ced.TBeta
-                                          )]
-                                       )
-                                       (Ced.TRho
-                                          (Ced.TVar "H")
-                                          (Ced.TVar "p")
-                                       )
-                                )])
-           ))))))).
 
   Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
   match es with
