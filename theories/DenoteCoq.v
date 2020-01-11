@@ -373,13 +373,18 @@ Section monadic.
       ret (Ced.TyPi x' t1' t2')
   | tApp t ts =>
     t' <- denoteType t ;;
-       let denApp (t: term) :=
-           match t with
-           | tConstruct _ _ _ | tApp _ _ =>
-                                inj2M (denoteTerm t)
-           | _ => inj1M (denoteType t)
-           end in
-    ts' <- list_m (map (fun t => denApp t) ts) ;;
+    (* let denApp (t: term) := *)
+        (* match t with *)
+        (* | tConstruct _ _ _ | tApp _ _ => *)
+                             (* inj2M (denoteTerm t) *)
+        (* | _ => inj1M (denoteType t) *)
+        (* end in *)
+    (* ts' <- list_m (map (fun t => denApp t) ts) ;; *)
+    ts' <- list_m (map (fun e => b <- isType e ;;
+                             if b
+                             then fmap inl (denoteType e)
+                             else fmap inr (denoteTerm e))
+                      ts) ;;
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
     '(t', x') <- localDenote x (denoteType t) ;;

@@ -193,7 +193,7 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
           t'' <- ppTerm false true t' ;;
           ret (d ++ t'')
         | inl t' =>
-          t'' <- ppTyp false false t' ;;
+          t'' <- ppTyp false true t' ;;
           ret (d ++ t'')
         end in
     ts2' <- list_m (map ppApp ts2) ;;
@@ -255,7 +255,7 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
           t'' <- ppTerm false true t' ;;
           ret (d ++ t'')
         | inl t' =>
-          t'' <- ppTyp false false t' ;;
+          t'' <- ppTyp false true t' ;;
           ret (d ++ t'')
         end in
     ts2' <- list_m (map ppApp ts2) ;;
