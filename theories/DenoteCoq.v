@@ -48,6 +48,7 @@ Section monadic.
   Open Scope monad_scope.
   Open Scope string_scope.
   Open Scope list_scope.
+  Open Scope bool_scope.
   Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
 
@@ -132,21 +133,33 @@ Section monadic.
   Fixpoint decl_exists (id : ident) (decls : global_env) : bool :=
   match decls with
   | [] => false
-  | ConstantDecl kn d :: tl =>
-      match string_compare (kername_to_qualid kn) id with
-      | Eq => true
-      | _ => decl_exists id tl
-      end
+  | ConstantDecl kn d :: tl => (String.eqb (kername_to_qualid kn) id) || decl_exists id tl
   | InductiveDecl kn d :: tl =>
-      match string_compare (kername_to_qualid kn) id with
-      | Eq => true
-      | _ => decl_exists id tl
-      end
+      if String.eqb (kername_to_qualid kn) id
+      then true
+      else
+        let fix exists_constr (l : list ((ident × term) × nat)) :=
+            match l with
+            | nil => false
+            | (c, _, _) :: tl => (String.eqb c id) || (exists_constr tl)
+            end in
+        let bdy := ind_bodies d in
+        match head bdy with
+        | None => decl_exists id tl
+        | Some b => exists_constr (ind_ctors b) || decl_exists id tl
+        end
+  end.
+
+  Fixpoint bound_var (x : ident) (Γ : ctx) : bool :=
+  match Γ with
+  | [] => false
+  | x' :: xs => (String.eqb x x') || (bound_var x xs)
   end.
 
   Definition fresh (x: ident) : m ident :=
-  '(genv, _) <- ask ;;
-  if (decl_exists x genv)
+  '(genv, Γ) <- ask ;;
+  if (bound_var x Γ) || (decl_exists x genv)
+  (* if (decl_exists x genv) *)
   (* TODO: Implement a smarter / nicer fresh generator *)
   then ret (append x "'")
   else ret x.
@@ -221,81 +234,6 @@ Section monadic.
   Fixpoint showList (ls : list string) : string :=
   "[ " ++ showList' ls ++ "]".
 
-(* (tLetIn (nNamed "H0"%string) *)
-(*         (tApp *)
-(*            (tConst *)
-(*               "Coq.Init.Logic.eq_ind"%string *)
-(*               []) *)
-(*            [tInd *)
-(*               {| *)
-(*                 inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                 inductive_ind := 0 |} []; *)
-(*             tConstruct *)
-(*               {| *)
-(*                 inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                 inductive_ind := 0 |} 0 []; *)
-(*             tLambda (nNamed "e"%string) *)
-(*                     (tInd *)
-(*                        {| *)
-(*                          inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                          inductive_ind := 0 |} []) *)
-(*                     (tCase *)
-(*                        ({| *)
-(*                            inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                            inductive_ind := 0 |}, 0) *)
-(*                        (tLambda  *)
-(*                           (nNamed "n"%string) *)
-(*                           (tInd *)
-(*                              {| *)
-(*                                inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                                inductive_ind := 0 |} []) *)
-(*                           (tSort *)
-(*                              (Universe.make'' *)
-(*                                 (Level.lProp, false) []))) *)
-(*                        (tRel 0) *)
-(*                        [(0, *)
-(*                          tInd *)
-(*                            {| *)
-(*                              inductive_mind := "Coq.Init.Logic.True"; *)
-(*                              inductive_ind := 0 |} []); *)
-(*                         (1, *)
-(*                          tLambda nAnon *)
-(*                                  (tInd *)
-(*                                     {| *)
-(*                                       inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                                       inductive_ind := 0 |} []) *)
-(*                                  (tInd *)
-(*                                     {| *)
-(*                                       inductive_mind := "Coq.Init.Logic.False"; *)
-(*                                       inductive_ind := 0 |} []))]); *)
-(*             tConstruct *)
-(*               {| *)
-(*                 inductive_mind := "Coq.Init.Logic.True"; *)
-(*                 inductive_ind := 0 |} 0 []; *)
-(*             tApp *)
-(*               (tConstruct *)
-(*                  {| *)
-(*                    inductive_mind := "Coq.Init.Datatypes.nat"; *)
-(*                    inductive_ind := 0 |} 1 []) *)
-(*               [tRel 1];  *)
-(*             tRel 0]) *)
-(*         (tInd *)
-(*            {| *)
-(*              inductive_mind := "Coq.Init.Logic.False"; *)
-(*              inductive_ind := 0 |} []) *)
-(*         (tApp *)
-(*            (tConst *)
-(*               "Coq.Init.Logic.False_ind"%string *)
-(*               []) *)
-(*            [tInd *)
-(*               {| *)
-(*                 inductive_mind := "Coq.Init.Logic.False"; *)
-(*                 inductive_ind := 0 |} []; *)
-(*             tRel 0])) *)
-
-  (* Next step is to build the delta term *)
-  (* in order to do this it is necessary to denote part of the term *)
-  (* to figure out the name of the variables building the equality *)
   Definition defaultK : Ced.Kind := Ced.KdStar.
   Definition defaultTy : Ced.Typ := Ced.TyVar "xx".
   Definition defaultTer : Ced.Term := Ced.TVar "xx".
@@ -320,12 +258,6 @@ Section monadic.
   | _ => false
   end.
 
-  (* | TMu (is_rec: bool) (_: Term) (_: option Typ)
-     (branches: list (Term * Term)) *)
-
-(* (μ' e @ (λ x : nat . λ _ : eq ·nat (S n) x . { S n ≃ x }) *)
-         (* { eq_refl ➔ β } ) *)
-  (* | TLam (_: Name) (erased: bool) (_: Typ) (_: Term) *)
   Definition eq_elim (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term :=
   Ced.TMu false eq
           (Some
@@ -467,11 +399,12 @@ Section monadic.
   | tCase (ind, npars) mot c brchs =>
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
+    mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
     ts' <- list_m (map (fun '(_, t) => denoteTerm t) brchs) ;;
     let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
-    ret (Ced.TMu false c' None (combine constrs trimmed_ts'))
+    ret (Ced.TMu false c' (Some mot') (combine constrs trimmed_ts'))
                  (* (combine constrs ts')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
@@ -508,7 +441,7 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
-    ki <- local (fun '(genv, _) => (genv, param_names)) (denoteKind tki) ;;
+    ki <- local (fun '(genv, _) => (genv, nil)) (denoteKind tki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
@@ -526,14 +459,6 @@ Section monadic.
                                      (Ced.TyVar "False")
                                      (Ced.TApp (Ced.TVar "f")
                                                [inl (Ced.TyVar "P")]))).
-
-  (* JMeq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A .
-JMeq_ ·A x ·A y ➔ P y *)
-  (* = Λ A . λ x . Λ P . λ p . λ y . λ j . *)
-  (* μ' j @(λ A1 : ★ . λ y1 : A1 . λ _ : JMeq_ ·A x ·A1 y1 . P y){ *)
-  (* | JMeq_refl ➔ [H : { y ≃ x } = μ' j { JMeq_refl ➔ β } ] *)
-  (* - ρ H - p *)
-  (* }. *)
 
   Definition JMeq_rect_term : Ced.Assgn :=
            (Ced.AssgnTerm "JMeq_rect"

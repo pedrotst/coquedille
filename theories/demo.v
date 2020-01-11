@@ -75,6 +75,7 @@ end.
 Quote Recursively Definition isVnil_syntax := isVnil.
 Eval compute in (pretty (denoteCoq isVnil_syntax)).
 
+
 (* Test a straightforward lemma *)
 Lemma exlemma : [1] = [1].
 Proof.
@@ -100,8 +101,8 @@ Eval compute in (pretty (denoteCoq jmeq_syntax)).
 Eval compute in ((denoteCoq jmeq_syntax)).
 
 Lemma vector_0_nil {A} :
- forall {n : nat} (v : t A n),
-   n = 0 -> JMeq v (@nil A).
+ forall {n : nat} (v : Vec A n),
+   n = 0 -> JMeq v (vnil A).
 Proof.
  destruct v; intro.
  - reflexivity.
@@ -135,9 +136,9 @@ Eval compute in ((denoteCoq isnil_syntax)).
 Eval compute in (pretty (denoteCoq isnil_syntax)).
 
 Definition case0' {A}
-          (P : t A 0 -> Type)
-          (H : P (nil A))
-          (v : t A 0)
+          (P : Vec A 0 -> Type)
+          (H : P (vnil A))
+          (v : Vec A 0)
  : P v.
 Proof.
  eapply JMeq_rect.
@@ -152,7 +153,7 @@ Eval compute in ((denoteCoq case0'_syntax)).
 Eval compute in (pretty (denoteCoq case0'_syntax)).
 
 
-Lemma eq_vnil {A} : forall x y : Vector.t A 0, x = y.
+Lemma eq_vnil {A} : forall x y : Vec A 0, x = y.
 Proof.
     intros.
     pattern y.
@@ -167,7 +168,7 @@ Eval compute in (pretty (denoteCoq eqvnil_syntax)).
 
 (* vnil <> vcons *)
 Lemma Vector_nil_neq_List_nil {A} (a : A):
-  ~ (@nil A ~= @Datatypes.nil A).
+  ~ (@vnil A ~= @Datatypes.nil A).
 Proof.
   intro H.
   pose proof (@eq_vnil A).
@@ -186,12 +187,10 @@ Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq nilvenil_syntax)).
 Eval compute in ((denoteCoq nilvenil_syntax)).
 
-Definition zzzz := (fun x: nat -> nat => x) (fun x: nat => x).
+Definition zzzz {A}: forall (z : A), A -> nat := fun (z: A) (_: A) => 1.
 
-(* Quote Recursively Definition False_syntax := False. *)
-(* Eval compute in (pretty (denoteCoq False_syntax)). *)
-(* Quote Recursively Definition True_syntax := True. *)
-(* Eval compute in (pretty (denoteCoq True_syntax)). *)
+Quote Recursively Definition zz_syntax := zzzz.
+Eval compute in (pretty (denoteCoq zz_syntax)).
 
 Definition tst_parens := (nil).
 
