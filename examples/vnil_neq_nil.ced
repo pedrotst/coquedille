@@ -52,20 +52,20 @@ eq_vnil : ∀ A : ★ . Π x : Vec ·A O . Π y : Vec ·A O . eq ·(Vec ·A O) x
 
 not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
 
-peq_eq : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ { x ≃ y }
-       = Λ A . λ x . λ y . λ eq . μ' eq { eq_refl ➔ β }.
-
-Vector_nil_neq_List_nil : ∀ A : ★ . Π a : A . not ·(JMeq ·(Vec ·A O) (vnil ·A)
-·(list ·A) (nil ·A)) = Λ A : ★ . λ a : A . λ H : JMeq ·(Vec ·A O) (vnil ·A)
-·(list ·A) (nil ·A) . [ H0 : Π x : Vec ·A O . Π y : Vec ·A O . eq ·(Vec ·A O) x
-y = eq_vnil ·A ] - [ H1 : JMeq ·(list ·A) (nil ·A) ·(Vec ·A O) (vnil ·A) =
-JMeq_sym ·(Vec ·A O) ·(list ·A) (vnil ·A) (nil ·A) H ] - (λ H' : JMeq ·(list ·A)
-(nil ·A) ·(Vec ·A O) (vnil ·A) . [ v : Vec ·A O = vnil ·A ] - [ T : ★ = Vec ·A O
-] - μ' H' @(λ B : ★ . λ x : B . λ _ : JMeq ·(list ·A) (nil ·A) ·B x . Π H0' : Π
-x' : B . Π y : B . eq ·B x' y . False) { | JMeq_refl ➔ λ H0' : Π x : list ·A . Π
-y : list ·A . eq ·(list ·A) x y . [ H' : eq ·(list ·A) (nil ·A) (cons ·A a (nil
-·A)) = H0' (nil ·A) (cons ·A a (nil ·A)) ] - δ - ( peq_eq (nil ·A) (cons ·A a (nil
-·A)) H') } H0) H1.
+Vector_nil_neq_List_nil : ∀ A : ★ . Π a : A . not ·(JMeq ·(Vec ·A O) (vnil ·A) ·(list ·A) (nil ·A))
+= Λ A : ★ . λ a : A . λ H : JMeq ·(Vec ·A O) (vnil ·A) ·(list ·A) (nil ·A) .
+[ H0 : Π x : Vec ·A O . Π y : Vec ·A O . eq ·(Vec ·A O) x y = eq_vnil ·A ]
+- [ H1 : JMeq ·(list ·A) (nil ·A) ·(Vec ·A O) (vnil ·A) = JMeq_sym ·(Vec ·A O) ·(list ·A) (vnil ·A) (nil ·A) H ]
+- (λ H' : JMeq ·(list ·A) (nil ·A) ·(Vec ·A O) (vnil ·A) .
+  [ v : Vec ·A O = vnil ·A ]
+  - [ T : ★ = Vec ·A O ]
+  - μ' H' @(λ B : ★ . λ x : B . λ _ : JMeq ·(list ·A) (nil ·A) ·B x . Π H0' : Π x' : B . Π y : B . eq ·B x' y . False) {
+  | JMeq_refl  ➔ λ H0' : Π x : list ·A . Π y : list ·A . eq ·(list ·A) x y .
+               [ H' : eq ·(list ·A) (nil ·A) (cons ·A a (nil ·A)) = H0' (nil ·A) (cons ·A a (nil ·A)) ]
+               - δ - ( μ' H' @(λ x : list ·A . λ _ : eq ·(list ·A) (nil ·A) x . { nil ·A ≃ x }) {
+                        | eq_refl ➔ β
+                        })
+    } H0) H1.
 
 JMeq_heq : ∀ A : ★ . ∀ B: ★ . Π x : A . Π y : B . JMeq ·A x ·B y ➔ { x ≃ y } = Λ A . Λ B . λ x . λ y . λ e . μ' e {
          | JMeq_refl ➔ β
