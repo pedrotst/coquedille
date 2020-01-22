@@ -1,0 +1,9 @@
+module contradiction.
+
+import tst.
+
+vnil_eq_nil : ∀ A : ★ . Π a : A . { vnil ·A ≃ nil ·A }
+   = Λ A . λ a . β.
+
+eq_jmeq : ∀ A : ★ . ∀ B : ★ . Π a : A . Π b : B . { a ≃ b } ➔ JMeq ·A a ·B b
+        = Λ A . Λ B . λ a . λ b . λ eq . ρ<1> eq - JMeq_refl b.

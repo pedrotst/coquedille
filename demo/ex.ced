@@ -1,0 +1,9 @@
+module ex.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data Vec (A : ★) : nat ➔ ★ =
+  | vnil : Vec O
+  | vcons : A ➔ Π n : nat . Vec n ➔ Vec (S n).

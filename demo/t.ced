@@ -1,0 +1,61 @@
+module t.
+
+-- import stdlib.
+
+-- data eq_ (A : ★) (x : A) : A ➔ ★ =
+--   | eq_refl : eq_ x.
+
+-- data JMeq (A : ★) (x : A) : Π B : ★ . B ➔ ★ =
+--   | JMeq_refl : JMeq ·A x.
+
+-- JMeq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . JMeq ·A x ·A y ➔ P y
+         -- = Λ A . λ x . Λ P . λ p . λ y . λ j . μ' j @(λ A1 : ★ . λ y1 : A1 . λ _ : JMeq ·A x ·A1 y1 . P y){
+         -- | JMeq_refl ➔ [H : { y ≃ x } = μ' j { JMeq_refl ➔ β } ] - ρ H - p
+         -- }.
+
+-- JMeq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . JMeq ·A x ·A y ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ p : P x . λ y : A . λ H : JMeq ·A x ·A y . μ' H @(λ A1 : ★ . λ y1 : A1 . λ _ : JMeq ·A x ·A1 y1 . P y) {
+--   | JMeq_refl ➔ [ H : { y ≃ x } = μ' H {
+--   | JMeq_refl ➔ β
+
+--  } ] - ρ H - p
+--  }.
+
+-- JMeq_heq : ∀ A : ★ . ∀ B : ★ . Π a : A . Π b : B . JMeq ·A a ·B b ➔ { a ≃ b }
+         -- = Λ A . Λ B . λ a . λ b . λ j . μ' j { JMeq_refl ➔ β }.
+
+-- JMeq_nheq : ∀ A : ★ . ∀ B : ★ . Π a : A . Π b : B . Not ·(JMeq ·A a ·B b) ➔ Not ·({ a ≃ b })
+         -- = Λ A . Λ B . λ a . λ b . λ j . ●.
+
+-- eq_peq : ∀ A : ★ . Π x : A . Π y : A . { x ≃ y } ➔ eq ·A x y
+       -- = Λ A . λ x . λ y . λ eq . ρ eq - eq_refl y.
+
+-- peq_eq : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ { x ≃ y }
+       -- = Λ A . λ x . λ y . λ eq . μ' eq { eq_refl ➔ β }.
+
+-- JMeq_eq : ∀ A : ★ . ∀ B : ★ . Π x : A . Π y : B . JMeq ·A x ·B y ➔ eq ·A x y
+       -- = ●.
+
+
+-- JMeq_cast : ∀ A : ★ . ∀ B : ★ . Π x : A . Π y : B . JMeq ·A x ·B y ➔ Cast ·A ·B
+       -- = Λ A . Λ B . λ x . λ y . λ j . [ λ z . z, β ].
+
+-- eq_cast_JMeq : ∀ A : ★ . ∀ B : ★ . Π x : A . Π y : B . Π f : Cast ·A ·B . eq_ ·B (cast -f x) y ➔ JMeq ·A x ·B y
+--              = Λ A . Λ B . λ x . λ y . λ c . λ e . ●.
+
+-- constr_inj : ∀ A : ★ . Π x : A . Π y : A . { cons ·A x nil ≃ cons ·A y nil } ➔ { x ≃ y }
+--            = Λ A . λ x . λ y . λ eq . ●.
+
+-- f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq_ ·A x y ➔ eq_ ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq_ ·A x y . μ' H @(λ y' : A . λ _ : eq_ ·A x y' . eq_ ·B (f x) (f y')) {
+--   | eq_refl  ➔ eq_refl ·B (f x)
+--  }.
+
+
+-- _ : Not ·({ succ zero ≃ zero }) = λ eq . δ - eq.
+
+data x : ★ =
+| zz : x
+| zx : x.
+
+False : ★ = ∀ A : ★ . A.
+
+_ : ({ zz ≃ zx }) ➔ False = λ eq . δ - eq.

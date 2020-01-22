@@ -1,0 +1,33 @@
+module injVec.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data Vec (A : ★) : nat ➔ ★ =
+  | vnil : Vec O
+  | vcons : A ➔ Π n : nat . Vec n ➔ Vec (S n).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . μ' H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl  ➔ eq_refl ·B (f x)
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . μ' e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl  ➔ f
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . μ' H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl  ➔ eq_refl ·A x
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+vcons_inj : ∀ A : ★ . Π z : A . Π y : A . eq ·(Vec ·A (S O)) (vcons ·A z O (vnil ·A)) (vcons ·A y O (vnil ·A)) ➔ eq ·A z y = Λ A : ★ . λ z : A . λ y : A . λ H : eq ·(Vec ·A (S O)) (vcons ·A z O (vnil ·A)) (vcons ·A y O (vnil ·A)) . [ H0 : eq ·(Vec ·A (S O)) (vcons ·A y O (vnil ·A)) (vcons ·A y O (vnil ·A)) ➔ eq ·A z y = μ' H @(λ y' : Vec ·A (S O) . λ _ : eq ·(Vec ·A (S O)) (vcons ·A z O (vnil ·A)) y' . eq ·(Vec ·A (S O)) y' (vcons ·A y O (vnil ·A)) ➔ eq ·A z y) {
+  | eq_refl  ➔ λ H0 : eq ·(Vec ·A (S O)) (vcons ·A z O (vnil ·A)) (vcons ·A y O (vnil ·A)) . (λ H0' : eq ·(Vec ·A (S O)) (vcons ·A z O (vnil ·A)) (vcons ·A y O (vnil ·A)) . [ H1 : eq ·A z y = f_equal ·(Vec ·A (S O)) ·A (λ e : Vec ·A (S O) . μ' e @(λ n : nat . λ v : Vec ·A n . A) {
+  | vnil  ➔ z
+  | vcons a n v ➔ a
+ }) (vcons ·A z O (vnil ·A)) (vcons ·A y O (vnil ·A)) H0' ] - (λ H1' : eq ·A z y . [ H2 : eq ·A z y = H1' ] - eq_ind_r ·A y ·(λ a : A . eq ·A a y) (eq_refl ·A y) z H2) H1) H0
+ } ] - H0 (eq_refl ·(Vec ·A (S O)) (vcons ·A y O (vnil ·A))).
