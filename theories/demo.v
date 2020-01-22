@@ -167,16 +167,13 @@ Eval compute in ((denoteCoq eqvnil_syntax)).
 Eval compute in (pretty (denoteCoq eqvnil_syntax)).
 
 (* vnil <> vcons *)
-Lemma Vector_nil_neq_List_nil {A} (a : A):
+Lemma Vector_nil_neq_List_nil {A} (a : A) :
   ~ (@vnil A ~= @Datatypes.nil A).
 Proof.
   intro H.
   pose proof (@eq_vnil A).
   symmetry in H.
   destruct H.
-  (* inversion H. *)
-  (* clear H0. *)
-  (* rewrite H1 in H0. *)
   pose proof (H0 (@Datatypes.nil A) (Datatypes.cons a Datatypes.nil)).
   discriminate.
 Qed.
@@ -185,6 +182,26 @@ Qed.
 (* Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) => *)
 Quote Recursively Definition nilvenil_syntax := Vector_nil_neq_List_nil.
 Eval compute in (pretty (denoteCoq nilvenil_syntax)).
+Eval compute in ((denoteCoq nilvenil_syntax)).
+
+Lemma cons_inj : forall A (z z' y y' : A), [z; z'] = [y; y'] -> z = y /\ z' = y'.
+Proof.
+  intros.
+  inversion H.
+  split; reflexivity.
+Qed.
+
+Lemma vcons_inj : forall A (z y : A), vcons _ z 0 (vnil A) = vcons A y 0 (vnil A) -> z = y.
+Proof.
+  intros.
+  inversion H.
+  reflexivity.
+Qed.
+
+
+
+Quote Recursively Definition consinj_syntax := vcons_inj.
+Eval compute in (pretty (denoteCoq consinj_syntax)).
 Eval compute in ((denoteCoq nilvenil_syntax)).
 
 Definition zzzz {A}: forall (z : A), A -> nat := fun (z: A) (_: A) => 1.

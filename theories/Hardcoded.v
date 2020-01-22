@@ -23,6 +23,13 @@ Definition eq_elim_term (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term 
           )
           [(Ced.TVar "eq_refl", Ced.TBeta)].
 
+Definition False_term :=
+  Ced.AssgnType "False"
+                (Some Ced.KdStar)
+                (Ced.TyAll (Ced.Named "X")
+                           Ced.KdStar
+                           (Ced.TyVar "X")).
+
 Definition False_ind_term : Ced.Assgn :=
   Ced.AssgnTerm "False_ind"
                 (Some (Ced.TyAll

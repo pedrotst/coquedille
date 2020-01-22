@@ -310,7 +310,6 @@ Section monadic.
 
   with denoteTerm (t: term): m Ced.Term :=
   match t with
-  | tProd x t1 t2 => ret (Ced.TVar "tProd")
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ) <- ask ;;
@@ -329,6 +328,7 @@ Section monadic.
     ctors <- get_ctors ind ;;
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
+  | tProd x kty t (*=> ret (Ced.TVar "tProd")*)
   | tLambda x kty t =>
     '(t', x') <- localDenote x ⟦ t ⟧ ;;
     if isKind kty
@@ -397,7 +397,7 @@ Section monadic.
   body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
   let name := ind_name body in
   if String.eqb name "False"
-  then ret (Ced.CmdAssgn (Ced.AssgnType "False" (Some Ced.KdStar) (Ced.TyAll (Ced.Named "X") Ced.KdStar (Ced.TyVar "X"))))
+  then ret (Ced.CmdAssgn False_term)
   else
     let ctors := ind_ctors body in
     let param_l := rev (ind_params mbody) in
@@ -408,8 +408,8 @@ Section monadic.
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
-  Fixpoint denoteGenv (es: global_env) : m Ced.Program :=
-  match es with
+  Fixpoint denoteGenv (genv: global_env): m Ced.Program :=
+  match genv with
   | nil => ret nil
   | e :: es' =>
     ps <- denoteGenv es';;
@@ -426,7 +426,6 @@ Section monadic.
       then ret ((Ced.CmdAssgn JMeq_rect_term) :: ps)
       else
         (* Ignore JMeq_eq because it is an axiom *)
-        (* TODO: Find better ways to deal with axioms *)
       if (String.eqb kern "Coq.Logic.JMeq.JMeq_eq")
       then ret ps
       else
@@ -447,11 +446,10 @@ Section monadic.
   (* We assume that the term is well formed before calling denoteCoq *)
   (* It's probably a good idea to add well formednes checker before calling it *)
   (* TODO: browse metacoq library for well typed term guarantees *)
-  Fixpoint denoteCoq' (t: term): m Ced.Program :=
+  Definition denoteCoq' (t: term): m Ced.Program :=
   (* TODO: Update this for denoteGenv only use the genvs seen so far *)
   '(genv, _) <- ask;;
-   decls <- denoteGenv genv;;
-   ret decls.
+   denoteGenv genv.
 
 End monadic.
 
@@ -473,6 +471,6 @@ apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
-Definition denoteCoq (p: program) :=
+Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
 run_m (genv, nil) (denoteCoq' t).
