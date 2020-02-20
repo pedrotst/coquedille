@@ -41,7 +41,7 @@ Module Ced.
   | TApp (_: Term) (_: list (Typ + Term))
   | TLetTm (_: Name) (erased: bool) (ty: Typ) (_: Term) (body: Term)
   | TLetTy (_: Name) (k: Kind) (ty: Typ) (body: Term)
-  | TMu (is_rec: bool) (_: Term) (_: option Typ) (branches: list (Term * Term))
+  | TMu (is_rec: option Var) (_: Term) (_: option Typ) (branches: list (Term * Term))
   | TDelta (_ : Term)
   | TRho (lhs rhs : Term)
   | TBeta

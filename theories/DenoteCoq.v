@@ -53,10 +53,11 @@ Section monadic.
   Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
 
-  Definition m A := readerT (global_env * ctx) (eitherT string IdentityMonad.ident) A.
-  Definition run_m {A} (env: global_env * ctx) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
+  Definition tfixname := option string.
+  Definition m A := readerT (global_env * ctx * tfixname) (eitherT string IdentityMonad.ident) A.
+  Definition run_m {A} (env: global_env * ctx * tfixname) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
   Context {Monad_m : Monad m}.
-  Context {Reader_m: MonadReader (global_env * ctx) m}.
+  Context {Reader_m: MonadReader (global_env * ctx * tfixname) m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
@@ -110,7 +111,7 @@ Section monadic.
        end.
 
   Fixpoint isType (t: term) : m bool :=
-  '(genv, Γ) <- ask ;;
+  '(genv, Γ, _) <- ask ;;
    match t with
    | tInd _ _ => ret true
    | tProd _ t1 t2 =>
@@ -152,7 +153,7 @@ Section monadic.
   end.
 
   Definition fresh (x: ident) : m ident :=
-  '(genv, Γ) <- ask ;;
+  '(genv, Γ, _) <- ask ;;
   if (bound_var x Γ) || (decl_exists x genv)
   (* TODO: Implement a smarter / nicer fresh generator *)
   then ret (append x "'")
@@ -161,11 +162,11 @@ Section monadic.
   Definition localDenote {A} (x: name) (r: m A): m (A * Ced.Name):=
   match x with
   | nAnon =>
-    r' <- local (fun '(genv, Γ) => (genv, "_" :: Γ)) r ;;
+    r' <- local (fun '(genv, Γ, n) => (genv, "_" :: Γ, n)) r ;;
     ret (r', Ced.Anon)
   | nNamed n =>
     x' <- fresh n ;;
-    r' <- local (fun '(genv, Γ) => (genv, x' :: Γ)) r ;;
+    r' <- local (fun '(genv, Γ, n) => (genv, x' :: Γ, n)) r ;;
     ret (r' , Ced.Named x')
   end.
 
@@ -193,7 +194,7 @@ Section monadic.
   ret (rev args).
 
   Definition get_ctors ind : m (list (ident * term * nat)) :=
-    '(genv, _) <- ask ;;
+    '(genv, _, _) <- ask ;;
     let minds := inductive_mind ind in
     m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
     let bodies := ind_bodies m_decl in
@@ -251,6 +252,12 @@ Section monadic.
   | _ => false
   end.
 
+  Fixpoint countProds (t: term) : nat :=
+  match t with
+  | tProd _ _ bdy => S (countProds bdy)
+  | _ => 0
+  end.
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -259,14 +266,15 @@ Section monadic.
     k1 <- (if isKind t1
          then fmap inl (denoteKind t1)
          else fmap inr (denoteType t1)) ;;
-    '(k2, x') <-  localDenote x (denoteKind t2) ;;
+    '(k2, x') <- localDenote x (denoteKind t2) ;;
     ret (Ced.KdAll x' k1 k2)
   | _ => raise "Ill-formed kind"
   end
+
   with denoteType (t: term): m Ced.Typ :=
   match t with
   | tRel n =>
-    '(_, Γ) <- ask ;;
+    '(_, Γ, _) <- ask ;;
      v <- option_m (nth_error Γ n) ("ty tRel " ++ utils.string_of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
@@ -294,10 +302,10 @@ Section monadic.
     else ty <- denoteType kty ;;
          ret (Ced.TyLam x' ty t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
+  | tFix _ _ => raise "type tFix not implemented yet"
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
   | tEvar _ _ => raise "type tEvar not implemented yet"
-  | tFix _ _ => raise "type tFix not implemented yet"
   | tProj _ _ => raise "type tProj not implemented yet"
   | tCoFix _ _ => raise "type tCoFix not implemented yet"
   | tConst kern _ => ret (Ced.TyVar (kername_to_qualid kern))
@@ -312,7 +320,7 @@ Section monadic.
   match t with
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
-    '(_, Γ) <- ask ;;
+    '(_, Γ, _) <- ask ;;
      v <- option_m (nth_error Γ n) ("term Variable " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
@@ -356,20 +364,26 @@ Section monadic.
            ret (Ced.TLetTm x' false ty t'' bdy')
   | tVar _ => raise "tVar not implemented yet"
   | tEvar _ _ => raise "tEvar not implemented yet"
-  | tFix _ _ => raise "tFix not implemented yet"
   | tProj _ _ => raise "tProj not implemented yet"
   | tCoFix _ _ => raise "tCoFix not implemented yet"
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast t _ _ => ⟦ t ⟧
+  | tFix [f] _ =>
+    let name := getName (denoteName (dname f)) in
+    let body := dbody f in
+    local (fun '(genv, Γ, _) => (genv, name :: Γ, Some name)) ⟦ body ⟧
+
+  | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
+    '(_, _, fixname) <- ask ;;
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    ts' <- list_m (map (fun '(_, t) => denoteTerm t) brchs) ;;
+    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, _) => (genv, Γ, None)) (denoteTerm t))) brchs) ;;
     let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
-    ret (Ced.TMu false c' (Some mot') (combine constrs trimmed_ts'))
+    ret (Ced.TMu fixname c' (Some mot') (combine constrs trimmed_ts'))
                  (* (combine constrs ts')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
@@ -379,7 +393,7 @@ Section monadic.
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
   let '(name, t, i) := ctor in
   let paramnames := map fst params in
-  t' <- local (fun '(genv, _) => (genv, [data_name])) (denoteType t) ;;
+  t' <- local (fun '(genv, _, _) => (genv, [data_name], None)) (denoteType t) ;;
   ret (Ced.Ctr name t').
 
   Fixpoint denoteParams (params : context): m Ced.Params :=
@@ -404,7 +418,7 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
-    ki <- local (fun '(genv, _) => (genv, nil)) (denoteKind tki) ;;
+    ki <- local (fun '(genv, _, _) => (genv, nil, None)) (denoteKind tki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
@@ -448,7 +462,7 @@ Section monadic.
   (* TODO: browse metacoq library for well typed term guarantees *)
   Definition denoteCoq' (t: term): m Ced.Program :=
   (* TODO: Update this for denoteGenv only use the genvs seen so far *)
-  '(genv, _) <- ask;;
+  '(genv, _, _) <- ask;;
    denoteGenv genv.
 
 End monadic.
@@ -459,7 +473,7 @@ apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadReader : MonadReader (global_env * ctx) m.
+Instance m_MonadReader : MonadReader (global_env * ctx * tfixname) m.
 apply MonadReader_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
@@ -473,4 +487,4 @@ Defined.
 
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-run_m (genv, nil) (denoteCoq' t).
+run_m (genv, nil, None) (denoteCoq' t).

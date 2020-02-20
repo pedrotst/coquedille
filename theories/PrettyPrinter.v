@@ -316,9 +316,12 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
         end in
     t' <- ppTerm false false t ;;
     mot' <- printMotive mot ;;
-    let prime := if b then "" else "'" in
+    let isrec := match b with
+                 | None =>  "'"
+                 | Some s => (TkSpace ++ s ++ TkDot)
+                 end in
     brchs' <- list_m (map printBranch brchs) ;;
-               ret (TkMu ++ prime ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac
+               ret (TkMu ++ isrec ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac
                          ++ TkCR ++ (string_of_list id brchs' 1)
               ++ TkCR ++ TkSpace ++ TkCloseCBrac)
   | TDelta t =>

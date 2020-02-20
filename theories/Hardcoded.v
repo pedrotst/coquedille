@@ -6,7 +6,7 @@ Require Import String.
 Local Open Scope string_scope.
 
 Definition eq_elim_term (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term :=
-  Ced.TMu false eq
+  Ced.TMu None eq
           (Some
              (Ced.TyLam
                 (Ced.Named "x")
@@ -96,7 +96,7 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                               inl (Ced.TyVar "A");
                                                                               inl (Ced.TyVar "y")])
                                                                         (Ced.TMu
-                                                                           false
+                                                                           None
                                                                            (Ced.TVar "H")
                                                                            (Some (Ced.TyLamK
                                                                                     (Ced.Named "A1")
@@ -125,7 +125,7 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                                   (Ced.TVar "y")
                                                                                   (Ced.TVar "x"))
                                                                                (Ced.TMu
-                                                                                  false
+                                                                                  None
                                                                                   (Ced.TVar "H")
                                                                                   None
                                                                                   [(Ced.TVar "JMeq_refl",
