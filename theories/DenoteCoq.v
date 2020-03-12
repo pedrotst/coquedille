@@ -50,14 +50,27 @@ Section monadic.
   Open Scope string_scope.
   Open Scope list_scope.
   Open Scope bool_scope.
+  Open Scope type_scope.
   Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
+  (* Here we define the states we will need to carry around in our Translation Functions *)
 
-  Definition tfixname := option string.
-  Definition m A := readerT (global_env * ctx * tfixname) (eitherT string IdentityMonad.ident) A.
-  Definition run_m {A} (env: global_env * ctx * tfixname) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
+  (* In order to translate recursive functions we need the three following mappings:*)
+  (* 1) Decreasing variables to function names *)
+  Definition rec_args := alist Ced.Var string.
+
+  (* 2) Function name to variable  *)
+  Definition args_rec := alist string Ced.Var.
+
+  (* 3) Function name to it's type signature *)
+  Definition ftys := alist string term.
+  Definition rec_env := ftys * args_rec * ftys.
+  Definition fresh_renv: rec_env := (nil, nil, nil).
+
+  Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
+  Definition run_m {A} (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
   Context {Monad_m : Monad m}.
-  Context {Reader_m: MonadReader (global_env * ctx * tfixname) m}.
+  Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
@@ -162,11 +175,11 @@ Section monadic.
   Definition localDenote {A} (x: name) (r: m A): m (A * Ced.Name):=
   match x with
   | nAnon =>
-    r' <- local (fun '(genv, Γ, n) => (genv, "_" :: Γ, n)) r ;;
+    r' <- local (fun '(genv, Γ, renv) => (genv, "_" :: Γ, renv)) r ;;
     ret (r', Ced.Anon)
   | nNamed n =>
     x' <- fresh n ;;
-    r' <- local (fun '(genv, Γ, n) => (genv, x' :: Γ, n)) r ;;
+    r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;;
     ret (r' , Ced.Named x')
   end.
 
@@ -371,19 +384,19 @@ Section monadic.
   | tFix [f] _ =>
     let name := getName (denoteName (dname f)) in
     let body := dbody f in
-    local (fun '(genv, Γ, _) => (genv, name :: Γ, Some name)) ⟦ body ⟧
+    local (fun '(genv, Γ, _) => (genv, name :: Γ, fresh_renv)) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
-    '(_, _, fixname) <- ask ;;
+    (* '(_, _, renv) <- ask ;; *)
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, _) => (genv, Γ, None)) (denoteTerm t))) brchs) ;;
+    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, _) => (genv, Γ, fresh_renv)) (denoteTerm t))) brchs) ;;
     let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
-    ret (Ced.TMu fixname c' (Some mot') (combine constrs trimmed_ts'))
+    ret (Ced.TMu None c' (Some mot') (combine constrs trimmed_ts'))
                  (* (combine constrs ts')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
@@ -393,7 +406,7 @@ Section monadic.
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
   let '(name, t, i) := ctor in
   let paramnames := map fst params in
-  t' <- local (fun '(genv, _, _) => (genv, [data_name], None)) (denoteType t) ;;
+  t' <- local (fun '(genv, _, _) => (genv, [data_name], fresh_renv)) (denoteType t) ;;
   ret (Ced.Ctr name t').
 
   Fixpoint denoteParams (params : context): m Ced.Params :=
@@ -418,7 +431,7 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
-    ki <- local (fun '(genv, _, _) => (genv, nil, None)) (denoteKind tki) ;;
+    ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
@@ -473,7 +486,7 @@ apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadReader : MonadReader (global_env * ctx * tfixname) m.
+Instance m_MonadReader : MonadReader (global_env * ctx * rec_env) m.
 apply MonadReader_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
@@ -487,4 +500,4 @@ Defined.
 
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-run_m (genv, nil, None) (denoteCoq' t).
+run_m (genv, nil, fresh_renv) (denoteCoq' t).
