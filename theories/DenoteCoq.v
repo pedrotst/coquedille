@@ -29,6 +29,10 @@ Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fma
 
 Definition ctx := list Ced.Var.
 
+Local Definition string_eq x y := utils.string_compare x y = Eq.
+
+Local Instance string_RelDec : RelDec.RelDec string_eq :=
+  { rel_dec := String.eqb }.
 
 Fixpoint string_of_list_ascii (s : list ascii) : string
   := match s with
@@ -64,7 +68,7 @@ Section monadic.
 
   (* 3) Function name to it's type signature *)
   Definition ftys := alist string term.
-  Definition rec_env := ftys * args_rec * ftys.
+  Definition rec_env := rec_args * args_rec * ftys.
   Definition fresh_renv: rec_env := (nil, nil, nil).
 
   Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
@@ -271,6 +275,16 @@ Section monadic.
   | _ => 0
   end.
 
+  Definition get_rfunc_name (t: Ced.Term) (rarg: rec_args): option Ced.Var :=
+  match t with
+  | Ced.TVar x =>
+    match (alist_find _ x rarg) with
+    | Some fname => Some x
+    | None => None
+    end
+  | _ => None
+  end.
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -382,22 +396,37 @@ Section monadic.
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast t _ _ => ⟦ t ⟧
   | tFix [f] _ =>
-    let name := getName (denoteName (dname f)) in
+    let fname := getName (denoteName (dname f)) in
     let body := dbody f in
-    local (fun '(genv, Γ, _) => (genv, name :: Γ, fresh_renv)) ⟦ body ⟧
+    let type := dtype f in
+    let rec_arg := rarg f in
+    '(genv, Γ, renv) <- ask ;;
+    ty <- ⟦ type ⟧ ;;
+    '(_, Γ', _) <- ask ;;
+    rargname <- option_m (nth_error Γ' rec_arg) ("ty tRel " ++ utils.string_of_nat rec_arg ++ " not in environment " ++ showList Γ);;
+    (* Definition rec_args := alist Ced.Var string. *)
+    (* Definition args_rec := alist string Ced.Var. *)
+    (* Definition ftys := alist string term. *)
+    (* Definition rec_env := rec_args * args_rec * ftys. *)
+    let '(rarg, argr, fts) := renv in
+    let renv' := (alist_add _ rargname fname rarg,
+                  alist_add _ fname rargname argr,
+                  alist_add _ fname type fts) in
+    local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
-    (* '(_, _, renv) <- ask ;; *)
+    '(_, _, renv) <- ask ;;
+    let '(rarg, _, _) := renv in
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, _) => (genv, Γ, fresh_renv)) (denoteTerm t))) brchs) ;;
+    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
     let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
-    ret (Ced.TMu None c' (Some mot') (combine constrs trimmed_ts'))
-                 (* (combine constrs ts')) *)
+    let fname := get_rfunc_name c' rarg in
+    ret (Ced.TMu fname c' (Some mot') (combine constrs trimmed_ts'))
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
