@@ -71,10 +71,10 @@ Section monadic.
   Definition rec_env := rec_args * args_rec * ftys.
   Definition fresh_renv: rec_env := (nil, nil, nil).
 
-  Definition m A := stateT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
-  Definition run_m {A} (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runStateT ev env)).
+  Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
+  Definition run_m {A} (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
   Context {Monad_m : Monad m}.
-  Context {Reader_m: MonadState (global_env * ctx * rec_env) m}.
+  Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
@@ -128,7 +128,7 @@ Section monadic.
        end.
 
   Fixpoint isType (t: term) : m bool :=
-  '(genv, Γ, _) <- get ;;
+  '(genv, Γ, _) <- ask ;;
    match t with
    | tInd _ _ => ret true
    | tProd _ t1 t2 =>
@@ -170,7 +170,7 @@ Section monadic.
   end.
 
   Definition fresh (x: ident) : m ident :=
-  '(genv, Γ, _) <- get ;;
+  '(genv, Γ, _) <- ask ;;
   if (bound_var x Γ) || (decl_exists x genv)
   (* TODO: Implement a smarter / nicer fresh generator *)
   then ret (append x "'")
@@ -179,19 +179,11 @@ Section monadic.
   Definition localDenote {A} (x: name) (r: m A): m (A * Ced.Name):=
   match x with
   | nAnon =>
-    '(genv, Γ, renv) <- get ;;
-    put (genv, "_" :: Γ, renv) ;;
-    (* r' <- local (fun '(genv, Γ, renv) => (genv, "_" :: Γ, renv)) r ;; *)
-    r' <- r ;;
-    put (genv, Γ, renv) ;;
+    r' <- local (fun '(genv, Γ, renv) => (genv, "_" :: Γ, renv)) r ;;
     ret (r', Ced.Anon)
   | nNamed n =>
-    '(genv, Γ, renv) <- get ;;
     x' <- fresh n ;;
-    put (genv, x' :: Γ, renv) ;;
-    r' <- r ;;
-    put (genv, Γ, renv) ;;
-    (* r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;; *)
+    r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;;
     ret (r' , Ced.Named x')
   end.
 
@@ -219,7 +211,7 @@ Section monadic.
   ret (rev args).
 
   Definition get_ctors ind : m (list (ident * term * nat)) :=
-    '(genv, _, _) <- get ;;
+    '(genv, _, _) <- ask ;;
     let minds := inductive_mind ind in
     m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
     let bodies := ind_bodies m_decl in
@@ -309,7 +301,7 @@ Section monadic.
   with denoteType (t: term): m Ced.Typ :=
   match t with
   | tRel n =>
-    '(_, Γ, _) <- get ;;
+    '(_, Γ, _) <- ask ;;
      v <- option_m (nth_error Γ n) ("ty tRel " ++ utils.string_of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
@@ -355,7 +347,7 @@ Section monadic.
   match t with
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
-    '(_, Γ, _) <- get ;;
+    '(_, Γ, _) <- ask ;;
      v <- option_m (nth_error Γ n) ("term Variable " ++ utils.string_of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
@@ -408,9 +400,9 @@ Section monadic.
     let body := dbody f in
     let type := dtype f in
     let rec_arg := rarg f in
-    '(genv, Γ, renv) <- get ;;
+    '(genv, Γ, renv) <- ask ;;
     ty <- ⟦ type ⟧ ;;
-    '(_, Γ', _) <- get ;;
+    '(_, Γ', _) <- ask ;;
     rargname <- option_m (nth_error Γ' rec_arg) ("ty tRel " ++ utils.string_of_nat rec_arg ++ " not in environment " ++ showList Γ);;
     (* Definition rec_args := alist Ced.Var string. *)
     (* Definition args_rec := alist string Ced.Var. *)
@@ -420,22 +412,17 @@ Section monadic.
     let renv' := (alist_add _ rargname fname rarg,
                   alist_add _ fname rargname argr,
                   alist_add _ fname type fts) in
-    put (genv, fname :: Γ, renv') ;;
-    nbody <- ⟦ body ⟧ ;;
-    put (genv, Γ, renv') ;;
-    ret nbody
-    (* local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧ *)
+    local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
-    '(_, _, renv) <- get ;;
+    '(_, _, renv) <- ask ;;
     let '(rarg, _, _) := renv in
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    ts' <- list_m (map (fun '(_, t) => (denoteTerm t)) brchs) ;;
-    (* ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;; *)
+    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
     let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
     let constrs := map build_tApp (combine ctors args) in
     let fname := get_rfunc_name c' rarg in
@@ -443,17 +430,12 @@ Section monadic.
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint denoteCtor (data_name : Ced.Var)
+  Fixpoint denoteCtors (data_name : Ced.Var)
            (params: Ced.Params)
            (ctor: (ident * term) * nat) : m Ced.Ctor  :=
   let '(name, t, i) := ctor in
   let paramnames := map fst params in
-  (* t' <- local (fun '(genv, _, _) => (genv, [data_name], fresh_renv)) (denoteType t) ;; *)
-  '(genv, Γ, renv) <- get ;;
-  put (genv, [data_name], fresh_renv) ;;
-  t' <- denoteType t ;;
-  (* t' <- local (fun '(genv, _, _) => (genv, [data_name], fresh_renv)) (denoteType t) ;; *)
-  put (genv, Γ, renv) ;;
+  t' <- local (fun '(genv, _, _) => (genv, [data_name], fresh_renv)) (denoteType t) ;;
   ret (Ced.Ctr name t').
 
   Fixpoint denoteParams (params : context): m Ced.Params :=
@@ -478,11 +460,8 @@ Section monadic.
     let param_names := map (get_ident ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
-    '(genv, Γ, renv) <- get ;;
-    ki <- denoteKind tki ;;
-    put (genv, Γ, renv) ;;
-    (* ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;; *)
-    ctors' <- list_m (map (denoteCtor name (rev params)) ctors);;
+    ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;;
+    ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
   Fixpoint denoteGenv (genv: global_env): m Ced.Program :=
@@ -525,39 +504,29 @@ Section monadic.
   (* TODO: browse metacoq library for well typed term guarantees *)
   Definition denoteCoq' (t: term): m Ced.Program :=
   (* TODO: Update this for denoteGenv only use the genvs seen so far *)
-  '(genv, _, _) <- get;;
+  '(genv, _, _) <- ask;;
    denoteGenv genv.
 
 End monadic.
 
 Instance m_Monad : Monad m.
-apply Monad_stateT.
+apply Monad_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadReader : MonadState (global_env * ctx * rec_env) m.
-apply MonadState_stateT.
+Instance m_MonadReader : MonadReader (global_env * ctx * rec_env) m.
+apply MonadReader_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
 Defined.
-
-(* Global Instance MonadExc_stateT {E} (ME : MonadExc E m) : MonadExc E stateT := *)
-(* { raise := fun _ v => lift (raise v) *)
-  (* ; catch := fun _ c h => mkReaderT (fun s => catch (runReaderT c s) (fun x => runReaderT (h x) s)) *)
-(* }. *)
 
 Instance m_MonadExc : MonadExc string m.
-apply Exc_stateT.
-apply Monad_eitherT.
-apply Monad_ident.
+apply MonadExc_readerT.
 apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-match run_m (genv, nil, fresh_renv) (denoteCoq' t) with
-| inr (x, _) => inr x
-| inl err => inl err
-end.
+run_m (genv, nil, fresh_renv) (denoteCoq' t).
