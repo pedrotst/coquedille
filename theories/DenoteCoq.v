@@ -67,8 +67,10 @@ Section monadic.
   Definition args_rec := alist string Ced.Var.
 
   (* 3) Function name to it's type signature *)
-  Definition ftys := alist string Ced.Term.
-  Definition rec_env := rec_args * args_rec * ftys.
+  Definition motives := alist ident Ced.Typ.
+
+  Definition rec_env := rec_args * args_rec * motives.
+
   Definition fresh_renv: rec_env := (nil, nil, nil).
 
   Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
@@ -297,25 +299,31 @@ Section monadic.
            end
   end.
 
-  Fixpoint get_nth_arg (n: nat) (t: term) : m (name * term * term) :=
+  Definition get_motive (x: option ident) (mfty: motives) :=
+  match x with
+  | None => None
+  | Some x' => alist_find _ x' mfty
+  end.
+
+  Fixpoint get_nth_arg (n: nat) (t: Ced.Typ) : m (Ced.Name * Ced.Typ * Ced.Typ) :=
   match n with
   | O => match t with
-        | tProd x ty body => ret (x, ty, body)
+        | Ced.TyPi x ty body => ret (x, ty, body)
         | _ => raise "term does not have requested arg argument"
         end
   | S n' => match t with
-           | tProd x ty body =>
+           | Ced.TyPi x ty body =>
              '(x', ty', body') <- get_nth_arg n' body ;;
-             ret (x', ty', (tProd x ty body'))
+             ret (x', ty', (Ced.TyPi x ty body'))
            | _ => raise "term does not have requested arg argument"
            end
   end.
 
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
-  Definition normalize_type (t: term) (n: nat) : m term :=
+  Definition normalize_motive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
   '(x', ty', t') <- get_nth_arg n t ;;
-   ret (tProd x' ty' t').
+   ret (Ced.TyLam x' ty' t').
 
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -433,32 +441,30 @@ Section monadic.
     let type := dtype f in
     let rec_arg := rarg f in
     '(genv, Γ, renv) <- ask ;;
-    ty <- ⟦ type ⟧ ;;
+    ty <- denoteType type ;;
+    mot <- normalize_motive ty rec_arg ;;
     rargname <- get_rargname rec_arg type ;;
-    (* rargname <- option_m (nth_error Γ' rec_arg) ("ty tRel " ++ utils.string_of_nat rec_arg ++ " not in environment " ++ showList Γ);; *)
-    (* Definition rec_args := alist Ced.Var string. *)
-    (* Definition args_rec := alist string Ced.Var. *)
-    (* Definition ftys := alist string term. *)
-    (* Definition rec_env := rec_args * args_rec * ftys. *)
     let '(rarg, argr, fts) := renv in
     let renv' := (alist_add _ rargname fname rarg,
                   alist_add _ fname rargname argr,
-                  alist_add _ fname ty fts) in
+                  alist_add _ fname mot fts) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
     '(_, _, renv) <- ask ;;
-    let '(rarg, _, _) := renv in
+    let '(rarg, _, mots) := renv in
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
-    mot' <- denoteType mot ;;
+    (* mot' <- denoteType mot ;; *)
     args <- list_m (map take_args brchs) ;;
     brchs' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
     let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) brchs') in
     let constrs := map build_tApp (combine ctors args) in
     let fname := get_rfunc_name c' rarg in
-    ret (Ced.TMu fname c' (Some mot') (combine constrs trimmed_brchs'))
+    let mot' := get_motive fname mots in
+    ret (Ced.TMu fname c' mot' (combine constrs trimmed_brchs'))
+    (* ret (Ced.TMu fname c' None (combine constrs trimmed_brchs')) *)
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
