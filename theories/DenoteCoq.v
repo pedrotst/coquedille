@@ -67,7 +67,7 @@ Section monadic.
   Definition args_rec := alist string Ced.Var.
 
   (* 3) Function name to it's type signature *)
-  Definition ftys := alist string term.
+  Definition ftys := alist string Ced.Term.
   Definition rec_env := rec_args * args_rec * ftys.
   Definition fresh_renv: rec_env := (nil, nil, nil).
 
@@ -279,11 +279,43 @@ Section monadic.
   match t with
   | Ced.TVar x =>
     match (alist_find _ x rarg) with
-    | Some fname => Some x
+    | Some fname => Some fname
     | None => None
     end
   | _ => None
   end.
+
+  Fixpoint get_rargname (n: nat) (t: term): m ident :=
+  match n with
+  | O => match t with
+        | tProd x _ _ => ret (get_ident x)
+        | _ => raise "error fetching recursive argument name"
+        end
+  | S n' => match t with
+           | tProd _ _ t' => get_rargname n' t'
+           | _ => raise "error fetching recursive argument name"
+           end
+  end.
+
+  Fixpoint get_nth_arg (n: nat) (t: term) : m (name * term * term) :=
+  match n with
+  | O => match t with
+        | tProd x ty body => ret (x, ty, body)
+        | _ => raise "term does not have requested arg argument"
+        end
+  | S n' => match t with
+           | tProd x ty body =>
+             '(x', ty', body') <- get_nth_arg n' body ;;
+             ret (x', ty', (tProd x ty body'))
+           | _ => raise "term does not have requested arg argument"
+           end
+  end.
+
+  (* This function pull the nth argument of a lambda term
+     and pulls it to be the first argument *)
+  Definition normalize_type (t: term) (n: nat) : m term :=
+  '(x', ty', t') <- get_nth_arg n t ;;
+   ret (tProd x' ty' t').
 
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -402,8 +434,8 @@ Section monadic.
     let rec_arg := rarg f in
     '(genv, Γ, renv) <- ask ;;
     ty <- ⟦ type ⟧ ;;
-    '(_, Γ', _) <- ask ;;
-    rargname <- option_m (nth_error Γ' rec_arg) ("ty tRel " ++ utils.string_of_nat rec_arg ++ " not in environment " ++ showList Γ);;
+    rargname <- get_rargname rec_arg type ;;
+    (* rargname <- option_m (nth_error Γ' rec_arg) ("ty tRel " ++ utils.string_of_nat rec_arg ++ " not in environment " ++ showList Γ);; *)
     (* Definition rec_args := alist Ced.Var string. *)
     (* Definition args_rec := alist string Ced.Var. *)
     (* Definition ftys := alist string term. *)
@@ -411,7 +443,7 @@ Section monadic.
     let '(rarg, argr, fts) := renv in
     let renv' := (alist_add _ rargname fname rarg,
                   alist_add _ fname rargname argr,
-                  alist_add _ fname type fts) in
+                  alist_add _ fname ty fts) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
@@ -422,11 +454,11 @@ Section monadic.
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    ts' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
-    let trimmed_ts' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) ts') in
+    brchs' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
+    let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) brchs') in
     let constrs := map build_tApp (combine ctors args) in
     let fname := get_rfunc_name c' rarg in
-    ret (Ced.TMu fname c' (Some mot') (combine constrs trimmed_ts'))
+    ret (Ced.TMu fname c' (Some mot') (combine constrs trimmed_brchs'))
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
