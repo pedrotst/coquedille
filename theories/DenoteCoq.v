@@ -63,13 +63,15 @@ Section monadic.
   (* 1) Decreasing variables to function names *)
   Definition rec_args := alist Ced.Var string.
 
-  (* 2) Function name to variable  *)
-  Definition args_rec := alist string Ced.Var.
+  (* 2) Function Name to its decreasing variable number *)
+  (* this is used to reorganize the tApp structure *)
+  (* TODO: make this a list of nat with all the parameters *)
+  Definition rarg_pos := alist Ced.Var nat.
 
   (* 3) Function name to it's type signature *)
   Definition motives := alist ident Ced.Typ.
 
-  Definition rec_env := rec_args * args_rec * motives.
+  Definition rec_env := rec_args * rarg_pos * motives.
 
   Definition fresh_renv: rec_env := (nil, nil, nil).
 
@@ -319,6 +321,33 @@ Section monadic.
            end
   end.
 
+  Fixpoint delete_nth {A} (n:nat) (l: list A): list A :=
+  match l with
+  | nil => nil
+  | x :: xs => match n with
+             | O => xs
+             | S n' => x :: delete_nth n' xs
+             end
+  end.
+
+  Fixpoint nth_to_head {A} (n: nat) (l: list A): list A :=
+  match nth_error l n with
+  | None => l
+  | Some x => x :: delete_nth n l
+  end.
+
+  Fixpoint reorg_app {A} (t: Ced.Term)  (l: list A) : m (list A):=
+  match t with
+  | Ced.TVar x =>
+    '(_, _, renv) <- ask ;;
+     let '(_, arec, _) := renv in
+     match alist_find _ x arec with
+     | None => ret l
+     | Some n => ret (nth_to_head n l)
+     end
+  | _ => ret l
+  end.
+
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   Definition normalize_motive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
@@ -397,7 +426,8 @@ Section monadic.
                              then fmap inl (denoteType e)
                              else fmap inr (denoteTerm e))
                       ts) ;;
-    ret (Ced.TApp t' ts')
+    ts'' <- reorg_app t' ts' ;;
+    ret (Ced.TApp t' ts'')
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     ctors <- get_ctors ind ;;
@@ -439,14 +469,14 @@ Section monadic.
     let fname := getName (denoteName (dname f)) in
     let body := dbody f in
     let type := dtype f in
-    let rec_arg := rarg f in
+    let rec_pos := rarg f in
     '(genv, Γ, renv) <- ask ;;
     ty <- denoteType type ;;
-    mot <- normalize_motive ty rec_arg ;;
-    rargname <- get_rargname rec_arg type ;;
+    mot <- normalize_motive ty rec_pos ;;
+    rargname <- get_rargname rec_pos type ;;
     let '(rarg, argr, fts) := renv in
     let renv' := (alist_add _ rargname fname rarg,
-                  alist_add _ fname rargname argr,
+                  alist_add _ fname rec_pos argr,
                   alist_add _ fname mot fts) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
