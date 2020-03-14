@@ -369,6 +369,28 @@ Section monadic.
   '(x', ty', t') <- get_nth_arg n t ;;
    ret (Ced.TyLam x' ty' t').
 
+
+  Definition flattenTApp (t: Ced.Term) :=
+  match t with
+  | Ced.TApp t' nil => t'
+  | _ => t
+  end.
+
+  (* Definition unOpt {A B} (x: option A) (ret: B): B := *)
+  (* match x with *)
+  (* | None => ret *)
+  (* | Some x' => ret *)
+  (* end. *)
+
+  Definition get_oargs (fname: option Ced.Var) (oargs: other_args) :=
+  match fname with
+  | None => nil
+  | Some x => match alist_find _ x oargs with
+             | None => nil
+             | Some l => l
+             end
+  end.
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -498,11 +520,10 @@ Section monadic.
                   alist_add _ fname other_args oargs,
                   alist_add _ fname mot fts) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
-
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
     '(_, _, renv) <- ask ;;
-    let '(rarg, _, _, mots) := renv in
+    let '(rarg, _, oargs, mots) := renv in
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
     mot' <- denoteType mot ;;
@@ -512,8 +533,11 @@ Section monadic.
     let constrs := map build_tApp (combine ctors args) in
     let fname := get_rfunc_name c' rarg in
     let mot' := get_motive fname mots mot' in
-    ret (Ced.TMu fname c' mot' (combine constrs trimmed_brchs'))
-    (* ret (Ced.TMu fname c' None (combine constrs trimmed_brchs')) *)
+    let app_args := get_oargs fname oargs in
+    (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
+    let tapp_args := map (inr ̊ Ced.TVar) app_args in
+    let t' := Ced.TApp (Ced.TMu fname c' (Some mot') (combine constrs trimmed_brchs')) tapp_args in
+    ret (flattenTApp t')
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
