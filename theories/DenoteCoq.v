@@ -69,7 +69,7 @@ Section monadic.
   Definition rarg_pos := alist Ced.Var nat.
 
   (* 3) The remaining arguments of the function to bind at each branch *)
-  Definition other_args := alist Ced.Var (list Ced.Var).
+  Definition other_args := alist Ced.Var (list (Ced.Var * Ced.Typ)).
 
   (* 4) Function name to it's type signature *)
   Definition motives := alist ident Ced.Typ.
@@ -293,9 +293,9 @@ Section monadic.
   | _ => None
   end.
 
-  Fixpoint get_fvariables (t: term): list ident :=
+  Fixpoint get_fvariables (t: Ced.Typ): list (Ced.Var * Ced.Typ):=
   match t with
-  | tProd x _ t' => (get_ident x) :: get_fvariables t'
+  | Ced.TyPi x ty t' => ((getName x), ty) :: get_fvariables t'
   | _ => nil
   end.
 
@@ -511,8 +511,9 @@ Section monadic.
     ty <- denoteType type ;;
     mot <- normalize_motive ty rec_pos ;;
     (* rargname <- get_rargname rec_pos type ;; *)
-    let fvars := get_fvariables type in
-    rargname <- option_m (nth_error fvars rec_pos) "error fetching recursive argument name";;
+    let fvars := get_fvariables ty in
+    rargs <- option_m (nth_error fvars rec_pos) "error fetching recursive argument name";;
+    let '(rargname, rargty) := rargs in
     let other_args := delete_nth fvars rec_pos in
     let '(rarg, argr, oargs, fts) := renv in
     let renv' := (alist_add _ rargname fname rarg,
@@ -535,7 +536,7 @@ Section monadic.
     let mot' := get_motive fname mots mot' in
     let app_args := get_oargs fname oargs in
     (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
-    let tapp_args := map (inr ̊ Ced.TVar) app_args in
+    let tapp_args := map (inr ̊ Ced.TVar ̊ fst) app_args in
     let t' := Ced.TApp (Ced.TMu fname c' (Some mot') (combine constrs trimmed_brchs')) tapp_args in
     ret (flattenTApp t')
   end
