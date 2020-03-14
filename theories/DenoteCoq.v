@@ -68,12 +68,16 @@ Section monadic.
   (* TODO: make this a list of nat with all the parameters *)
   Definition rarg_pos := alist Ced.Var nat.
 
-  (* 3) Function name to it's type signature *)
+  (* 3) The remaining arguments of the function to bind at each branch *)
+  Definition other_args := alist Ced.Var (list Ced.Var).
+
+  (* 4) Function name to it's type signature *)
   Definition motives := alist ident Ced.Typ.
 
-  Definition rec_env := rec_args * rarg_pos * motives.
 
-  Definition fresh_renv: rec_env := (nil, nil, nil).
+  Definition rec_env := rec_args * rarg_pos * other_args * motives.
+
+  Definition fresh_renv: rec_env := (nil, nil, nil, nil).
 
   Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
   Definition run_m {A} (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
@@ -289,22 +293,31 @@ Section monadic.
   | _ => None
   end.
 
-  Fixpoint get_rargname (n: nat) (t: term): m ident :=
-  match n with
-  | O => match t with
-        | tProd x _ _ => ret (get_ident x)
-        | _ => raise "error fetching recursive argument name"
-        end
-  | S n' => match t with
-           | tProd _ _ t' => get_rargname n' t'
-           | _ => raise "error fetching recursive argument name"
-           end
+  Fixpoint get_fvariables (t: term): list ident :=
+  match t with
+  | tProd x _ t' => (get_ident x) :: get_fvariables t'
+  | _ => nil
   end.
 
-  Definition get_motive (x: option ident) (mfty: motives) :=
+  (* Fixpoint get_rargname (n: nat) (t: term): m ident := *)
+  (* match n with *)
+  (* | O => match t with *)
+  (*       | tProd x _ _ => ret (get_ident x) *)
+  (*       | _ => raise "error fetching recursive argument name" *)
+  (*       end *)
+  (* | S n' => match t with *)
+  (*          | tProd _ _ t' => get_rargname n' t' *)
+  (*          | _ => raise "error fetching recursive argument name" *)
+  (*          end *)
+  (* end. *)
+
+  Definition get_motive (x: option ident) (mfty: motives) (default: Ced.Typ) :=
   match x with
-  | None => None
-  | Some x' => alist_find _ x' mfty
+  | None => default
+  | Some x' => match alist_find _ x' mfty with
+              | None => default
+              | Some mot => mot
+              end
   end.
 
   Fixpoint get_nth_arg (n: nat) (t: Ced.Typ) : m (Ced.Name * Ced.Typ * Ced.Typ) :=
@@ -321,29 +334,31 @@ Section monadic.
            end
   end.
 
-  Fixpoint delete_nth {A} (n:nat) (l: list A): list A :=
+  Fixpoint delete_nth {A} (l: list A) (n:nat): list A :=
   match l with
   | nil => nil
   | x :: xs => match n with
              | O => xs
-             | S n' => x :: delete_nth n' xs
+             | S n' => x :: delete_nth xs n'
              end
   end.
 
-  Fixpoint nth_to_head {A} (n: nat) (l: list A): list A :=
+  Fixpoint nth_to_head {A} (l: list A) (n: nat) : list A :=
   match nth_error l n with
   | None => l
-  | Some x => x :: delete_nth n l
+  | Some x => x :: delete_nth l n
   end.
 
-  Fixpoint reorg_app {A} (t: Ced.Term)  (l: list A) : m (list A):=
+  (* FIXME: Notice that if the function name is hidden behind another definition this will not work because
+     it expects that it is a TVar directly. Solving this seems tricky *)
+  Fixpoint reorg_app {A} (t: Ced.Term) (l: list A) : m (list A):=
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
-     let '(_, arec, _) := renv in
+     let '(_, arec, _, _) := renv in
      match alist_find _ x arec with
      | None => ret l
-     | Some n => ret (nth_to_head n l)
+     | Some n => ret (nth_to_head l n)
      end
   | _ => ret l
   end.
@@ -473,26 +488,30 @@ Section monadic.
     '(genv, Γ, renv) <- ask ;;
     ty <- denoteType type ;;
     mot <- normalize_motive ty rec_pos ;;
-    rargname <- get_rargname rec_pos type ;;
-    let '(rarg, argr, fts) := renv in
+    (* rargname <- get_rargname rec_pos type ;; *)
+    let fvars := get_fvariables type in
+    rargname <- option_m (nth_error fvars rec_pos) "error fetching recursive argument name";;
+    let other_args := delete_nth fvars rec_pos in
+    let '(rarg, argr, oargs, fts) := renv in
     let renv' := (alist_add _ rargname fname rarg,
                   alist_add _ fname rec_pos argr,
+                  alist_add _ fname other_args oargs,
                   alist_add _ fname mot fts) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
 
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot c brchs =>
     '(_, _, renv) <- ask ;;
-    let '(rarg, _, mots) := renv in
+    let '(rarg, _, _, mots) := renv in
     ctors <- get_ctors ind ;;
     c' <- ⟦ c ⟧ ;;
-    (* mot' <- denoteType mot ;; *)
+    mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
     brchs' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
     let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) brchs') in
     let constrs := map build_tApp (combine ctors args) in
     let fname := get_rfunc_name c' rarg in
-    let mot' := get_motive fname mots in
+    let mot' := get_motive fname mots mot' in
     ret (Ced.TMu fname c' mot' (combine constrs trimmed_brchs'))
     (* ret (Ced.TMu fname c' None (combine constrs trimmed_brchs')) *)
   end
