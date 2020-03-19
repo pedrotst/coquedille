@@ -391,6 +391,12 @@ Section monadic.
              end
   end.
 
+  Fixpoint bind_oargs (oargs: list (Ced.Var * Ced.Typ)) (tail: Ced.Term) :=
+  match oargs with
+  | nil => tail
+  | (x, ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_oargs ts tail)
+  end.
+
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
   match t with
@@ -532,12 +538,14 @@ Section monadic.
     brchs' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
     let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) brchs') in
     let constrs := map build_tApp (combine ctors args) in
+    let flat_constrs := map flattenTApp constrs in
     let fname := get_rfunc_name c' rarg in
     let mot' := get_motive fname mots mot' in
     let app_args := get_oargs fname oargs in
+    let oargs_brchs := map (bind_oargs app_args) trimmed_brchs' in
     (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
     let tapp_args := map (inr ̊ Ced.TVar ̊ fst) app_args in
-    let t' := Ced.TApp (Ced.TMu fname c' (Some mot') (combine constrs trimmed_brchs')) tapp_args in
+    let t' := Ced.TApp (Ced.TMu fname c' (Some mot') (combine flat_constrs oargs_brchs)) tapp_args in
     ret (flattenTApp t')
   end
   where "⟦ x ⟧" := (denoteTerm x).
