@@ -60,22 +60,21 @@ Section monadic.
   (* Here we define the states we will need to carry around in our Translation Functions *)
 
   (* In order to translate recursive functions we need the three following mappings:*)
-  (* 1) Decreasing variables to function names *)
-  Definition rec_args := alist Ced.Var string.
+  (* 1) Recursive variables to function names *)
+  Definition a_rargs := alist Ced.Var string.
 
   (* 2) Function Name to its decreasing variable number *)
   (* this is used to reorganize the tApp structure *)
   (* TODO: make this a list of nat with all the parameters *)
-  Definition rarg_pos := alist Ced.Var nat.
+  Definition a_rargspos := alist Ced.Var nat.
 
-  (* 3) The remaining arguments of the function to bind at each branch *)
-  Definition other_args := alist Ced.Var (list (Ced.Var * Ced.Typ)).
+  (* 3) The remaining non-recursive arguments of the function to bind at each branch *)
+  Definition a_nrargs := alist Ced.Var (list (Ced.Var * Ced.Typ)).
 
   (* 4) Function name to it's type signature *)
-  Definition motives := alist ident Ced.Typ.
+  Definition a_motives := alist Ced.Var Ced.Typ.
 
-
-  Definition rec_env := rec_args * rarg_pos * other_args * motives.
+  Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives.
 
   Definition fresh_renv: rec_env := (nil, nil, nil, nil).
 
@@ -218,7 +217,7 @@ Section monadic.
   args <- take_args' nil nargs t;;
   ret (rev args).
 
-  Definition get_ctors ind : m (list (ident * term * nat)) :=
+  Definition get_ctors ind : m (list ctor_typ) :=
     '(genv, _, _) <- ask ;;
     let minds := inductive_mind ind in
     m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
@@ -231,7 +230,7 @@ Section monadic.
   let '(n, _, _) := ctor in
   Ced.TApp (Ced.TVar n) ts.
 
-  Definition get_ctor_name : ident * term * nat -> ident :=
+  Definition get_ctor_name : ctor_typ -> ident :=
   fun x => fst (fst x).
 
   Fixpoint removeLambdas (n: nat) (t: Ced.Term) :=
@@ -283,7 +282,7 @@ Section monadic.
   | _ => 0
   end.
 
-  Definition get_rfunc_name (t: Ced.Term) (rarg: rec_args): option Ced.Var :=
+  Definition get_rfunc_name (t: Ced.Term) (rarg: a_rargs): option Ced.Var :=
   match t with
   | Ced.TVar x =>
     match (alist_find _ x rarg) with
@@ -299,19 +298,7 @@ Section monadic.
   | _ => nil
   end.
 
-  (* Fixpoint get_rargname (n: nat) (t: term): m ident := *)
-  (* match n with *)
-  (* | O => match t with *)
-  (*       | tProd x _ _ => ret (get_ident x) *)
-  (*       | _ => raise "error fetching recursive argument name" *)
-  (*       end *)
-  (* | S n' => match t with *)
-  (*          | tProd _ _ t' => get_rargname n' t' *)
-  (*          | _ => raise "error fetching recursive argument name" *)
-  (*          end *)
-  (* end. *)
-
-  Definition get_motive (x: option ident) (mfty: motives) (default: Ced.Typ) :=
+  Definition get_motive (x: option ident) (mfty: a_motives) (default: Ced.Typ) :=
   match x with
   | None => default
   | Some x' => match alist_find _ x' mfty with
@@ -351,24 +338,24 @@ Section monadic.
 
   (* FIXME: Notice that if the function name is hidden behind another definition this will not work because
      it expects that it is a TVar directly. Solving this seems tricky *)
-  Fixpoint reorg_app {A} (t: Ced.Term) (l: list A) : m (list A):=
+  Definition reorg_app_args {A} (t: Ced.Term) (l: list A) : m (list A):=
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
-     let '(_, arec, _, _) := renv in
-     match alist_find _ x arec with
-     | None => ret l
+     let '(_, arpos, _, _) := renv in
+     match alist_find _ x arpos with
      | Some n => ret (nth_to_head l n)
+     | None => ret l
      end
   | _ => ret l
   end.
 
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
-  Definition normalize_motive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
+  (* TODO: Recursivelly pull dependent variables *)
+  Definition denoteMotive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
   '(x', ty', t') <- get_nth_arg n t ;;
    ret (Ced.TyLam x' ty' t').
-
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
@@ -376,25 +363,19 @@ Section monadic.
   | _ => t
   end.
 
-  (* Definition unOpt {A B} (x: option A) (ret: B): B := *)
-  (* match x with *)
-  (* | None => ret *)
-  (* | Some x' => ret *)
-  (* end. *)
-
-  Definition get_oargs (fname: option Ced.Var) (oargs: other_args) :=
+  Definition get_nrargs (fname: option Ced.Var) (nrargs: a_nrargs) :=
   match fname with
   | None => nil
-  | Some x => match alist_find _ x oargs with
+  | Some x => match alist_find _ x nrargs with
              | None => nil
              | Some l => l
              end
   end.
 
-  Fixpoint bind_oargs (oargs: list (Ced.Var * Ced.Typ)) (tail: Ced.Term) :=
-  match oargs with
+  Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Typ)) (tail: Ced.Term) :=
+  match nrargs with
   | nil => tail
-  | (x, ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_oargs ts tail)
+  | (x, ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_nrargs ts tail)
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 9).
@@ -469,7 +450,7 @@ Section monadic.
                              then fmap inl (denoteType e)
                              else fmap inr (denoteTerm e))
                       ts) ;;
-    ts'' <- reorg_app t' ts' ;;
+    ts'' <- reorg_app_args t' ts' ;;
     ret (Ced.TApp t' ts'')
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
@@ -512,40 +493,42 @@ Section monadic.
     let fname := getName (denoteName (dname f)) in
     let body := dbody f in
     let type := dtype f in
-    let rec_pos := rarg f in
+    let rarg_pos := rarg f in
     '(genv, Γ, renv) <- ask ;;
     ty <- denoteType type ;;
-    mot <- normalize_motive ty rec_pos ;;
-    (* rargname <- get_rargname rec_pos type ;; *)
+    mot <- denoteMotive ty rarg_pos ;;
     let fvars := get_fvariables ty in
-    rargs <- option_m (nth_error fvars rec_pos) "error fetching recursive argument name";;
+    rargs <- option_m (nth_error fvars rarg_pos) "error fetching recursive argument name";;
     let '(rargname, rargty) := rargs in
-    let other_args := delete_nth fvars rec_pos in
-    let '(rarg, argr, oargs, fts) := renv in
-    let renv' := (alist_add _ rargname fname rarg,
-                  alist_add _ fname rec_pos argr,
-                  alist_add _ fname other_args oargs,
-                  alist_add _ fname mot fts) in
+    let nargs := delete_nth fvars rarg_pos in
+    let '(arargs, arpos, anargs, amots) := renv in
+    let renv' := (alist_add _ rargname fname arargs,
+                  alist_add _ fname rarg_pos arpos,
+                  alist_add _ fname nargs anargs,
+                  alist_add _ fname mot amots) in
     local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
   | tFix _ _ => raise "Ill formed fixpoint"
-  | tCase (ind, npars) mot c brchs =>
+  | tCase (ind, npars) mot matchvar brchs =>
     '(_, _, renv) <- ask ;;
-    let '(rarg, _, oargs, mots) := renv in
+    let '(arargs, _, anargs, amots) := renv in
     ctors <- get_ctors ind ;;
-    c' <- ⟦ c ⟧ ;;
+    matchvar' <- ⟦ matchvar ⟧ ;;
     mot' <- denoteType mot ;;
     args <- list_m (map take_args brchs) ;;
-    brchs' <- list_m (map (fun '(_, t) => (local (fun '(genv, Γ, renv) => (genv, Γ, renv)) (denoteTerm t))) brchs) ;;
-    let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine (map fst brchs) brchs') in
+    brchs_t' <- list_m (map (fun '(_, t) => ⟦ t ⟧) brchs) ;;
+    let brchs_n := map fst brchs in
+    let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine brchs_n brchs_t') in
     let constrs := map build_tApp (combine ctors args) in
     let flat_constrs := map flattenTApp constrs in
-    let fname := get_rfunc_name c' rarg in
-    let mot' := get_motive fname mots mot' in
-    let app_args := get_oargs fname oargs in
-    let oargs_brchs := map (bind_oargs app_args) trimmed_brchs' in
+    let fname := get_rfunc_name matchvar' arargs in
+    let mot' := get_motive fname amots mot' in
+    let app_args := get_nrargs fname anargs in
+    (* TODO: instead of removing and rebinding we can just remove the necessary ones
+       this may actually make anargs unecessary *)
+    let nrargs_brchs := map (bind_nrargs app_args) trimmed_brchs' in
     (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
     let tapp_args := map (inr ̊ Ced.TVar ̊ fst) app_args in
-    let t' := Ced.TApp (Ced.TMu fname c' (Some mot') (combine flat_constrs oargs_brchs)) tapp_args in
+    let t' := Ced.TApp (Ced.TMu fname matchvar' (Some mot') (combine flat_constrs nrargs_brchs)) tapp_args in
     ret (flattenTApp t')
   end
   where "⟦ x ⟧" := (denoteTerm x).
