@@ -416,20 +416,83 @@ Section monadic.
   Definition pull_var (x: Ced.Var) (t: Ced.Typ) :=
   run_m' (pull_var' x t) t.
 
+  Definition mot_env := alist Ced.Var Ced.Typ.
+
+  Fixpoint build_env' (ty: Ced.Typ) (acc: mot_env): mot_env :=
+  match ty with
+  | Ced.TyPi n ty b => build_env' b (alist_add _ (getName n) ty acc)
+    (* match n with *)
+    (* | Ced.Anon => acc *)
+    (* | Ced.Named x => alist_add _ x ty acc *)
+    (* end *)
+  | _ => acc
+  end.
+
+  Fixpoint get_body (t: Ced.Typ): Ced.Typ :=
+  match t with
+  | Ced.TyPi _ _ b => get_body b
+  | _ => t
+  end.
+
+  Definition build_env t := rev (build_env' t nil).
+
+  Fixpoint pull_env (env: mot_env) (x: Ced.Var) (t: Ced.Typ) : Ced.Typ * mot_env :=
+  match alist_find _ x env with
+  | Some ty => (Ced.TyPi (Ced.Named x) ty t, (alist_remove _ x env))
+  | None => (t, env)
+  end.
+
+  (* Inserts Pi x ty in the end of the lambda list *)
+  Fixpoint insert_pi_body (t: Ced.Typ) (x: Ced.Var) (ty: Ced.Typ): Ced.Typ :=
+  match t with
+  | Ced.TyLam x' ty' b => Ced.TyLam x' ty' (insert_pi_body b x ty)
+  | _ => Ced.TyPi (Ced.Named x) ty t
+  end.
+
+  (* Inserts Lam x ty in the begining of the lambda list *)
+  Fixpoint insert_lam_body (t: Ced.Typ) (x: Ced.Var) (ty: Ced.Typ): Ced.Typ :=
+  Ced.TyLam (Ced.Named x) ty t.
+
+  Definition unfold_env (t: Ced.Typ) (env: mot_env)
+    := fold_right (fun '(x, ty) t' => insert_pi_body t' x ty) t env.
+
+  Definition alist_remove_many (l: list Ced.Var) (env: mot_env) :=
+  fold_right (fun x env' => alist_remove _  x env') env l .
+
+  Fixpoint alist_find_many (l: list Ced.Var) (env: mot_env) :=
+  match l with
+  | nil => nil
+  | x :: xs => alist_find _ x env :: alist_find_many xs env
+  end.
+
+  Fixpoint combine_maybe {A B} (xs: list A) (ys: list (option B)): list (A * B) :=
+  match xs, ys with
+  | x :: xs, (Some y) :: ys => (x, y) :: combine_maybe xs ys
+  | x :: xs, None :: ys => combine_maybe xs ys
+  | _, _ => nil
+  end.
+
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   (* TODO: Recursivelly pull dependent variables *)
-  Definition denoteMotive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
-  '(x', ty', t') <- pull_nth_arg n t ;;
-   let l := get_deps ty' in
-   let t'' := fold_right pull_var t' l in
-   ret (Ced.TyLam x' ty' t'').
-
-  Fixpoint build_env (ty: Ced.Typ): (global_env * ctx * rec_env) * Ced.Typ :=
-  match ty with
-  | Ced.TyPi x ty b =>
-    let '(env, Γ, renv, ret) := build_env b in
-    (env,
+  Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname: m (Ced.Typ * rec_env):=
+  let body := get_body mot in
+  let fvars := build_env mot in
+  '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
+  let nargs := delete_nth fvars rargpos  in
+  let deps := get_deps rarg_ty in
+  let nargs' := alist_remove_many deps nargs in
+  let deps_ty := alist_find_many deps nargs in
+  let t' := insert_lam_body body rarg rarg_ty in
+  let t'' := fold_right (fun '(x, ty) t => insert_lam_body t x ty) t' (combine_maybe deps deps_ty) in
+  let mot' := unfold_env t'' nargs' in
+  '(_, _, renv) <- ask ;;
+  let '(arargs, arpos, anargs, amots) := renv in
+  let renv' := (alist_add _ rarg fname arargs,
+                 alist_add _ fname rargpos arpos,
+                 alist_add _ fname nargs anargs,
+                 alist_add _ fname mot' amots) in
+  ret (mot', renv').
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
@@ -564,24 +627,13 @@ Section monadic.
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast t _ _ => ⟦ t ⟧
   | tFix [f] _ =>
-    let fname := getName (denoteName (dname f)) in
+    let fname := get_ident (dname f) in
     let body := dbody f in
     let type := dtype f in
     let rarg_pos := rarg f in
-    '(genv, Γ, renv) <- ask ;;
     ty <- denoteType type ;;
-    '(genv', Γ', renv, ret) <- build_env ty ;;
-    mot <- local (fun '(_, _, _) => (nil, nil, fresh_renv)) (denoteMotive ty rarg_pos) ;;
-    let fvars := get_fvariables ty in
-    rargs <- option_m (nth_error fvars rarg_pos) "error fetching recursive argument name";;
-    let '(rargname, rargty) := rargs in
-    let nargs := delete_nth fvars rarg_pos in
-    let '(arargs, arpos, anargs, amots) := renv in
-    let renv' := (alist_add _ rargname fname arargs,
-                  alist_add _ fname rarg_pos arpos,
-                  alist_add _ fname nargs anargs,
-                  alist_add _ fname mot amots) in
-    local (fun '(_, _, _) => (genv, fname :: Γ, renv')) ⟦ body ⟧
+    '(mot, renv') <- denoteMotive ty rarg_pos fname;;
+    local (fun '(genv, Γ, renv) => (genv, fname :: Γ, renv')) ⟦ body ⟧
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot matchvar brchs =>
     '(_, _, renv) <- ask ;;
