@@ -307,7 +307,7 @@ Section monadic.
               end
   end.
 
-  Fixpoint get_nth_arg (n: nat) (t: Ced.Typ) : m (Ced.Name * Ced.Typ * Ced.Typ) :=
+  Fixpoint pull_nth_arg (n: nat) (t: Ced.Typ) : m (Ced.Name * Ced.Typ * Ced.Typ) :=
   match n with
   | O => match t with
         | Ced.TyPi x ty body => ret (x, ty, body)
@@ -315,7 +315,7 @@ Section monadic.
         end
   | S n' => match t with
            | Ced.TyPi x ty body =>
-             '(x', ty', body') <- get_nth_arg n' body ;;
+             '(x', ty', body') <- pull_nth_arg n' body ;;
              ret (x', ty', (Ced.TyPi x ty body'))
            | _ => raise "term does not have requested arg argument"
            end
@@ -350,12 +350,86 @@ Section monadic.
   | _ => ret l
   end.
 
+(* (Ced.AssgnTerm "hasNum"%string *)
+(* (Some *)
+(* (Ced.TyPi (Ced.Named "n"%string) *)
+(*       (Ced.TyVar "nat"%string) *)
+(*       (Ced.TyPi (Ced.Named "x"%string) *)
+(*                 (Ced.TyVar "nat"%string) *)
+(*                 (Ced.TyPi (Ced.Named "v"%string) *)
+(*                           (Ced.TyApp (Ced.TyVar "t"%string) *)
+(*                                       [inl (Ced.TyVar "nat"%string); *)
+(*                                       inr (Ced.TVar "n"%string)]) *)
+(*                           (Ced.TyVar "bool"%string)))))) *)
+
+  Fixpoint tyAppVars' (ts: list (Ced.Typ + Ced.Term)) :=
+  let peel t :=
+      match t with
+      | inl (Ced.TyVar x) => Some x
+      | inr (Ced.TVar x) => Some x
+      | _ => None
+      end
+  in match ts with
+     | t :: ts => peel t :: tyAppVars' ts
+     | nil => nil
+     end.
+
+  Fixpoint eraseNones {A} (ls: list (option A)): list A :=
+  match ls with
+  | (Some x) :: l => x :: eraseNones l
+  | None :: l => eraseNones l
+  | nil => nil
+  end.
+
+  Definition tyAppVars := eraseNones ̊ tyAppVars'.
+
+  Definition get_deps (ty': Ced.Typ) : list Ced.Var :=
+  match ty' with
+  | Ced.TyApp _ apps => tyAppVars apps
+  | _ => nil
+  end.
+
+  Definition m' A := option A.
+  Context {Monad_m': Monad m'}.
+
+  Definition run_m' {A} (mon' : m' A) (default : A): A :=
+  match mon' with
+  | Some a => a
+  | None => default
+  end.
+
+  Definition pull_var' (x: Ced.Var) (t: Ced.Typ): m' Ced.Typ :=
+  let fix pull t : m' (Ced.Var * Ced.Typ * Ced.Typ) :=
+      match t with
+      | Ced.TyPi x' ty bdy =>
+        let y := getName x' in
+        if String.eqb x y
+        then Some (y, ty, bdy)
+        else
+          '(x', ty', body') <- pull bdy ;;
+           ret (x', ty', Ced.TyPi (Ced.Named x') ty' body')
+      | _ => None
+      end in
+  '(x', ty', bdy') <- pull t ;;
+  ret (Ced.TyPi (Ced.Named x') ty' bdy').
+
+  Definition pull_var (x: Ced.Var) (t: Ced.Typ) :=
+  run_m' (pull_var' x t) t.
+
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   (* TODO: Recursivelly pull dependent variables *)
   Definition denoteMotive (t: Ced.Typ) (n: nat) : m Ced.Typ :=
-  '(x', ty', t') <- get_nth_arg n t ;;
-   ret (Ced.TyLam x' ty' t').
+  '(x', ty', t') <- pull_nth_arg n t ;;
+   let l := get_deps ty' in
+   let t'' := fold_right pull_var t' l in
+   ret (Ced.TyLam x' ty' t'').
+
+  Fixpoint build_env (ty: Ced.Typ): (global_env * ctx * rec_env) * Ced.Typ :=
+  match ty with
+  | Ced.TyPi x ty b =>
+    let '(env, Γ, renv, ret) := build_env b in
+    (env,
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
@@ -496,7 +570,8 @@ Section monadic.
     let rarg_pos := rarg f in
     '(genv, Γ, renv) <- ask ;;
     ty <- denoteType type ;;
-    mot <- denoteMotive ty rarg_pos ;;
+    '(genv', Γ', renv, ret) <- build_env ty ;;
+    mot <- local (fun '(_, _, _) => (nil, nil, fresh_renv)) (denoteMotive ty rarg_pos) ;;
     let fvars := get_fvariables ty in
     rargs <- option_m (nth_error fvars rarg_pos) "error fetching recursive argument name";;
     let '(rargname, rargty) := rargs in
