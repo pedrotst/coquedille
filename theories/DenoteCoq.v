@@ -465,6 +465,9 @@ Section monadic.
   | x :: xs => alist_find _ x env :: alist_find_many xs env
   end.
 
+  (* The function zips two lists by pulling out the elements of the option functor in the second list *)
+  (* If the second element is a None, then it ignores not only that element, but
+  also the matching element in the first list *)
   Fixpoint combine_maybe {A B} (xs: list A) (ys: list (option B)): list (A * B) :=
   match xs, ys with
   | x :: xs, (Some y) :: ys => (x, y) :: combine_maybe xs ys
@@ -472,27 +475,47 @@ Section monadic.
   | _, _ => nil
   end.
 
+  (* Definition unfold_env (t: Ced.Typ) (env: mot_env) *)
+    (* := fold_right (fun '(x, ty) t' => insert_pi_body t' x ty) t env. *)
+
+  Definition build_lam (t: Ced.Typ) (env: mot_env) :=
+  fold_right (fun '(x, ty) t' => insert_lam_body t' x ty) t env.
+
+  Program Fixpoint pull_deps t deps fvars {measure (length fvars)} :=
+  let fvars' := alist_remove_many deps fvars in
+  let deps_ty := alist_find_many deps fvars in
+  let ts := combine_maybe deps deps_ty in
+  let t' := build_lam t ts in
+  let deps' := concat (map get_deps (map snd ts)) in
+  if eq_nat (length deps') 0
+  then (t', fvars')
+  else pull_deps t' deps' fvars'.
+  Next Obligation.
+    admit.
+  Admitted.
+
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   (* TODO: Recursivelly pull dependent variables *)
-  Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname: m (Ced.Typ * rec_env):=
+  Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname: m rec_env:=
   let body := get_body mot in
   let fvars := build_env mot in
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   let nargs := delete_nth fvars rargpos  in
   let deps := get_deps rarg_ty in
-  let nargs' := alist_remove_many deps nargs in
-  let deps_ty := alist_find_many deps nargs in
   let t' := insert_lam_body body rarg rarg_ty in
-  let t'' := fold_right (fun '(x, ty) t => insert_lam_body t x ty) t' (combine_maybe deps deps_ty) in
+  let '(t'', nargs') := pull_deps t' deps nargs in
+  (* let nargs' := alist_remove_many deps nargs in *)
+  (* let deps_ty := alist_find_many deps nargs in *)
+  (* let t'' := fold_right (fun '(x, ty) t => insert_lam_body t x ty) t' (combine_maybe deps deps_ty) in *)
   let mot' := unfold_env t'' nargs' in
   '(_, _, renv) <- ask ;;
   let '(arargs, arpos, anargs, amots) := renv in
   let renv' := (alist_add _ rarg fname arargs,
                  alist_add _ fname rargpos arpos,
-                 alist_add _ fname nargs anargs,
+                 alist_add _ fname nargs' anargs,
                  alist_add _ fname mot' amots) in
-  ret (mot', renv').
+  ret renv'.
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
@@ -632,7 +655,7 @@ Section monadic.
     let type := dtype f in
     let rarg_pos := rarg f in
     ty <- denoteType type ;;
-    '(mot, renv') <- denoteMotive ty rarg_pos fname;;
+    renv' <- denoteMotive ty rarg_pos fname;;
     local (fun '(genv, Γ, renv) => (genv, fname :: Γ, renv')) ⟦ body ⟧
   | tFix _ _ => raise "Ill formed fixpoint"
   | tCase (ind, npars) mot matchvar brchs =>
