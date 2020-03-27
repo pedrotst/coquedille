@@ -350,18 +350,6 @@ Section monadic.
   | _ => ret l
   end.
 
-(* (Ced.AssgnTerm "hasNum"%string *)
-(* (Some *)
-(* (Ced.TyPi (Ced.Named "n"%string) *)
-(*       (Ced.TyVar "nat"%string) *)
-(*       (Ced.TyPi (Ced.Named "x"%string) *)
-(*                 (Ced.TyVar "nat"%string) *)
-(*                 (Ced.TyPi (Ced.Named "v"%string) *)
-(*                           (Ced.TyApp (Ced.TyVar "t"%string) *)
-(*                                       [inl (Ced.TyVar "nat"%string); *)
-(*                                       inr (Ced.TVar "n"%string)]) *)
-(*                           (Ced.TyVar "bool"%string)))))) *)
-
   Fixpoint tyAppVars' (ts: list (Ced.Typ + Ced.Term)) :=
   let peel t :=
       match t with
@@ -383,48 +371,35 @@ Section monadic.
 
   Definition tyAppVars := eraseNones ̊ tyAppVars'.
 
-  Definition get_deps (ty': Ced.Typ) : list Ced.Var :=
-  match ty' with
-  | Ced.TyApp _ apps => tyAppVars apps
+  Definition app_inl {A B C} (f: A -> C) (x: A + B) : option C :=
+  match x with
+  | inl a => Some (f a)
+  | inr _ => None
+  end.
+
+  (* There may be some monadic functions to take care of these auxiliar
+  functions for us *)
+  Definition map_inl {A B C} (f: A -> C)  (l: list (A + B)): list C
+    := eraseNones (map (app_inl f) l).
+
+  Fixpoint get_deps (t: Ced.Typ) : list Ced.Var :=
+  match t with
+  | Ced.TyIntersec _ t1 t2
+  | Ced.TyPi _ t1 t2
+  | Ced.TyLam _ t1 t2 => get_deps t1 ++ get_deps t2
+  | Ced.TyAll _ _ t'
+  | Ced.TyAllT _ _ t'
+  | Ced.TyLamK _ _ t' => get_deps t'
+  | Ced.TyApp t' apps => get_deps t' ++ concat (map_inl get_deps apps) ++ tyAppVars apps
   | _ => nil
   end.
-
-  Definition m' A := option A.
-  Context {Monad_m': Monad m'}.
-
-  Definition run_m' {A} (mon' : m' A) (default : A): A :=
-  match mon' with
-  | Some a => a
-  | None => default
-  end.
-
-  Definition pull_var' (x: Ced.Var) (t: Ced.Typ): m' Ced.Typ :=
-  let fix pull t : m' (Ced.Var * Ced.Typ * Ced.Typ) :=
-      match t with
-      | Ced.TyPi x' ty bdy =>
-        let y := getName x' in
-        if String.eqb x y
-        then Some (y, ty, bdy)
-        else
-          '(x', ty', body') <- pull bdy ;;
-           ret (x', ty', Ced.TyPi (Ced.Named x') ty' body')
-      | _ => None
-      end in
-  '(x', ty', bdy') <- pull t ;;
-  ret (Ced.TyPi (Ced.Named x') ty' bdy').
-
-  Definition pull_var (x: Ced.Var) (t: Ced.Typ) :=
-  run_m' (pull_var' x t) t.
 
   Definition mot_env := alist Ced.Var Ced.Typ.
 
   Fixpoint build_env' (ty: Ced.Typ) (acc: mot_env): mot_env :=
   match ty with
+  | Ced.TyAll _ _ t => build_env' t acc
   | Ced.TyPi n ty b => build_env' b (alist_add _ (getName n) ty acc)
-    (* match n with *)
-    (* | Ced.Anon => acc *)
-    (* | Ced.Named x => alist_add _ x ty acc *)
-    (* end *)
   | _ => acc
   end.
 
@@ -475,19 +450,16 @@ Section monadic.
   | _, _ => nil
   end.
 
-  (* Definition unfold_env (t: Ced.Typ) (env: mot_env) *)
-    (* := fold_right (fun '(x, ty) t' => insert_pi_body t' x ty) t env. *)
-
   Definition build_lam (t: Ced.Typ) (env: mot_env) :=
   fold_right (fun '(x, ty) t' => insert_lam_body t' x ty) t env.
 
-  Program Fixpoint pull_deps t deps fvars {measure (length fvars)} :=
+  Program Fixpoint pull_deps t deps fvars { measure #|fvars| } :=
   let fvars' := alist_remove_many deps fvars in
   let deps_ty := alist_find_many deps fvars in
   let ts := combine_maybe deps deps_ty in
   let t' := build_lam t ts in
   let deps' := concat (map get_deps (map snd ts)) in
-  if eq_nat (length deps') 0
+  if eq_nat #|deps'| 0
   then (t', fvars')
   else pull_deps t' deps' fvars'.
   Next Obligation.
@@ -497,7 +469,7 @@ Section monadic.
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   (* TODO: Recursivelly pull dependent variables *)
-  Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname: m rec_env:=
+  Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname : m rec_env:=
   let body := get_body mot in
   let fvars := build_env mot in
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
@@ -505,9 +477,6 @@ Section monadic.
   let deps := get_deps rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs in
-  (* let nargs' := alist_remove_many deps nargs in *)
-  (* let deps_ty := alist_find_many deps nargs in *)
-  (* let t'' := fold_right (fun '(x, ty) t => insert_lam_body t x ty) t' (combine_maybe deps deps_ty) in *)
   let mot' := unfold_env t'' nargs' in
   '(_, _, renv) <- ask ;;
   let '(arargs, arpos, anargs, amots) := renv in
@@ -657,7 +626,7 @@ Section monadic.
     ty <- denoteType type ;;
     renv' <- denoteMotive ty rarg_pos fname;;
     local (fun '(genv, Γ, renv) => (genv, fname :: Γ, renv')) ⟦ body ⟧
-  | tFix _ _ => raise "Ill formed fixpoint"
+  | tFix _ _ => raise "Mutually recursive fixpoints not implemented yet"
   | tCase (ind, npars) mot matchvar brchs =>
     '(_, _, renv) <- ask ;;
     let '(arargs, _, anargs, amots) := renv in
