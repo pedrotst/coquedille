@@ -663,7 +663,7 @@ Section monadic.
   Fixpoint denoteParams (params : context): m Ced.Params :=
   match params with
   | nil => ret []
-  | cons p ps =>
+  | p :: ps =>
     let x := decl_name p in
     let t := decl_type p in
     tk <- (if isKind t then inj1M (denoteKind t) else inj2M (denoteType t)) ;;
