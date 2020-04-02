@@ -76,12 +76,15 @@ Section monadic.
 
   Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives.
 
+  Definition params_env := alist Ced.Var nat.
+
   Definition fresh_renv: rec_env := (nil, nil, nil, nil).
 
-  Definition m A := readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident) A.
-  Definition run_m {A} (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT ev env)).
+  Definition m A := stateT params_env (readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident)) A.
+  Definition run_m {A} (params: params_env) (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
   Context {Monad_m : Monad m}.
   Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
+  Context {State_m: MonadState params_env m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
@@ -382,16 +385,59 @@ Section monadic.
   Definition map_inl {A B C} (f: A -> C)  (l: list (A + B)): list C
     := eraseNones (map (app_inl f) l).
 
-  Fixpoint get_deps (t: Ced.Typ) : list Ced.Var :=
+  (* Program Fixpoint get_deps (t: Ced.Typ) : m (list Ced.Var) := *)
+  (* match t with *)
+  (* | Ced.TyIntersec _ t1 t2 *)
+  (* | Ced.TyPi _ t1 t2 *)
+  (* | Ced.TyLam _ t1 t2 => *)
+  (*   t1 <- get_deps t1 ;; *)
+  (*   t2 <- get_deps t2 ;; *)
+  (*   ret (t1 ++ t2) *)
+  (* | Ced.TyAll _ _ t' *)
+  (* | Ced.TyAllT _ _ t' *)
+  (* | Ced.TyLamK _ _ t' => get_deps t' *)
+  (* | Ced.TyApp t' apps => *)
+  (*   penv <- get ;; *)
+  (*   t1 <- get_deps t';; *)
+  (*   match t' with *)
+  (*   | Ced.TyVar x => *)
+  (*     match alist_find _ x penv with *)
+  (*     | Some n => *)
+  (*       apps' <- list_m (map_inl get_deps (skipn n apps)) ;; *)
+  (*       ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
+  (*     | None => *)
+  (*       apps' <- list_m (map_inl get_deps apps) ;; *)
+  (*       ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
+  (*     end *)
+  (*   | _ =>  *)
+  (*     apps' <- list_m (map_inl get_deps apps) ;; *)
+  (*     ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
+  (*   end *)
+  (* | _ => ret nil *)
+  (* end. *)
+
+
+  Fixpoint get_deps' (t: Ced.Typ) : list Ced.Var :=
   match t with
   | Ced.TyIntersec _ t1 t2
   | Ced.TyPi _ t1 t2
-  | Ced.TyLam _ t1 t2 => get_deps t1 ++ get_deps t2
+  | Ced.TyLam _ t1 t2 => get_deps' t1 ++ get_deps' t2
   | Ced.TyAll _ _ t'
   | Ced.TyAllT _ _ t'
-  | Ced.TyLamK _ _ t' => get_deps t'
-  | Ced.TyApp t' apps => get_deps t' ++ concat (map_inl get_deps apps) ++ tyAppVars apps
+  | Ced.TyLamK _ _ t' => get_deps' t'
+  | Ced.TyApp t' apps => get_deps' t' ++ concat (map_inl get_deps' apps) ++ tyAppVars apps
   | _ => nil
+  end.
+
+  Fixpoint get_deps (penv : alist Ced.Var nat) (t: Ced.Typ): list Ced.Var :=
+  match t with
+  | Ced.TyApp (Ced.TyVar x) apps =>
+    match alist_find _ x penv with
+    | Some n =>
+      get_deps' (Ced.TyApp (Ced.TyVar x) (skipn n apps))
+    | _ => get_deps' t
+    end
+  | _ => get_deps' t
   end.
 
   Definition mot_env := alist Ced.Var Ced.Typ.
@@ -453,15 +499,15 @@ Section monadic.
   Definition build_lam (t: Ced.Typ) (env: mot_env) :=
   fold_right (fun '(x, ty) t' => insert_lam_body t' x ty) t env.
 
-  Program Fixpoint pull_deps t deps fvars { measure #|fvars| } :=
+  Program Fixpoint pull_deps t deps fvars penv { measure #|fvars| } :=
   let fvars' := alist_remove_many deps fvars in
   let deps_ty := alist_find_many deps fvars in
   let ts := combine_maybe deps deps_ty in
   let t' := build_lam t ts in
-  let deps' := concat (map get_deps (map snd ts)) in
+  let deps' := concat (map (get_deps penv) (map snd ts)) in
   if eq_nat #|deps'| 0
   then (t', fvars')
-  else pull_deps t' deps' fvars'.
+  else pull_deps t' deps' fvars' penv.
   Next Obligation.
     admit.
   Admitted.
@@ -473,10 +519,11 @@ Section monadic.
   let body := get_body mot in
   let fvars := build_env mot in
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
+  penv <- get ;;
   let nargs := delete_nth fvars rargpos  in
-  let deps := get_deps rarg_ty in
+  let deps := get_deps penv rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
-  let '(t'', nargs') := pull_deps t' deps nargs in
+  let '(t'', nargs') := pull_deps t' deps nargs penv in
   let mot' := unfold_env t'' nargs' in
   '(_, _, renv) <- ask ;;
   let '(arargs, arpos, anargs, amots) := renv in
@@ -683,6 +730,8 @@ Section monadic.
     params <- denoteParams param_l;;
     let tki := ind_type body in
     ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;;
+    penv <- get ;;
+    put (alist_add _ name (length params) penv) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
@@ -690,12 +739,13 @@ Section monadic.
   match genv with
   | nil => ret nil
   | e :: es' =>
-    ps <- denoteGenv es';;
     match e with
     | InductiveDecl kern mbody =>
       p <- denoteInductive mbody ;;
+      ps <- denoteGenv es';;
       ret (p :: ps)
     | ConstantDecl kern cbody =>
+      ps <- denoteGenv es';;
       if (String.eqb kern
                      "Coq.Init.Logic.False_ind")
       then ret ((Ced.CmdAssgn False_ind_term) :: ps)
@@ -732,23 +782,42 @@ Section monadic.
 End monadic.
 
 Instance m_Monad : Monad m.
+apply Monad_stateT.
 apply Monad_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
 Instance m_MonadReader : MonadReader (global_env * ctx * rec_env) m.
+apply MonadReader_stateT.
+apply Monad_readerT.
+apply Monad_eitherT.
+apply Monad_ident.
 apply MonadReader_readerT.
 apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
 Instance m_MonadExc : MonadExc string m.
+apply Exc_stateT.
+apply Monad_readerT.
+apply Monad_eitherT.
+apply Monad_ident.
 apply MonadExc_readerT.
 apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
+Instance m_MonadState : MonadState params_env m.
+apply MonadState_stateT.
+apply Monad_readerT.
+apply Monad_eitherT.
+apply Monad_ident.
+Defined.
+
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-run_m (genv, nil, fresh_renv) (denoteCoq' t).
+match run_m nil (genv, nil, fresh_renv) (denoteCoq' t) with
+| inl l => inl l
+| inr (p, _) => inr p
+end.
