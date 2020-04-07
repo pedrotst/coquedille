@@ -1,15 +1,3 @@
-
-  (* Inductive A : Type := foo_A : nat -> A. *)
-  (* Inductive B : Type := foo_B : bool -> B. *)
-
-  (* Definition fab (ab : A + B) : nat + bool := *)
-  (* let g := fix fa (a : A) : nat := match a with | foo_A x => x end in *)
-  (* let f := fix fb (b: B) : bool := match b with | foo_B b => b end in *)
-  (* match ab with *)
-  (* | inl a => inl (g a) *)
-  (* | inr b => inr (f b) *)
-  (* end. *)
-
 Require Import Strings.String.
 Require Import Strings.Ascii.
 Require Import List. Import ListNotations.
@@ -475,9 +463,9 @@ Section monadic.
     | _ => nil
   end.
 
-  Definition get_deps (kty: Ced.Sort): list Ced.Var :=
+  Definition get_deps penv (kty: Ced.Sort): list Ced.Var :=
   match kty with
-  | inr ty => get_depsTy ty
+  | inr ty => get_depsTy (delparamsTy penv ty)
   | _ => nil
   end.
 
@@ -492,6 +480,7 @@ Section monadic.
 
   Fixpoint get_body (t: Ced.Typ): Ced.Typ :=
   match t with
+  | Ced.TyAll _ _ b => get_body b
   | Ced.TyPi _ _ b => get_body b
   | _ => t
   end.
@@ -557,8 +546,8 @@ Section monadic.
   let ts := combine_maybe deps deps_ty in
   let t' := build_lam t ts in
   let tys := map snd ts in
-  let erased_tys := map (deleteparams penv) tys in
-  let deps' := concat (map get_deps erased_tys) in
+  (* let erased_tys := map (deleteparams penv) tys in *)
+  let deps' := concat (map (get_deps penv) tys) in
   if eq_nat #|deps'| 0
   then (t', fvars')
   else pull_deps t' deps' fvars' penv.
@@ -575,7 +564,7 @@ Section monadic.
   penv <- get ;;
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   let nargs := delete_nth fvars rargpos  in
-  let deps := get_deps rarg_ty in
+  let deps := get_deps penv rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs penv in
   let mot' := unfold_env t'' nargs' in
@@ -585,6 +574,22 @@ Section monadic.
                  alist_add _ fname nargs' anargs,
                  alist_add _ fname mot' amots) in
   ret renv'.
+
+  Definition p_env : params_env := [("t", 1)].
+
+  Definition myfun (mot : Ced.Typ) (rargpos : nat) :=
+  let body := get_body mot in
+  let fvars := build_env mot in
+  match nth_error fvars rargpos with
+  | None => None
+  | Some (rarg, rarg_ty) =>
+    let nargs := delete_nth fvars rargpos  in
+    let deps := get_deps p_env rarg_ty in
+    let t' := insert_lam_body body rarg rarg_ty in
+    let '(t'', nargs') := pull_deps t' deps nargs p_env in
+    let mot' := unfold_env t'' nargs' in
+    Some (mot', nargs')
+  end.
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
