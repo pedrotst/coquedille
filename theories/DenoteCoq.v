@@ -81,7 +81,7 @@ Section monadic.
   Definition a_rargspos := alist Ced.Var nat.
 
   (* 3) The remaining non-recursive arguments of the function to bind at each branch *)
-  Definition a_nrargs := alist Ced.Var (list (Ced.Var * Ced.Typ)).
+  Definition a_nrargs := alist Ced.Var (list (Ced.Var * Ced.Sort)).
 
   (* 4) Function name to it's type signature *)
   Definition a_motives := alist Ced.Var Ced.Typ.
@@ -365,7 +365,7 @@ Section monadic.
   | _ => ret l
   end.
 
-  Fixpoint tyAppVars' (ts: list (Ced.Typ + Ced.Term)) :=
+  Fixpoint tyAppVars' (ts: list Ced.TyTerm) :=
   let peel t :=
       match t with
       | inl (Ced.TyVar x) => Some x
@@ -397,54 +397,10 @@ Section monadic.
   Definition map_inl {A B C} (f: A -> C)  (l: list (A + B)): list C
     := eraseNones (map (app_inl f) l).
 
-  (* Program Fixpoint get_deps (t: Ced.Typ) : m (list Ced.Var) := *)
-  (* match t with *)
-  (* | Ced.TyIntersec _ t1 t2 *)
-  (* | Ced.TyPi _ t1 t2 *)
-  (* | Ced.TyLam _ t1 t2 => *)
-  (*   t1 <- get_deps t1 ;; *)
-  (*   t2 <- get_deps t2 ;; *)
-  (*   ret (t1 ++ t2) *)
-  (* | Ced.TyAll _ _ t' *)
-  (* | Ced.TyAllT _ _ t' *)
-  (* | Ced.TyLamK _ _ t' => get_deps t' *)
-  (* | Ced.TyApp t' apps => *)
-  (*   penv <- get ;; *)
-  (*   t1 <- get_deps t';; *)
-  (*   match t' with *)
-  (*   | Ced.TyVar x => *)
-  (*     match alist_find _ x penv with *)
-  (*     | Some n => *)
-  (*       apps' <- list_m (map_inl get_deps (skipn n apps)) ;; *)
-  (*       ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
-  (*     | None => *)
-  (*       apps' <- list_m (map_inl get_deps apps) ;; *)
-  (*       ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
-  (*     end *)
-  (*   | _ =>  *)
-  (*     apps' <- list_m (map_inl get_deps apps) ;; *)
-  (*     ret (t1 ++ (concat apps') ++ tyAppVars apps) *)
-  (*   end *)
-  (* | _ => ret nil *)
-  (* end. *)
-
-
-  Fixpoint get_deps' (t: Ced.Typ) : list Ced.Var :=
-  match t with
-  | Ced.TyIntersec _ t1 t2
-  | Ced.TyPi _ t1 t2
-  | Ced.TyLam _ t1 t2 => get_deps' t1 ++ get_deps' t2
-  | Ced.TyAll _ _ t'
-  | Ced.TyAllT _ _ t'
-  | Ced.TyLamK _ _ t' => get_deps' t'
-  | Ced.TyApp t' apps => get_deps' t' ++ concat (map_inl get_deps' apps) ++ tyAppVars apps
-  | _ => nil
-  end.
-
   Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
   let '(a1, a2) := aa in (f a1, f a2).
 
-  Fixpoint delparamsTy (penv: alist Ced.Var nat) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
+  Fixpoint delparamsTy (penv: params_env) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let c (kt: Ced.TyTerm) :=
@@ -469,7 +425,17 @@ Section monadic.
   | Ced.TyVar _ => ty
   | Ced.TyEq  t1 t2 => Ced.TyEq (delparamsT penv t1) (delparamsT penv t1)
   end
-  with delparamsT (penv: alist Ced.Var nat) (t: Ced.Term) {struct t}: Ced.Term :=
+  with delparamsK (penv: params_env) (k: Ced.Kind) {struct k}: Ced.Kind :=
+  match k with
+  | Ced.KdStar => Ced.KdStar
+  | Ced.KdAll x kty k' =>
+    let kty' := match kty with
+                | inl ki => inl ki
+                | inr ty => inr (delparamsTy penv ty)
+                end in
+    Ced.KdAll x kty' (delparamsK penv k')
+  end
+  with delparamsT (penv: params_env) (t: Ced.Term) {struct t}: Ced.Term :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let c (kt: Ced.TyTerm) :=
@@ -491,21 +457,28 @@ Section monadic.
                           (map (map_pair dparT) bs)
   end.
 
-  Definition deleteparams penv tyterm: Ced.TyTerm:=
-  match tyterm with
-  | inl ty => inl (delparamsTy penv ty)
-  | inr t => inr (delparamsT penv t)
+  Definition deleteparams penv kty: Ced.Sort:=
+  match kty with
+  | inr ty => inr (delparamsTy penv ty)
+  | inl k => inl (delparamsK penv k)
   end.
 
-  Fixpoint get_deps (penv : alist Ced.Var nat) (t: Ced.Typ): list Ced.Var :=
-  match t with
-  | Ced.TyApp (Ced.TyVar x) apps =>
-    match alist_find _ x penv with
-    | Some n =>
-      get_deps' (Ced.TyApp (Ced.TyVar x) (skipn n apps))
-    | _ => get_deps' t
-    end
-  | _ => get_deps' t
+  Fixpoint get_depsTy (ty: Ced.Typ) : list Ced.Var :=
+  match ty with
+    | Ced.TyIntersec _ t1 t2
+    | Ced.TyPi _ t1 t2
+    | Ced.TyLam _ t1 t2 => get_depsTy t1 ++ get_depsTy t2
+    | Ced.TyAll _ _ t'
+    | Ced.TyAllT _ _ t'
+    | Ced.TyLamK _ _ t' => get_depsTy t'
+    | Ced.TyApp t' apps => get_depsTy t' ++ concat (map_inl get_depsTy apps) ++ tyAppVars apps
+    | _ => nil
+  end.
+
+  Definition get_deps (kty: Ced.Sort): list Ced.Var :=
+  match kty with
+  | inr ty => get_depsTy ty
+  | _ => nil
   end.
 
   Definition mot_env := alist Ced.Var Ced.Sort.
@@ -583,7 +556,9 @@ Section monadic.
   let deps_ty := alist_find_many deps fvars in
   let ts := combine_maybe deps deps_ty in
   let t' := build_lam t ts in
-  let deps' := concat (map (get_deps penv) (map snd ts)) in
+  let tys := map snd ts in
+  let erased_tys := map (deleteparams penv) tys in
+  let deps' := concat (map get_deps erased_tys) in
   if eq_nat #|deps'| 0
   then (t', fvars')
   else pull_deps t' deps' fvars' penv.
@@ -600,7 +575,7 @@ Section monadic.
   penv <- get ;;
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   let nargs := delete_nth fvars rargpos  in
-  let deps := get_deps penv rarg_ty in
+  let deps := get_deps rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs penv in
   let mot' := unfold_env t'' nargs' in
@@ -626,10 +601,11 @@ Section monadic.
              end
   end.
 
-  Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Typ)) (tail: Ced.Term) :=
+  Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Sort)) (tail: Ced.Term) :=
   match nrargs with
   | nil => tail
-  | (x, ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_nrargs ts tail)
+  | (x, inr ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_nrargs ts tail)
+  | (x, inl k) :: ts => Ced.TLamK (Ced.Named x) k (bind_nrargs ts tail)
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 9).
