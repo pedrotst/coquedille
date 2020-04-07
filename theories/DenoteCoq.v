@@ -444,7 +444,7 @@ Section monadic.
   Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
   let '(a1, a2) := aa in (f a1, f a2).
 
-  Fixpoint delparamsTy (penv: alist Ced.Var nat) (ty: Ced.Typ): Ced.Typ :=
+  Fixpoint delparamsTy (penv: alist Ced.Var nat) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let c (kt: Ced.TyTerm) :=
@@ -469,7 +469,7 @@ Section monadic.
   | Ced.TyVar _ => ty
   | Ced.TyEq  t1 t2 => Ced.TyEq (delparamsT penv t1) (delparamsT penv t1)
   end
-  with delparamsT (penv: alist Ced.Var nat) (t: Ced.Term): Ced.Term :=
+  with delparamsT (penv: alist Ced.Var nat) (t: Ced.Term) {struct t}: Ced.Term :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let c (kt: Ced.TyTerm) :=
@@ -478,24 +478,20 @@ Section monadic.
       | inr t => inr (dparT t)
       end in
   match t with
-  | _ => t end.
-  (* | Ced.TVar x => t *)
-  (* | Ced.TLam x er ty b => Ced.TLam x er (dparTy ty) (dparT b) *)
-  (* | Ced.TLamK x k b => Ced.TLamK x k (dparT b) *)
-  (* | Ced.TApp t apps => Ced.TApp (dparT t) (map c apps) *)
-  (* | Ced.TLetTm x er ty t' b => Ced.TLetTm x er (dparTy ty) (dparT t') (dparT t) *)
-  (* | Ced.TLetTy x k ty b => Ced.TLetTy x k (dparTy ty) (dparT b) *)
-  (* | Ced.TMu x t' mot bs => Ced.TMu x (dparT t') (option_map dparTy mot) *)
-  (*                                 bs *)
-  (*                         (* (map (map_pair dparT) bs) *) *)
+  | Ced.TVar x => t
+  | Ced.TLam x er ty b => Ced.TLam x er (dparTy ty) (dparT b)
+  | Ced.TLamK x k b => Ced.TLamK x k (dparT b)
+  | Ced.TApp t apps => Ced.TApp (dparT t) (map c apps)
+  | Ced.TLetTm x er ty t' b => Ced.TLetTm x er (dparTy ty) (dparT t') (dparT b)
+  | Ced.TLetTy x k ty b => Ced.TLetTy x k (dparTy ty) (dparT b)
+  | Ced.TDelta b => Ced.TDelta (dparT b)
+  | Ced.TRho t1 t2 => Ced.TRho (dparT t1) (dparT t2)
+  | Ced.TBeta => Ced.TBeta
+  | Ced.TMu x t' mot bs => Ced.TMu x (dparT t') (option_map dparTy mot)
+                          (map (map_pair dparT) bs)
+  end.
 
-  (* | Ced.TDelta b => Ced.TDelta (dparT b) *)
-  (* | Ced.TRho t1 t2 => Ced.TRho (dparT t1) (dparT t2) *)
-  (* | Ced.TBeta => Ced.TBeta *)
-  (* end. *)
-
-  Fixpoint deleteparams penv tyterm: Ced.TyTerm:=
-  let dpar := deleteparams penv in
+  Definition deleteparams penv tyterm: Ced.TyTerm:=
   match tyterm with
   | inl ty => inl (delparamsTy penv ty)
   | inr t => inr (delparamsT penv t)
