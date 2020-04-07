@@ -1,3 +1,15 @@
+
+  (* Inductive A : Type := foo_A : nat -> A. *)
+  (* Inductive B : Type := foo_B : bool -> B. *)
+
+  (* Definition fab (ab : A + B) : nat + bool := *)
+  (* let g := fix fa (a : A) : nat := match a with | foo_A x => x end in *)
+  (* let f := fix fb (b: B) : bool := match b with | foo_B b => b end in *)
+  (* match ab with *)
+  (* | inl a => inl (g a) *)
+  (* | inr b => inr (f b) *)
+  (* end. *)
+
 Require Import Strings.String.
 Require Import Strings.Ascii.
 Require Import List. Import ListNotations.
@@ -429,6 +441,66 @@ Section monadic.
   | _ => nil
   end.
 
+  Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
+  let '(a1, a2) := aa in (f a1, f a2).
+
+  Fixpoint delparamsTy (penv: alist Ced.Var nat) (ty: Ced.Typ): Ced.Typ :=
+  let dparTy := delparamsTy penv in
+  let dparT := delparamsT penv in
+  let c (kt: Ced.TyTerm) :=
+      match kt with
+      | inl ty => inl (dparTy ty)
+      | inr t => inr (dparT t)
+      end in
+  match ty with
+  | Ced.TyIntersec x ty b => Ced.TyIntersec x ty (dparTy b)
+  | Ced.TyPi x k b => Ced.TyPi x k (dparTy b)
+  | Ced.TyLam x ty b => Ced.TyLam x ty (dparTy b) (**)
+  | Ced.TyAll x k b => Ced.TyAll x k (dparTy b)
+  | Ced.TyAllT x ty b => Ced.TyAllT x ty (dparTy b)
+  | Ced.TyLamK x k b => Ced.TyLamK x k (dparTy b)
+  | Ced.TyApp (Ced.TyVar x) apps =>
+    match alist_find _ x penv with
+    | Some n => Ced.TyApp (Ced.TyVar x) (skipn n apps)
+    | None => Ced.TyApp (Ced.TyVar x) (map c apps)
+    end
+  | Ced.TyApp t' apps =>
+    Ced.TyApp t' (map c apps)
+  | Ced.TyVar _ => ty
+  | Ced.TyEq  t1 t2 => Ced.TyEq (delparamsT penv t1) (delparamsT penv t1)
+  end
+  with delparamsT (penv: alist Ced.Var nat) (t: Ced.Term): Ced.Term :=
+  let dparTy := delparamsTy penv in
+  let dparT := delparamsT penv in
+  let c (kt: Ced.TyTerm) :=
+      match kt with
+      | inl ty => inl (dparTy ty)
+      | inr t => inr (dparT t)
+      end in
+  match t with
+  | _ => t end.
+  (* | Ced.TVar x => t *)
+  (* | Ced.TLam x er ty b => Ced.TLam x er (dparTy ty) (dparT b) *)
+  (* | Ced.TLamK x k b => Ced.TLamK x k (dparT b) *)
+  (* | Ced.TApp t apps => Ced.TApp (dparT t) (map c apps) *)
+  (* | Ced.TLetTm x er ty t' b => Ced.TLetTm x er (dparTy ty) (dparT t') (dparT t) *)
+  (* | Ced.TLetTy x k ty b => Ced.TLetTy x k (dparTy ty) (dparT b) *)
+  (* | Ced.TMu x t' mot bs => Ced.TMu x (dparT t') (option_map dparTy mot) *)
+  (*                                 bs *)
+  (*                         (* (map (map_pair dparT) bs) *) *)
+
+  (* | Ced.TDelta b => Ced.TDelta (dparT b) *)
+  (* | Ced.TRho t1 t2 => Ced.TRho (dparT t1) (dparT t2) *)
+  (* | Ced.TBeta => Ced.TBeta *)
+  (* end. *)
+
+  Fixpoint deleteparams penv tyterm: Ced.TyTerm:=
+  let dpar := deleteparams penv in
+  match tyterm with
+  | inl ty => inl (delparamsTy penv ty)
+  | inr t => inr (delparamsT penv t)
+  end.
+
   Fixpoint get_deps (penv : alist Ced.Var nat) (t: Ced.Typ): list Ced.Var :=
   match t with
   | Ced.TyApp (Ced.TyVar x) apps =>
@@ -440,12 +512,12 @@ Section monadic.
   | _ => get_deps' t
   end.
 
-  Definition mot_env := alist Ced.Var Ced.Typ.
+  Definition mot_env := alist Ced.Var Ced.Sort.
 
   Fixpoint build_env' (ty: Ced.Typ) (acc: mot_env): mot_env :=
   match ty with
-  | Ced.TyAll _ _ t => build_env' t acc
-  | Ced.TyPi n ty b => build_env' b (alist_add _ (getName n) ty acc)
+  | Ced.TyAll n k b => build_env' b (alist_add _ (getName n) (inl k) acc)
+  | Ced.TyPi n ty b => build_env' b (alist_add _ (getName n) (inr ty) acc)
   | _ => acc
   end.
 
@@ -457,22 +529,33 @@ Section monadic.
 
   Definition build_env t := rev (build_env' t nil).
 
-  Fixpoint pull_env (env: mot_env) (x: Ced.Var) (t: Ced.Typ) : Ced.Typ * mot_env :=
+  Fixpoint pull_env (env: mot_env) (x: Ced.Var) (bdy: Ced.Typ) : Ced.Typ * mot_env :=
   match alist_find _ x env with
-  | Some ty => (Ced.TyPi (Ced.Named x) ty t, (alist_remove _ x env))
-  | None => (t, env)
+  | Some ty =>
+    let t' := match ty with
+              | inl xk => Ced.TyAll (Ced.Named x) xk bdy
+              | inr xty => Ced.TyPi (Ced.Named x) xty bdy
+              end in
+      (t', (alist_remove _ x env))
+  | None => (bdy, env)
   end.
 
   (* Inserts Pi x ty in the end of the lambda list *)
-  Fixpoint insert_pi_body (t: Ced.Typ) (x: Ced.Var) (ty: Ced.Typ): Ced.Typ :=
+  Fixpoint insert_pi_body (t: Ced.Typ) (x: Ced.Var) (kty: Ced.Kind + Ced.Typ): Ced.Typ :=
   match t with
-  | Ced.TyLam x' ty' b => Ced.TyLam x' ty' (insert_pi_body b x ty)
-  | _ => Ced.TyPi (Ced.Named x) ty t
+  | Ced.TyLam x' ty' b => Ced.TyLam x' ty' (insert_pi_body b x kty)
+  | _ => match kty with
+        | inr ty => Ced.TyPi (Ced.Named x) ty t
+        | inl k => Ced.TyAll (Ced.Named x) k t
+        end
   end.
 
   (* Inserts Lam x ty in the begining of the lambda list *)
-  Fixpoint insert_lam_body (t: Ced.Typ) (x: Ced.Var) (ty: Ced.Typ): Ced.Typ :=
-  Ced.TyLam (Ced.Named x) ty t.
+  Fixpoint insert_lam_body (t: Ced.Typ) (x: Ced.Var) (kty: Ced.Kind + Ced.Typ): Ced.Typ :=
+  match kty with
+  | inl k => Ced.TyLamK (Ced.Named x) k t
+  | inr ty => Ced.TyLam (Ced.Named x) ty t
+  end.
 
   Definition unfold_env (t: Ced.Typ) (env: mot_env)
     := fold_right (fun '(x, ty) t' => insert_pi_body t' x ty) t env.
@@ -518,15 +601,14 @@ Section monadic.
   Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname : m rec_env:=
   let body := get_body mot in
   let fvars := build_env mot in
-  '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   penv <- get ;;
+  '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   let nargs := delete_nth fvars rargpos  in
   let deps := get_deps penv rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs penv in
   let mot' := unfold_env t'' nargs' in
-  '(_, _, renv) <- ask ;;
-  let '(arargs, arpos, anargs, amots) := renv in
+  '(_, _, (arargs, arpos, anargs, amots)) <- ask ;;
   let renv' := (alist_add _ rarg fname arargs,
                  alist_add _ fname rargpos arpos,
                  alist_add _ fname nargs' anargs,
