@@ -165,6 +165,13 @@ Definition appSize (t: Term) :=
   | _ => 0
   end.
 
+Definition flattenApp (t: Typ) :=
+  match t with
+  | TyApp t' nil => t'
+  | _ => t
+  end.
+
+
 Fixpoint ppKind (ki : Kind) {struct ki}: state type_ctx string :=
   match ki with
   | KdStar => ret TkStar
@@ -379,12 +386,6 @@ match n with
   | _ => ret k
   end
 end.
-
-Definition flattenApp (t: Typ) :=
-  match t with
-  | TyApp t' nil => t'
-  | _ => t
-  end.
 
 Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ): Typ :=
   let removeParams' := removeParams data_name params_count in

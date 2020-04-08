@@ -74,11 +74,14 @@ Section monadic.
   (* 4) Function name to it's type signature *)
   Definition a_motives := alist Ced.Var Ced.Typ.
 
-  Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives.
+  (* 5) Function name to reorg list used to reorganize the applications *)
+  Definition a_reorg := alist Ced.Var (list nat).
+
+  Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives * a_reorg.
 
   Definition params_env := alist Ced.Var nat.
 
-  Definition fresh_renv: rec_env := (nil, nil, nil, nil).
+  Definition fresh_renv: rec_env := (nil, nil, nil, nil, nil).
 
   Definition m A := stateT params_env (readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident)) A.
   Definition run_m {A} (params: params_env) (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
@@ -345,7 +348,7 @@ Section monadic.
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
-     let '(_, arpos, _, _) := renv in
+     let '(_, arpos, _, _, _) := renv in
      match alist_find _ x arpos with
      | Some n => ret (nth_to_head l n)
      | None => ret l
@@ -570,11 +573,12 @@ Section monadic.
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs penv in
   let mot' := unfold_env t'' nargs' in
-  '(_, _, (arargs, arpos, anargs, amots)) <- ask ;;
+  '(_, _, (arargs, arpos, anargs, amots, reorg)) <- ask ;;
   let renv' := (alist_add _ rarg fname arargs,
                  alist_add _ fname rargpos arpos,
                  alist_add _ fname nargs' anargs,
-                 alist_add _ fname mot' amots) in
+                 alist_add _ fname mot' amots,
+                 alist_add _ fname nil reorg) in
   ret renv'.
 
   Definition flattenTApp (t: Ced.Term) :=
@@ -721,7 +725,7 @@ Section monadic.
   | tFix _ _ => raise "Mutually recursive fixpoints not implemented yet"
   | tCase (ind, npars) mot matchvar brchs =>
     '(_, _, renv) <- ask ;;
-    let '(arargs, _, anargs, amots) := renv in
+    let '(arargs, _, anargs, amots, _) := renv in
     ctors <- get_ctors ind ;;
     matchvar' <- ⟦ matchvar ⟧ ;;
     mot' <- denoteType mot ;;

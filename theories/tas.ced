@@ -1,0 +1,25 @@
+module tas.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data t (A : ★) : nat ➔ ★ =
+  | nil : t O
+  | cons : Π h : A . Π n : nat . t n ➔ t (S n).
+
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+hasNum' : ∀ A : ★ . Π n : nat . Π n' : nat . Π v : t ·(t ·A n') n . bool
+= Λ A : ★ . λ n : nat . λ n' : nat . λ v : t ·(t ·A n') n .
+μ hasNum'. v @(λ n : nat . λ v : t ·(t ·A n') n .
+    ∀ A : ★ . Π n' : nat .
+    bool)
+{
+  | nil ➔ Λ A : ★ . λ n' : nat . false
+  | cons y size ys ➔ Λ A : ★ . λ n' : nat .
+  hasNum' -size ys ·A n'
+ } ·A n'.
+

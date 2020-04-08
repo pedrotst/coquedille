@@ -14,13 +14,6 @@ Module Ced.
   | Named (_: Var)
   .
 
-    (* data case-arg : Set where *)
-    (* CaseArg : erased? → var → maybe tpkd → case-arg *)
-  (* data case : Set where *)
-    (* Case : var → case-args → term → 𝕃 tmtp → case *)
-  (* Mu : is-mu → term → maybe type → *)
-       (* datatype-info → cases → term *)
-
   Inductive Kind : Type :=
   | KdStar
   | KdAll (_: Name) (_: Kind + Typ) (_: Kind)
@@ -46,13 +39,17 @@ Module Ced.
   | TRho (lhs rhs : Term)
   | TBeta
   .
+  Local Open Scope type_scope.
+
+  Notation Sort := (Kind + Typ).
+  Notation TyTerm := (Typ + Term).
 
   Inductive Ctor : Type :=
   | Ctr (_: Var) (_: Typ).
 
   Definition Ctors := list Ctor.
 
-  Definition Params := list (Var * (Kind + Typ)).
+  Definition Params := list (Var * Sort).
 
   Inductive Data : Type :=
   | DefData (_: Var) (_: Params) (_: Kind) (_: Ctors).
@@ -66,5 +63,17 @@ Module Ced.
   | CmdAssgn (_: Assgn)
   | CmdData (_: Data)
   .
-Definition Program := list Cmd.
+  Definition Program := list Cmd.
+
 End Ced.
+
+
+(* Definition kind_is_sort : Ced.Kind -> Ced.Sort := inl. *)
+(* Definition typ_is_sort : Ced.Typ -> Ced.Sort := inr. *)
+(* Coercion kind_is_sort : Ced.Kind >-> Ced.Sort. *)
+(* Coercion typ_is_sort : Ced.Typ >-> Ced.Sort. *)
+
+(* Definition typ_is_tyterm : Ced.Typ -> Ced.TyTerm := inl. *)
+(* Definition term_is_tyterm : Ced.Term -> Ced.TyTerm := inr. *)
+(* Coercion typ_is_tyterm : Ced.Typ >-> Ced.TyTerm. *)
+(* Coercion term_is_tyterm : Ced.Term >-> Ced.TyTerm. *)

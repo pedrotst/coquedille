@@ -66,15 +66,74 @@ end.
 Quote Recursively Definition isZero_syntax := isZeroFun.
 Eval compute in (pretty (denoteCoq isZero_syntax)).
 
-Definition isVnil {A n} (v : t A n) : nat -> bool :=
+Definition isVnil {A n} (v : t A n) : bool :=
 match v with
-| nil => fun H1 => true
-| cons x n' v' =>  fun H2 => false
+| nil => true
+| cons x n' v' =>  false
 end.
 
 Quote Recursively Definition isVnil_syntax := isVnil.
 Eval compute in (pretty (denoteCoq isVnil_syntax)).
 
+Fixpoint hasNum {n} (x: nat) (v: t nat n): bool :=
+match v with
+| nil => false
+| cons y size ys => eq_nat x y || hasNum x ys
+end.
+
+Quote Recursively Definition hasNum_syntax := hasNum.
+Eval compute in ((denoteCoq hasNum_syntax)).
+Eval compute in (pretty (denoteCoq hasNum_syntax)).
+
+Fixpoint hasNum' {A n n'} (v: t (t A n') n): bool :=
+match v with
+| nil => false
+| cons y size ys => hasNum' ys
+end.
+
+Quote Recursively Definition hasNum'_syntax := hasNum'.
+Eval compute in ((denoteCoq hasNum'_syntax)).
+Eval compute in (pretty (denoteCoq hasNum'_syntax)).
+
+Fixpoint hasVnil {A n n'} (v: t (t A n') n) : bool :=
+match v with
+| nil => false
+| cons y size ys => if isVnil y then true else hasVnil ys
+end.
+
+Arguments cons {_} _ {_}.
+Arguments nil {_}.
+
+Program Definition v1 := cons (@nil nat) nil.
+Program Definition v2 := cons (@nil nat) v1.
+
+Program Definition v3 := cons (v2) nil.
+
+Eval compute in (isVnil v2).
+Eval compute in (hasVnil v3).
+
+Quote Recursively Definition hasVnil_syntax := hasVnil.
+Eval compute in ((denoteCoq hasVnil_syntax)).
+Eval compute in (pretty (denoteCoq hasVnil_syntax)).
+
+Fixpoint myAdd (n m a b c: nat) {struct m} : nat :=
+  match m with
+  | 0 => n
+  | S p => S (myAdd n p a b c)
+  end.
+
+Quote Recursively Definition add_syntax := myAdd.
+Eval compute in ((denoteCoq add_syntax)).
+Eval compute in (pretty (denoteCoq add_syntax)).
+
+Quote Recursively Definition mul_syntax := Nat.mul.
+Eval compute in (pretty (denoteCoq mul_syntax)).
+
+Quote Recursively Definition pow_syntax := Nat.pow.
+Eval compute in (pretty (denoteCoq pow_syntax)).
+
+Quote Recursively Definition gcd_syntax := Nat.gcd.
+Eval compute in (pretty (denoteCoq gcd_syntax)).
 
 (* Test a straightforward lemma *)
 Lemma exlemma : [1] = [1].

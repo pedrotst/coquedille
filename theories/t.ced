@@ -1,0 +1,30 @@
+module t.
+
+-- Global Instance Monad_reader : Monad reader :=
+--   { ret  := fun _ v => mkReader (fun _ => v)
+--   ; bind := fun _ _ c1 c2 =>
+--     mkReader (fun s =>
+--       let v := runReader c1 s in
+--       runReader (c2 v) s)
+--   }.
+
+import stdlib.
+
+data Monad (m : ★ ➔ ★) : ★ =
+| ret_bind : (∀ a : ★ . a ➔ m ·a) ➔
+             (∀ a : ★ . ∀ b : ★ . (m ·a ➔ (a ➔ m ·b) ➔ m ·b)) ➔
+             Monad.
+
+IdMon : Monad ·(λ x : ★ . x) = ret_bind (Λ a : ★ . λ x : a . x)
+                                    (Λ a : ★ . Λ b : ★ .
+                                    λ x : a . λ f : a ➔ b .
+                                    f x).
+
+OptMon : Monad ·Option
+        = ret_bind some
+          (Λ a : ★ . Λ b : ★ . λ x : Option ·a .
+             λ f : a ➔ Option ·b.
+             μ' x {
+             | some x' ➔ f x'
+             | none ➔ none ·b
+             }).
