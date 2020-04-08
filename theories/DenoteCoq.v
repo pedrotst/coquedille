@@ -447,7 +447,7 @@ Section monadic.
                           (map (map_pair dparT) bs)
   end.
 
-  Definition deleteparams penv kty: Ced.Sort:=
+  Definition deleteparams (penv: params_env) (kty: Ced.Sort) : Ced.Sort:=
   match kty with
   | inr ty => inr (delparamsTy penv ty)
   | inl k => inl (delparamsK penv k)
@@ -465,7 +465,7 @@ Section monadic.
     | _ => nil
   end.
 
-  Definition get_deps penv (kty: Ced.Sort): list Ced.Var :=
+  Definition get_deps (penv: params_env) (kty: Ced.Sort): list Ced.Var :=
   match kty with
   | inr ty => get_depsTy (delparamsTy penv ty)
   | _ => nil
@@ -576,22 +576,6 @@ Section monadic.
                  alist_add _ fname nargs' anargs,
                  alist_add _ fname mot' amots) in
   ret renv'.
-
-  Definition p_env : params_env := [("t", 1)].
-
-  Definition myfun (mot : Ced.Typ) (rargpos : nat) :=
-  let body := get_body mot in
-  let fvars := build_env mot in
-  match nth_error fvars rargpos with
-  | None => None
-  | Some (rarg, rarg_ty) =>
-    let nargs := delete_nth fvars rargpos  in
-    let deps := get_deps p_env rarg_ty in
-    let t' := insert_lam_body body rarg rarg_ty in
-    let '(t'', nargs') := pull_deps t' deps nargs p_env in
-    let mot' := unfold_env t'' nargs' in
-    Some (mot', nargs')
-  end.
 
   Definition flattenTApp (t: Ced.Term) :=
   match t with
