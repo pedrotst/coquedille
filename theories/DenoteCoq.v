@@ -24,6 +24,11 @@ Require Import MetaCoq.Template.utils.
 Require Import Coquedille.Ast.
 Require Import Coquedille.Hardcoded.
 
+Require Import ExtLib.Core.RelDec.
+
+Require Import Coq.Sorting.Mergesort.
+Module Import NatSort := Sort NatOrder.
+
 Definition inj1M {A B mon} `{Monad mon} : mon A -> mon (sum A B) := fun m => fmap inl m.
 Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fmap inr m.
 
@@ -83,7 +88,10 @@ Section monadic.
 
   Definition fresh_renv: rec_env := (nil, nil, nil, nil, nil).
 
-  Definition m A := stateT params_env (readerT (global_env * ctx * rec_env) (eitherT string IdentityMonad.ident)) A.
+  Definition m A := stateT params_env
+                           (readerT (global_env * ctx * rec_env)
+                                    (eitherT string IdentityMonad.ident)) A.
+
   Definition run_m {A} (params: params_env) (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
   Context {Monad_m : Monad m}.
   Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
@@ -327,6 +335,13 @@ Section monadic.
            end
   end.
 
+  Fixpoint eraseNones {A} (ls: list (option A)): list A :=
+  match ls with
+  | (Some x) :: l => x :: eraseNones l
+  | None :: l => eraseNones l
+  | nil => nil
+  end.
+
   Fixpoint delete_nth {A} (l: list A) (n:nat): list A :=
   match l with
   | nil => nil
@@ -342,15 +357,30 @@ Section monadic.
   | Some x => x :: delete_nth l n
   end.
 
+  Definition nth_many {A} (l: list A) (r: list nat): list A :=
+  eraseNones (map (nth_error l) r).
+
+  Definition delete_many {A} (l: list A) (dels: list nat) :=
+  fold_right (fun a l' => delete_nth l' a) l dels.
+
+  (* Eval compute in sort [10;4;3;6;7]. *)
+
   (* FIXME: Notice that if the function name is hidden behind another definition this will not work because
      it expects that it is a TVar directly. Solving this seems tricky *)
-  Definition reorg_app_args {A} (t: Ced.Term) (l: list A) : m (list A):=
+  Definition reorg_app_args (t: Ced.Term) (l: list Ced.TyTerm) : m (list Ced.TyTerm) :=
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
-     let '(_, arpos, _, _, _) := renv in
-     match alist_find _ x arpos with
-     | Some n => ret (nth_to_head l n)
+     let '(_, _, _, _, reorg) := renv in
+     match alist_find _ x reorg with
+     | Some re =>
+       let items := nth_many l re in
+       (* FIXME: This is the least efficient implementation! :( *)
+       let sorted_re := (sort re) in
+       let tail := delete_many l sorted_re in
+       (* ret (items ++ [inr (Ced.TVar "u")] ++ tail ++ [inr (Ced.TVar "z")] ++ l) *)
+       ret (items ++ tail)
+       (* ret l *)
      | None => ret l
      end
   | _ => ret l
@@ -367,13 +397,6 @@ Section monadic.
      | t :: ts => peel t :: tyAppVars' ts
      | nil => nil
      end.
-
-  Fixpoint eraseNones {A} (ls: list (option A)): list A :=
-  match ls with
-  | (Some x) :: l => x :: eraseNones l
-  | None :: l => eraseNones l
-  | nil => nil
-  end.
 
   Definition tyAppVars := eraseNones ̊ tyAppVars'.
 
@@ -456,6 +479,7 @@ Section monadic.
   | inl k => inl (delparamsK penv k)
   end.
 
+  (* FIXME: This definition is incomplete, e.g. intersection *)
   Fixpoint get_depsTy (ty: Ced.Typ) : list Ced.Var :=
   match ty with
     | Ced.TyIntersec _ t1 t2
@@ -545,6 +569,15 @@ Section monadic.
   Definition build_lam (t: Ced.Typ) (env: mot_env) :=
   fold_right (fun '(x, ty) t' => insert_lam_body t' x ty) t env.
 
+  Fixpoint alist_pos' {K V R} `{RelDec _ R} (acc: nat) (m: alist K V) (k: K): option nat :=
+  match m with
+  | nil => None
+  | (k', _) :: ms => if (k ?[ R ] k')
+                   then Some acc
+                   else alist_pos' (S acc) ms k
+  end.
+  Definition alist_pos {K V R RD_K} := @alist_pos' K V R RD_K 0.
+
   Program Fixpoint pull_deps t deps fvars penv { measure #|fvars| } :=
   let fvars' := alist_remove_many deps fvars in
   let deps_ty := alist_find_many deps fvars in
@@ -560,6 +593,13 @@ Section monadic.
     admit.
   Admitted.
 
+  Fixpoint get_lambodies (t: Ced.Typ) : list Ced.Var :=
+  match t with
+  | Ced.TyLam x _ b
+  | Ced.TyLamK x _ b => (getName x) :: get_lambodies b
+  | _ => nil
+  end.
+
   (* This function pull the nth argument of a lambda term
      and pulls it to be the first argument *)
   (* TODO: Recursivelly pull dependent variables *)
@@ -568,17 +608,19 @@ Section monadic.
   let fvars := build_env mot in
   penv <- get ;;
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
-  let nargs := delete_nth fvars rargpos  in
+  let nargs := alist_remove _ rarg fvars in
   let deps := get_deps penv rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
   let '(t'', nargs') := pull_deps t' deps nargs penv in
+  let boundvars := get_lambodies t'' in
+  let reorgs := map (alist_pos fvars) boundvars in
   let mot' := unfold_env t'' nargs' in
   '(_, _, (arargs, arpos, anargs, amots, reorg)) <- ask ;;
   let renv' := (alist_add _ rarg fname arargs,
                  alist_add _ fname rargpos arpos,
                  alist_add _ fname nargs' anargs,
                  alist_add _ fname mot' amots,
-                 alist_add _ fname nil reorg) in
+                 alist_add _ fname (eraseNones reorgs) reorg) in
   ret renv'.
 
   Definition flattenTApp (t: Ced.Term) :=
@@ -675,7 +717,8 @@ Section monadic.
                              then fmap inl (denoteType e)
                              else fmap inr (denoteTerm e))
                       ts) ;;
-    ts'' <- reorg_app_args t' ts' ;;
+
+    ts'' <- reorg_app_args t' ts';;
     ret (Ced.TApp t' ts'')
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
