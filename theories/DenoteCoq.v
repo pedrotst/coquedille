@@ -391,18 +391,19 @@ Section monadic.
   Fixpoint delparamsTy (penv: params_env) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
+  let dparK := delparamsK penv in
   let c (kt: Ced.TyTerm) :=
       match kt with
       | inl ty => inl (dparTy ty)
       | inr t => inr (dparT t)
       end in
   match ty with
-  | Ced.TyIntersec x ty b => Ced.TyIntersec x ty (dparTy b)
-  | Ced.TyPi x k b => Ced.TyPi x k (dparTy b)
-  | Ced.TyLam x ty b => Ced.TyLam x ty (dparTy b) (**)
-  | Ced.TyAll x k b => Ced.TyAll x k (dparTy b)
-  | Ced.TyAllT x ty b => Ced.TyAllT x ty (dparTy b)
-  | Ced.TyLamK x k b => Ced.TyLamK x k (dparTy b)
+  | Ced.TyIntersec x ty' b => Ced.TyIntersec x (dparTy ty') (dparTy b)
+  | Ced.TyPi x ty' b => Ced.TyPi x (dparTy ty') (dparTy b)
+  | Ced.TyLam x ty' b => Ced.TyLam x (dparTy ty') (dparTy b) (**)
+  | Ced.TyAll x k b => Ced.TyAll x (dparK k) (dparTy b)
+  | Ced.TyAllT x ty b => Ced.TyAllT x (dparTy ty) (dparTy b)
+  | Ced.TyLamK x k b => Ced.TyLamK x (dparK k) (dparTy b)
   | Ced.TyApp (Ced.TyVar x) apps =>
     match alist_find _ x penv with
     | Some n => Ced.TyApp (Ced.TyVar x) (skipn n apps)
@@ -426,6 +427,7 @@ Section monadic.
   with delparamsT (penv: params_env) (t: Ced.Term) {struct t}: Ced.Term :=
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
+  let dparK := delparamsK penv in
   let c (kt: Ced.TyTerm) :=
       match kt with
       | inl ty => inl (dparTy ty)
@@ -434,7 +436,7 @@ Section monadic.
   match t with
   | Ced.TVar x => t
   | Ced.TLam x er ty b => Ced.TLam x er (dparTy ty) (dparT b)
-  | Ced.TLamK x k b => Ced.TLamK x k (dparT b)
+  | Ced.TLamK x k b => Ced.TLamK x (dparK k) (dparT b)
   | Ced.TApp t apps => Ced.TApp (dparT t) (map c apps)
   | Ced.TLetTm x er ty t' b => Ced.TLetTm x er (dparTy ty) (dparT t') (dparT b)
   | Ced.TLetTy x k ty b => Ced.TLetTy x k (dparTy ty) (dparT b)
