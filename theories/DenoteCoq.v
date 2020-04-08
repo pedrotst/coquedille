@@ -242,7 +242,7 @@ Section monadic.
   Definition build_tApp (nts: ctor_typ * list (Ced.Typ + Ced.Term)) :=
   let '(ctor, ts) := nts in
   let '(n, _, _) := ctor in
-  Ced.TApp (Ced.TVar n) ts.
+  Ced.TApp (Ced.TVar n) (map (fun t => (false, t)) ts).
 
   Definition get_ctor_name : ctor_typ -> ident :=
   fun x => fst (fst x).
@@ -363,27 +363,32 @@ Section monadic.
   Definition delete_many {A} (l: list A) (dels: list nat) :=
   fold_right (fun a l' => delete_nth l' a) l dels.
 
-  (* Eval compute in sort [10;4;3;6;7]. *)
+  Fixpoint tag_last {A} (l: list A) {struct l} : list (bool * A) :=
+  match l with
+  | nil => nil
+  | [a] => [(false, a)]
+  | a1 :: (_ :: _) as l0 => (true, a1) :: tag_last l0
+  end.
 
   (* FIXME: Notice that if the function name is hidden behind another definition this will not work because
      it expects that it is a TVar directly. Solving this seems tricky *)
-  Definition reorg_app_args (t: Ced.Term) (l: list Ced.TyTerm) : m (list Ced.TyTerm) :=
+  Definition reorg_app_args {A} (t: Ced.Term) (l: list A) : m (list (bool * A)) :=
+  let tag := map (fun x => (false, x)) in
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
      let '(_, _, _, _, reorg) := renv in
      match alist_find _ x reorg with
      | Some re =>
-       let items := nth_many l re in
+       let items := tag_last (nth_many l re) in
        (* FIXME: This is the least efficient implementation! :( *)
        let sorted_re := (sort re) in
        let tail := delete_many l sorted_re in
-       (* ret (items ++ [inr (Ced.TVar "u")] ++ tail ++ [inr (Ced.TVar "z")] ++ l) *)
-       ret (items ++ tail)
+       ret (items ++ tag tail)
        (* ret l *)
-     | None => ret l
+     | None => ret (tag l)
      end
-  | _ => ret l
+  | _ => ret (tag l)
   end.
 
   Fixpoint tyAppVars' (ts: list Ced.TyTerm) :=
@@ -408,8 +413,8 @@ Section monadic.
 
   (* There may be some monadic functions to take care of these auxiliar
   functions for us *)
-  Definition map_inl {A B C} (f: A -> C)  (l: list (A + B)): list C
-    := eraseNones (map (app_inl f) l).
+  Definition map_inl {A B X C} (f: A -> C)  (l: list (X * (A + B))): list C
+    := eraseNones (map (fun xab => app_inl f (snd xab)) l).
 
   Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
   let '(a1, a2) := aa in (f a1, f a2).
@@ -418,10 +423,11 @@ Section monadic.
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let dparK := delparamsK penv in
-  let c (kt: Ced.TyTerm) :=
+  let c (bkt: bool * Ced.TyTerm) :=
+      let '(b, kt) := bkt in
       match kt with
-      | inl ty => inl (dparTy ty)
-      | inr t => inr (dparT t)
+      | inl ty => (b, inl (dparTy ty))
+      | inr t => (b, inr (dparT t))
       end in
   match ty with
   | Ced.TyIntersec x ty' b => Ced.TyIntersec x (dparTy ty') (dparTy b)
@@ -454,10 +460,11 @@ Section monadic.
   let dparTy := delparamsTy penv in
   let dparT := delparamsT penv in
   let dparK := delparamsK penv in
-  let c (kt: Ced.TyTerm) :=
+  let c (bkt: bool * Ced.TyTerm) :=
+      let '(b, kt) := bkt in
       match kt with
-      | inl ty => inl (dparTy ty)
-      | inr t => inr (dparT t)
+      | inl ty => (b, inl (dparTy ty))
+      | inr t => (b, inr (dparT t))
       end in
   match t with
   | Ced.TVar x => t
@@ -488,7 +495,8 @@ Section monadic.
     | Ced.TyAll _ _ t'
     | Ced.TyAllT _ _ t'
     | Ced.TyLamK _ _ t' => get_depsTy t'
-    | Ced.TyApp t' apps => get_depsTy t' ++ concat (map_inl get_depsTy apps) ++ tyAppVars apps
+    | Ced.TyApp t' apps =>
+      get_depsTy t' ++ concat (map_inl get_depsTy apps) ++ tyAppVars (map snd apps)
     | _ => nil
   end.
 
@@ -677,8 +685,8 @@ Section monadic.
     t' <- denoteType t ;;
     ts' <- list_m (map (fun e => b <- isType e ;;
                              if b
-                             then fmap inl (denoteType e)
-                             else fmap inr (denoteTerm e))
+                             then fmap (fun x => (false, inl x)) (denoteType e)
+                             else fmap (fun x => (false, inr x)) (denoteTerm e))
                       ts) ;;
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
@@ -738,7 +746,7 @@ Section monadic.
     then
       t'' <- denoteTerm t' ;;
       match t'' with
-      | Ced.TApp _ ([(inl eqty); (inr x); _; _; (inr y); (inr eq)]) =>
+      | Ced.TApp _ ([(false, inl eqty); (false, inr x); _; _; (false, inr y); (false, inr eq)]) =>
         ret (Ced.TDelta (eq_elim_term eq eqty x))
       | _ => ret (Ced.TVar "delwrong")
       end
@@ -785,7 +793,7 @@ Section monadic.
        this may actually make anargs unecessary *)
     let nrargs_brchs := map (bind_nrargs app_args) trimmed_brchs' in
     (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
-    let tapp_args := map (inr ̊ Ced.TVar ̊ fst) app_args in
+    let tapp_args := map (fun x => (false, (inr ̊ Ced.TVar ̊ fst) x)) app_args in
     let t' := Ced.TApp (Ced.TMu fname matchvar' (Some mot') (combine flat_constrs nrargs_brchs)) tapp_args in
     ret (flattenTApp t')
   end

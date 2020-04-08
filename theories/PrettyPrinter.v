@@ -46,6 +46,7 @@ Definition TkRho       := "ρ".
 Definition TkEq        := "≃".
 Definition TkAt        := "@".
 Definition TkAssgn     := "=".
+Definition TkErase     := "-".
 Definition TkCR        := "
 ".
 
@@ -137,20 +138,23 @@ Fixpoint getVar (t: Typ + Term): option Var :=
   | inl t' => getVarTyp t'
   end.
 
-Definition ppDot (t: Typ + Term) : state type_ctx string :=
-  Γ <- get ;;
-  match getVar t with
-  | None => ret ""
-  | Some v =>
-      match alist_find _ v Γ with
+Definition ppDot (b: bool) (t: Typ + Term) : state type_ctx string :=
+  if b
+  then ret TkErase
+  else
+    Γ <- get ;;
+      match getVar t with
       | None => ret ""
-      | Some t =>
-        match t with
-        | inl _ => ret TkTDot
-        | _ => ret ""
+      | Some v =>
+        match alist_find _ v Γ with
+        | None => ret ""
+        | Some t =>
+          match t with
+          | inl _ => ret TkTDot
+          | _ => ret ""
+          end
         end
-      end
-  end.
+      end.
 
 Definition appendCtx v t : state type_ctx unit :=
   Γ <- get ;;
@@ -193,8 +197,9 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
   match t with
   | TyApp t1 ts2 =>
     t1' <- ppTyp false true t1 ;;
-    let ppApp (t: Typ + Term) : state type_ctx string :=
-        d <- ppDot t ;;
+    let ppApp (bt: bool * (Typ + Term)) : state type_ctx string :=
+        let '(b, t) := bt in
+        d <- ppDot b t ;;
         match t with
         | inr t' =>
           t'' <- ppTerm false true t' ;;
@@ -255,8 +260,9 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
   match t with
   | TApp t1 ts2 =>
     t1' <- ppTerm false true t1 ;;
-    let ppApp (t: Typ + Term) : state type_ctx string :=
-        d <- ppDot t ;;
+    let ppApp (bt: bool * (Typ + Term)) : state type_ctx string :=
+        let '(b, t) := bt in
+        d <- ppDot b t ;;
         match t with
         | inr t' =>
           t'' <- ppTerm false true t' ;;
