@@ -647,10 +647,11 @@ Section monadic.
   end.
 
   Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Sort)) (tail: Ced.Term) :=
+  let fresh x := append x "'" in
   match nrargs with
   | nil => tail
-  | (x, inr ty) :: ts => Ced.TLam (Ced.Named x) false ty (bind_nrargs ts tail)
-  | (x, inl k) :: ts => Ced.TLamK (Ced.Named x) k (bind_nrargs ts tail)
+  | (x, inr ty) :: ts => Ced.TLam (Ced.Named (fresh x)) false ty (bind_nrargs ts tail)
+  | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) k (bind_nrargs ts tail)
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 9).
