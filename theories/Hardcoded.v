@@ -15,9 +15,9 @@ Definition eq_elim_term (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term 
                    Ced.Anon
                    (Ced.TyApp
                       (Ced.TyVar "eq")
-                      [inl eqty ;
-                         inr y;
-                         inr (Ced.TVar "x")])
+                      [(false, inl eqty);
+                         (false, inr y);
+                         (false, inr (Ced.TVar "x"))])
                    (Ced.TyEq y (Ced.TVar "x")))
              )
           )
@@ -43,7 +43,7 @@ Definition False_ind_term : Ced.Assgn :=
                                      false
                                      (Ced.TyVar "False")
                                      (Ced.TApp (Ced.TVar "f")
-                                               [inl (Ced.TyVar "P")]))).
+                                               [(false, inl (Ced.TyVar "P"))]))).
 
 Definition JMeq_rect_term : Ced.Assgn :=
   (Ced.AssgnTerm "JMeq_rect"
@@ -58,7 +58,7 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                     (Ced.TyPi Ced.Anon
                                                               (Ced.TyApp
                                                                  (Ced.TyVar "P")
-                                                                 [inl (Ced.TyVar "x")])
+                                                                 [(false, inl (Ced.TyVar "x"))])
                                                               (Ced.TyPi
                                                                  (Ced.Named "y")
                                                                  (Ced.TyVar "A")
@@ -67,13 +67,13 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                     (Ced.TyApp
                                                                        (Ced.TyVar "JMeq")
                                                                        [
-                                                                         inl (Ced.TyVar "A");
-                                                                           inl (Ced.TyVar "x");
-                                                                           inl (Ced.TyVar "A");
-                                                                           inl (Ced.TyVar "y")])
+                                                                         (false, inl (Ced.TyVar "A"));
+                                                                         (false, inl (Ced.TyVar "x"));
+                                                                         (false, inl (Ced.TyVar "A"));
+                                                                         (false, inl (Ced.TyVar "y"))])
                                                                     (Ced.TyApp
                                                                        (Ced.TyVar "P")
-                                                                       [inl (Ced.TyVar "y")]
+                                                                       [(false, inl (Ced.TyVar "y"))]
                                                                     )
                  )))))))
                  (Ced.TLamK (Ced.Named "A") Ced.KdStar
@@ -84,17 +84,17 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                             (inr (Ced.TyVar "A")) Ced.KdStar)
                                                  (Ced.TLam (Ced.Named "p") false
                                                            (Ced.TyApp (Ced.TyVar "P")
-                                                                      [inl (Ced.TyVar "x")])
+                                                                      [(false, inl (Ced.TyVar "x"))])
                                                            (Ced.TLam (Ced.Named "y") false
                                                                      (Ced.TyVar "A")
                                                                      (Ced.TLam
                                                                         (Ced.Named "H") false
                                                                         (Ced.TyApp
                                                                            (Ced.TyVar "JMeq")
-                                                                           [inl (Ced.TyVar "A");
-                                                                              inl (Ced.TyVar "x");
-                                                                              inl (Ced.TyVar "A");
-                                                                              inl (Ced.TyVar "y")])
+                                                                           [(false, inl (Ced.TyVar "A"));
+                                                                              (false, inl (Ced.TyVar "x"));
+                                                                              (false, inl (Ced.TyVar "A"));
+                                                                              (false, inl (Ced.TyVar "y"))])
                                                                         (Ced.TMu
                                                                            None
                                                                            (Ced.TVar "H")
@@ -108,14 +108,14 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                                           Ced.Anon
                                                                                           (Ced.TyApp
                                                                                              (Ced.TyVar "JMeq")
-                                                                                             [inl (Ced.TyVar "A");
-                                                                                                inl (Ced.TyVar "x");
-                                                                                                inl (Ced.TyVar "A1");
-                                                                                                inl (Ced.TyVar "y1")
+                                                                                             [(false, inl (Ced.TyVar "A"));
+                                                                                              (false, inl (Ced.TyVar "x"));
+                                                                                              (false, inl (Ced.TyVar "A1"));
+                                                                                              (false, inl (Ced.TyVar "y1"))
                                                                                           ])
                                                                                           (Ced.TyApp
                                                                                              (Ced.TyVar "P")
-                                                                                             [inl (Ced.TyVar "y")])
+                                                                                             [(false, inl (Ced.TyVar "y"))])
                                                                            ))))
                                                                            [(Ced.TVar "JMeq_refl",
                                                                              Ced.TLetTm

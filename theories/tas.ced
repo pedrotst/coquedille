@@ -4,22 +4,35 @@ data nat : ★ =
   | O : nat
   | S : nat ➔ nat.
 
-data t (A : ★) : nat ➔ ★ =
-  | nil : t O
-  | cons : Π h : A . Π n : nat . t n ➔ t (S n).
+sub : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ sub. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m' : nat . n
+  | S k ➔ λ m' : nat . μ' m @(λ m' : nat . nat) {
+  | O ➔ n
+  | S l ➔ sub k l
+ }
+ } m.
 
-data bool : ★ =
-  | true : bool
-  | false : bool.
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
 
-hasNum' : ∀ A : ★ . Π n : nat . Π n' : nat . Π v : t ·(t ·A n') n . bool
-= Λ A : ★ . λ n : nat . λ n' : nat . λ v : t ·(t ·A n') n .
-μ hasNum'. v @(λ n : nat . λ v : t ·(t ·A n') n .
-    ∀ A : ★ . Π n' : nat .
-    bool)
-{
-  | nil ➔ Λ A : ★ . λ n' : nat . false
-  | cons y size ys ➔ Λ A : ★ . λ n' : nat .
-  hasNum' -size ys ·A n'
- } ·A n'.
+snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . μ' p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y
+ }.
 
+divmod : Π x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat = λ x : nat . λ y : nat . λ q : nat . λ u : nat . μ divmod. x @(λ x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat) {
+  | O ➔ λ y' : nat . λ q' : nat . λ u' : nat . pair ·nat ·nat q u
+  | S x' ➔ λ y' : nat . λ q' : nat . λ u' : nat . μ' u @(λ u' : nat . prod ·nat ·nat) {
+  | O ➔ divmod x' y (S q) y
+  | S u' ➔ divmod x' y q u'
+ }
+ } y q u.
+
+modulo : Π x : nat . Π y : nat . nat = λ x : nat . λ y : nat . μ' y @(λ y' : nat . nat) {
+  | O ➔ y
+  | S y' ➔ sub y' (snd ·nat ·nat (divmod x y' O y'))
+ }.
+
+gcd : Π a : nat . Π b : nat . nat = λ a : nat . λ b : nat . μ gcd. a @(λ a : nat . Π b : nat . nat) {
+  | O ➔ λ b' : nat . b
+  | S a' ➔ λ b' : nat . gcd (modulo b (S a')) (S a')
+ } b.

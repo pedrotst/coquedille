@@ -14,6 +14,7 @@ Module Ced.
   | Named (_: Var)
   .
 
+  Local Open Scope type_scope.
   Inductive Kind : Type :=
   | KdStar
   | KdAll (_: Name) (_: Kind + Typ) (_: Kind)
@@ -21,7 +22,7 @@ Module Ced.
   | TyVar (_: Var)
   | TyAll (_: Name) (_: Kind) (_: Typ)
   | TyPi (_: Name) (_: Typ) (_: Typ)
-  | TyApp (_: Typ) (_: list (Typ + Term))
+  | TyApp (_: Typ) (_: list (bool * (Typ + Term)))
   | TyLam (_: Name) (_: Typ) (_: Typ)
   | TyLamK (_: Name) (_: Kind) (_: Typ)
   | TyAllT (_: Name) (_: Typ) (_: Typ)
@@ -31,7 +32,7 @@ Module Ced.
   | TVar (_: Var)
   | TLam (_: Name) (erased: bool) (_: Typ) (_: Term)
   | TLamK (_: Name) (_: Kind) (_: Term)
-  | TApp (_: Term) (_: list (Typ + Term))
+  | TApp : Term -> list (bool * (Typ + Term)) -> Term
   | TLetTm (_: Name) (erased: bool) (ty: Typ) (_: Term) (body: Term)
   | TLetTy (_: Name) (k: Kind) (ty: Typ) (body: Term)
   | TMu (is_rec: option Var) (_: Term) (_: option Typ) (branches: list (Term * Term))
@@ -39,7 +40,6 @@ Module Ced.
   | TRho (lhs rhs : Term)
   | TBeta
   .
-  Local Open Scope type_scope.
 
   Notation Sort := (Kind + Typ).
   Notation TyTerm := (Typ + Term).

@@ -11,6 +11,16 @@ Require Import String.
 Require Import List. Import ListNotations.
 Require Import Coq.Vectors.Vector.
 
+Inductive Ve (A : Type) : nat -> bool -> nat -> Type :=
+| vni : Ve A 0 false 2
+| vcon : A -> forall (n : nat), Ve A n false 2 -> Ve A (S n) false 2
+.
+
+(* Fixpoint hasNu {A n b m} (v : Ve A n b m) : bool := *)
+(* match v with *)
+(* | vni => false *)
+(* | vcon => inr c *)
+(* end. *)
 
 Inductive Vec (A : Type) : nat -> Type :=
 | vnil : Vec A 0
