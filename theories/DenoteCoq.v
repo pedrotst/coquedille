@@ -73,20 +73,17 @@ Section monadic.
   (* TODO: make this a list of nat with all the parameters *)
   Definition a_rargspos := alist Ced.Var nat.
 
-  (* 3) The remaining non-recursive arguments of the function to bind at each branch *)
-  Definition a_nrargs := alist Ced.Var (list (Ced.Var * Ced.Sort)).
-
-  (* 4) Function name to it's type signature *)
+  (* 3) Function name to it's type signature *)
   Definition a_motives := alist Ced.Var Ced.Typ.
 
-  (* 5) Function name to reorg list used to reorganize the applications *)
+  (* 4) Function name to reorg list used to reorganize the applications *)
   Definition a_reorg := alist Ced.Var (list nat).
 
-  Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives * a_reorg.
+  Definition rec_env := a_rargs * a_rargspos * a_motives * a_reorg.
 
   Definition params_env := alist Ced.Var nat.
 
-  Definition fresh_renv: rec_env := (nil, nil, nil, nil, nil).
+  Definition fresh_renv: rec_env := (nil, nil, nil, nil).
 
   Definition m A := stateT params_env
                            (readerT (global_env * ctx * rec_env)
@@ -342,26 +339,8 @@ Section monadic.
   | nil => nil
   end.
 
-  Fixpoint delete_nth {A} (l: list A) (n:nat): list A :=
-  match l with
-  | nil => nil
-  | x :: xs => match n with
-             | O => xs
-             | S n' => x :: delete_nth xs n'
-             end
-  end.
-
-  Fixpoint nth_to_head {A} (l: list A) (n: nat) : list A :=
-  match nth_error l n with
-  | None => l
-  | Some x => x :: delete_nth l n
-  end.
-
   Definition nth_many {A} (l: list A) (r: list nat): list A :=
   eraseNones (map (nth_error l) r).
-
-  Definition delete_many {A} (l: list A) (dels: list nat) :=
-  fold_right (fun a l' => delete_nth l' a) l dels.
 
   Fixpoint tag_last {A} (l: list A) {struct l} : list (bool * A) :=
   match l with
@@ -372,20 +351,19 @@ Section monadic.
 
   (* FIXME: Notice that if the function name is hidden behind another definition this will not work because
      it expects that it is a TVar directly. Solving this seems tricky *)
+  (* We can assume that the terms are zeta reduced, always call metacoq with cbn [zeta]!
+   *)
   Definition reorg_app_args {A} (t: Ced.Term) (l: list A) : m (list (bool * A)) :=
   let tag := map (fun x => (false, x)) in
   match t with
   | Ced.TVar x =>
     '(_, _, renv) <- ask ;;
-     let '(_, _, _, _, reorg) := renv in
+     let '(_, _, _, reorg) := renv in
      match alist_find _ x reorg with
      | Some re =>
        let items := tag_last (nth_many l re) in
-       (* FIXME: This is the least efficient implementation! :( *)
        let sorted_re := (sort re) in
-       let tail := delete_many l sorted_re in
-       ret (items ++ tag tail)
-       (* ret l *)
+       ret items
      | None => ret (tag l)
      end
   | _ => ret (tag l)
@@ -414,10 +392,10 @@ Section monadic.
   (* There may be some monadic functions to take care of these auxiliar
   functions for us *)
   Definition map_inl {A B X C} (f: A -> C)  (l: list (X * (A + B))): list C
-    := eraseNones (map (fun xab => app_inl f (snd xab)) l).
+    := eraseNones (map (fun '(_, ab) => app_inl f ab) l).
 
-  Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
-  let '(a1, a2) := aa in (f a1, f a2).
+  Definition map_pair {A B} (f: A -> B) : A * A -> B * B :=
+  fun '(a1, a2) => (f a1, f a2).
 
   Fixpoint delparamsTy (penv: params_env) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
   let dparTy := delparamsTy penv in
@@ -486,7 +464,7 @@ Section monadic.
   | inl k => inl (delparamsK penv k)
   end.
 
-  (* FIXME: This definition is incomplete, e.g. intersection *)
+  (* FIXME: I think we need to define this for terms and types too *)
   Fixpoint get_depsTy (ty: Ced.Typ) : list Ced.Var :=
   match ty with
     | Ced.TyIntersec _ t1 t2
@@ -497,7 +475,9 @@ Section monadic.
     | Ced.TyLamK _ _ t' => get_depsTy t'
     | Ced.TyApp t' apps =>
       get_depsTy t' ++ concat (map_inl get_depsTy apps) ++ tyAppVars (map snd apps)
-    | _ => nil
+    | Ced.TyVar x => [x]
+    (* | Ced.TyEq t1 t2 => get_depsT t1 ++ get_depsT t2 *)
+    | Ced.TyEq _ _ => nil
   end.
 
   Definition get_deps (penv: params_env) (kty: Ced.Sort): list Ced.Var :=
@@ -619,15 +599,13 @@ Section monadic.
   let nargs := alist_remove _ rarg fvars in
   let deps := get_deps penv rarg_ty in
   let t' := insert_lam_body body rarg rarg_ty in
-  let '(t'', nargs') := pull_deps t' deps nargs penv in
+  let '(t'', _) := pull_deps t' deps nargs penv in
   let boundvars := get_lambodies t'' in
   let reorgs := map (alist_pos fvars) boundvars in
-  let mot' := unfold_env t'' nargs' in
-  '(_, _, (arargs, arpos, anargs, amots, reorg)) <- ask ;;
+  '(_, _, (arargs, arpos, amots, reorg)) <- ask ;;
   let renv' := (alist_add _ rarg fname arargs,
                  alist_add _ fname rargpos arpos,
-                 alist_add _ fname nargs' anargs,
-                 alist_add _ fname mot' amots,
+                 alist_add _ fname t'' amots,
                  alist_add _ fname (eraseNones reorgs) reorg) in
   ret renv'.
 
@@ -637,22 +615,22 @@ Section monadic.
   | _ => t
   end.
 
-  Definition get_nrargs (fname: option Ced.Var) (nrargs: a_nrargs) :=
-  match fname with
-  | None => nil
-  | Some x => match alist_find _ x nrargs with
-             | None => nil
-             | Some l => l
-             end
-  end.
+  (* Definition get_nrargs (fname: option Ced.Var) (nrargs: a_nrargs) := *)
+  (* match fname with *)
+  (* | None => nil *)
+  (* | Some x => match alist_find _ x nrargs with *)
+  (*            | None => nil *)
+  (*            | Some l => l *)
+  (*            end *)
+  (* end. *)
 
-  Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Sort)) (tail: Ced.Term) :=
-  let fresh x := append x "'" in
-  match nrargs with
-  | nil => tail
-  | (x, inr ty) :: ts => Ced.TLam (Ced.Named (fresh x)) false ty (bind_nrargs ts tail)
-  | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) k (bind_nrargs ts tail)
-  end.
+  (* Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Sort)) (tail: Ced.Term) := *)
+  (* let fresh x := append x "'" in *)
+  (* match nrargs with *)
+  (* | nil => tail *)
+  (* | (x, inr ty) :: ts => Ced.TLam (Ced.Named (fresh x)) false ty (bind_nrargs ts tail) *)
+  (* | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) k (bind_nrargs ts tail) *)
+  (* end. *)
 
   Reserved Notation "⟦ x ⟧" (at level 9).
   Fixpoint denoteKind (t: term): m Ced.Kind :=
@@ -777,7 +755,7 @@ Section monadic.
   | tFix _ _ => raise "Mutually recursive fixpoints not implemented yet"
   | tCase (ind, npars) mot matchvar brchs =>
     '(_, _, renv) <- ask ;;
-    let '(arargs, _, anargs, amots, _) := renv in
+    let '(arargs, _, amots, _) := renv in
     ctors <- get_ctors ind ;;
     matchvar' <- ⟦ matchvar ⟧ ;;
     mot' <- denoteType mot ;;
@@ -789,13 +767,7 @@ Section monadic.
     let flat_constrs := map flattenTApp constrs in
     let fname := get_rfunc_name matchvar' arargs in
     let mot' := get_motive fname amots mot' in
-    let app_args := get_nrargs fname anargs in
-    (* TODO: instead of removing and rebinding we can just remove the necessary ones
-       this may actually make anargs unecessary *)
-    let nrargs_brchs := map (bind_nrargs app_args) trimmed_brchs' in
-    (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
-    let tapp_args := map (fun x => (false, (inr ̊ Ced.TVar ̊ fst) x)) app_args in
-    let t' := Ced.TApp (Ced.TMu fname matchvar' (Some mot') (combine flat_constrs nrargs_brchs)) tapp_args in
+    let t' := Ced.TMu fname matchvar' (Some mot') (combine flat_constrs trimmed_brchs') in
     ret (flattenTApp t')
   end
   where "⟦ x ⟧" := (denoteTerm x).
