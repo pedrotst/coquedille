@@ -414,7 +414,7 @@ Section monadic.
   Definition map_inl {A B X C} (f: A -> C)  (l: list (X * (A + B))): list C
     := eraseNones (map (fun '(_, ab) => app_inl f ab) l).
 
-  Definition map_pair {A B} (f: A -> B) A * A -> B * B :=
+  Definition map_pair {A B} (f: A -> B): A * A -> B * B :=
   fun '(a1, a2) => (f a1, f a2).
 
   Fixpoint delparamsTy (penv: params_env) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
@@ -430,10 +430,14 @@ Section monadic.
   match ty with
   | Ced.TyIntersec x ty' b => Ced.TyIntersec x (dparTy ty') (dparTy b)
   | Ced.TyPi x ty' b => Ced.TyPi x (dparTy ty') (dparTy b)
-  | Ced.TyLam x ty' b => Ced.TyLam x (dparTy ty') (dparTy b) (**)
+  | Ced.TyLam x ty' b =>
+    let ty'' := match ty' with | Some u => Some (dparTy u) | None => None end in
+    Ced.TyLam x ty'' (dparTy b) (**)
   | Ced.TyAll x k b => Ced.TyAll x (dparK k) (dparTy b)
   | Ced.TyAllT x ty b => Ced.TyAllT x (dparTy ty) (dparTy b)
-  | Ced.TyLamK x k b => Ced.TyLamK x (dparK k) (dparTy b)
+  | Ced.TyLamK x k b =>
+    let k' := match k with | Some u => Some (dparK u) | None => None end in
+    Ced.TyLamK x k' (dparTy b)
   | Ced.TyApp (Ced.TyVar x) apps =>
     match alist_find _ x penv with
     | Some n => Ced.TyApp (Ced.TyVar x) (skipn n apps)
@@ -466,8 +470,12 @@ Section monadic.
       end in
   match t with
   | Ced.TVar x => t
-  | Ced.TLam x er ty b => Ced.TLam x er (dparTy ty) (dparT b)
-  | Ced.TLamK x k b => Ced.TLamK x (dparK k) (dparT b)
+  | Ced.TLam x er ty b =>
+    let ty'' := match ty with | Some u => Some (dparTy u) | None => None end in
+    Ced.TLam x er ty'' (dparT b)
+  | Ced.TLamK x k b =>
+    let k' := match k with | Some u => Some (dparK u) | None => None end in
+    Ced.TLamK x k' (dparT b)
   | Ced.TApp t apps => Ced.TApp (dparT t) (map c apps)
   | Ced.TLetTm x er ty t' b => Ced.TLetTm x er (dparTy ty) (dparT t') (dparT b)
   | Ced.TLetTy x k ty b => Ced.TLetTy x k (dparTy ty) (dparT b)
@@ -488,8 +496,12 @@ Section monadic.
   Fixpoint get_depsTy (ty: Ced.Typ) : list Ced.Var :=
   match ty with
     | Ced.TyIntersec _ t1 t2
-    | Ced.TyPi _ t1 t2
-    | Ced.TyLam _ t1 t2 => get_depsTy t1 ++ get_depsTy t2
+    | Ced.TyPi _ t1 t2 => get_depsTy t1 ++ get_depsTy t2
+    | Ced.TyLam _ t1 t2 =>
+      get_depsTy t2 ++ match t1 with
+                       | None => nil
+                       | Some u => get_depsTy u
+                       end
     | Ced.TyAll _ _ t'
     | Ced.TyAllT _ _ t'
     | Ced.TyLamK _ _ t' => get_depsTy t'
@@ -546,8 +558,8 @@ Section monadic.
   (* Inserts Lam x ty in the begining of the lambda list *)
   Fixpoint insert_lam_body (t: Ced.Typ) (x: Ced.Var) (kty: Ced.Kind + Ced.Typ): Ced.Typ :=
   match kty with
-  | inl k => Ced.TyLamK (Ced.Named x) k t
-  | inr ty => Ced.TyLam (Ced.Named x) ty t
+  | inl k => Ced.TyLamK (Ced.Named x) (Some k) t
+  | inr ty => Ced.TyLam (Ced.Named x) (Some ty) t
   end.
 
   Definition unfold_env (t: Ced.Typ) (env: mot_env)
@@ -648,8 +660,8 @@ Section monadic.
   let fresh x := append x "'" in
   match nrargs with
   | nil => tail
-  | (x, inr ty) :: ts => Ced.TLam (Ced.Named (fresh x)) false ty (bind_nrargs ts tail)
-  | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) k (bind_nrargs ts tail)
+  | (x, inr ty) :: ts => Ced.TLam (Ced.Named "_") false None (bind_nrargs ts tail)
+  | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) None (bind_nrargs ts tail)
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 9).
@@ -692,9 +704,9 @@ Section monadic.
     '(t', x') <- localDenote x (denoteType t) ;;
     if isKind kty
     then k <- denoteKind kty ;;
-         ret (Ced.TyLamK x' k t')
+         ret (Ced.TyLamK x' (Some k) t')
     else ty <- denoteType kty ;;
-         ret (Ced.TyLam x' ty t')
+         ret (Ced.TyLam x' (Some ty) t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
   | tFix _ _ => raise "type tFix not implemented yet"
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
@@ -707,7 +719,6 @@ Section monadic.
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
   | tSort univ => ret defaultTy
-    (* raise "type tSort not implemented yet" *)
   end
 
   with denoteTerm (t: term): m Ced.Term :=
@@ -732,14 +743,14 @@ Section monadic.
     ctors <- get_ctors ind ;;
     '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
     ret (Ced.TVar ctor)
-  | tProd x kty t (*=> ret (Ced.TVar "tProd")*)
+  | tProd x kty t
   | tLambda x kty t =>
     '(t', x') <- localDenote x ⟦ t ⟧ ;;
     if isKind kty
     then k <- denoteKind kty ;;
-         ret (Ced.TLamK x' k t')
+         ret (Ced.TLamK x' (Some k) t')
     else ty <- denoteType kty ;;
-         ret (Ced.TLam x' false ty t')
+         ret (Ced.TLam x' false (Some ty) t')
   | tLetIn x t' kty bdy =>
     if is_delta t
     then

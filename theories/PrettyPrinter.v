@@ -234,18 +234,28 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
                ++ TkSpace ++ k ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLam x t1 t2 =>
     let name := getName x in
-    t1' <- ppTyp false false t1 ;;
-    appendCtx name (inr t1) ;;
+    t1' <- match t1 with
+          | Some u => u' <- ppTyp false false u ;;
+                     appendCtx name (inr u) ;;
+                     ret (TkSpace ++ TkColon ++ TkSpace ++ u')
+          | None =>
+            appendCtx name (inr (TyVar "_")) ;;
+            ret ""
+          end ;;
     t2' <- ppTyp false false t2 ;;
-    ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
-               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
+    ret (TkLam ++ TkSpace ++ name ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyLamK x k t2 =>
     let name := getName x in
-    t1' <- ppKind k ;;
-    appendCtx name (inl k) ;;
+    k' <- match k with
+          | Some u => u' <- ppKind u ;;
+                     appendCtx name (inl u) ;;
+                     ret (TkSpace ++ TkColon ++ TkSpace ++ u')
+          | None =>
+            appendCtx name (inl KdStar) ;;
+            ret ""
+          end ;;
     t2' <- ppTyp false false t2 ;;
-    ret (TkLam ++ TkSpace ++ name ++ TkSpace ++ TkColon
-               ++ TkSpace ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
+    ret (TkLam ++ TkSpace ++ name ++ k' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
   | TyVar v => ret v
   | TyEq t1 t2 =>
     t1' <- ppTerm false false t1 ;;
@@ -274,22 +284,32 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TLam x b ty t =>
-    ty' <- ppTyp false false ty ;;
     let name := getName x in
-    appendCtx name (inr ty) ;;
+    ty' <- match ty with
+          | Some u => u' <- ppTyp false false u ;;
+                     appendCtx name (inr u) ;;
+                     ret (TkSpace ++ TkColon ++ TkSpace ++ u')
+          | None =>
+            appendCtx name (inr (TyVar "_")) ;;
+            ret ""
+          end ;;
     t' <- ppTerm false false t ;;
     let tk := if b then TkULam else TkLam in
-    ret (parens bapp (tk ++ TkSpace ++ name ++ TkSpace
-                            ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
+    ret (parens bapp (tk ++ TkSpace ++ name ++ ty' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TVar v => ret v
   | TLamK x k t =>
-    k' <- ppKind k ;;
     let name := getName x in
-    appendCtx name (inl k) ;;
+    k' <- match k with
+          | Some u => u' <- ppKind u ;;
+                     appendCtx name (inl u) ;;
+                     ret (TkSpace ++ TkColon ++ TkSpace ++ u')
+          | None =>
+            appendCtx name (inl KdStar) ;;
+            ret ""
+          end ;;
     t' <- ppTerm false false t ;;
-    ret (parens bapp (TkULam ++ TkSpace ++ name ++ TkSpace
-                            ++ TkColon ++ TkSpace ++ k' ++ TkSpace
+    ret (parens bapp (TkULam ++ TkSpace ++ name ++ k' ++ TkSpace
                             ++ TkDot ++ TkSpace ++ t'))
   | TLetTy x k ty bdy =>
     k' <- ppKind k;;
