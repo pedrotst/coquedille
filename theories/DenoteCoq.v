@@ -381,11 +381,9 @@ Section monadic.
      match alist_find _ x reorg with
      | Some re =>
        let items := tag_last (nth_many l re) in
-       (* FIXME: This is the least efficient implementation! :( *)
        let sorted_re := (sort re) in
        let tail := delete_many l sorted_re in
        ret (items ++ tag tail)
-       (* ret l *)
      | None => ret (tag l)
      end
   | _ => ret (tag l)
@@ -414,10 +412,10 @@ Section monadic.
   (* There may be some monadic functions to take care of these auxiliar
   functions for us *)
   Definition map_inl {A B X C} (f: A -> C)  (l: list (X * (A + B))): list C
-    := eraseNones (map (fun xab => app_inl f (snd xab)) l).
+    := eraseNones (map (fun '(_, ab) => app_inl f ab) l).
 
-  Definition map_pair {A B} (f: A -> B) (aa : A * A) : B * B :=
-  let '(a1, a2) := aa in (f a1, f a2).
+  Definition map_pair {A B} (f: A -> B) A * A -> B * B :=
+  fun '(a1, a2) => (f a1, f a2).
 
   Fixpoint delparamsTy (penv: params_env) (ty: Ced.Typ) {struct ty}: Ced.Typ :=
   let dparTy := delparamsTy penv in
@@ -486,7 +484,7 @@ Section monadic.
   | inl k => inl (delparamsK penv k)
   end.
 
-  (* FIXME: This definition is incomplete, e.g. intersection *)
+  (* FIXME: I think we need to define this for terms and types too *)
   Fixpoint get_depsTy (ty: Ced.Typ) : list Ced.Var :=
   match ty with
     | Ced.TyIntersec _ t1 t2
@@ -497,8 +495,8 @@ Section monadic.
     | Ced.TyLamK _ _ t' => get_depsTy t'
     | Ced.TyApp t' apps =>
       get_depsTy t' ++ concat (map_inl get_depsTy apps) ++ tyAppVars (map snd apps)
-    | _ => nil
-  end.
+    | Ced.TyVar x => [x]
+    | Ced.TyEq _ _ => nil  end.
 
   Definition get_deps (penv: params_env) (kty: Ced.Sort): list Ced.Var :=
   match kty with
