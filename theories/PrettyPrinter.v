@@ -40,6 +40,7 @@ Definition TkData      := "data".
 Definition TkLam       := "λ".
 Definition TkULam      := "Λ".
 Definition TkMu        := "μ".
+Definition TkSigma     := "σ".
 Definition TkDelta     := "δ".
 Definition TkBeta      := "β".
 Definition TkRho       := "ρ".
@@ -349,12 +350,12 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
         end in
     t' <- ppTerm false false t ;;
     mot' <- printMotive mot ;;
-    let isrec := match b with
-                 | None =>  "'"
-                 | Some s => (TkSpace ++ s ++ TkDot)
+    let rec := match b with
+                 | None =>  TkSigma
+                 | Some s => TkMu
                  end in
     brchs' <- list_m (map printBranch brchs) ;;
-               ret (TkMu ++ isrec ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac
+               ret (rec ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac
                          ++ TkCR ++ (string_of_list id brchs' 1)
               ++ TkCR ++ TkSpace ++ TkCloseCBrac)
   | TDelta t =>
