@@ -352,7 +352,7 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
     mot' <- printMotive mot ;;
     let rec := match b with
                  | None =>  TkSigma
-                 | Some s => TkMu
+                 | Some s => TkMu ++ TkSpace ++ s ++ TkDot
                  end in
     brchs' <- list_m (map printBranch brchs) ;;
                ret (rec ++ TkSpace ++ t' ++ TkSpace ++ mot' ++ TkOpenCBrac

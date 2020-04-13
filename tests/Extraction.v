@@ -8,7 +8,6 @@ Require Import Coquedille.PrettyPrinter.
 Require Coq.extraction.Extraction.
 Extraction Language Haskell.
 
-
 (* Controlling extraction of specific types *)
 Extract Inductive bool => "GHC.Base.Bool" ["GHC.Base.True" "GHC.Base.False"]. (* enumeration types *)
 Extract Inductive sumbool => "GHC.Base.Bool" ["GHC.Base.True" "GHC.Base.False"]
@@ -53,6 +52,7 @@ Quote Recursively Definition vector_syntax := Vectors.Vector.t.
 Quote Recursively Definition le_syntax := le.
 Definition asgn := nat.
 Quote Recursively Definition asgn_syntax := asgn.
+Quote Recursively Definition mul_syntax := Nat.mul.
 
 Lemma refl1 : 1 = 1.
 Proof.
@@ -82,4 +82,4 @@ Quote Recursively Definition zeroneqS_syntax := O_S.
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq
            nat_syntax list_syntax option_syntax vector_syntax le_syntax
-           asgn_syntax refl1_syntax lnil_syntax lcons_syntax nileqnil_syntax zeroneqS_syntax.
+           asgn_syntax refl1_syntax lnil_syntax lcons_syntax nileqnil_syntax zeroneqS_syntax mul_syntax.

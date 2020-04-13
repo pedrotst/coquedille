@@ -10,14 +10,14 @@ Definition eq_elim_term (eq: Ced.Term) (eqty : Ced.Typ) (y: Ced.Term): Ced.Term 
           (Some
              (Ced.TyLam
                 (Ced.Named "x")
-                eqty
+                (Some eqty)
                 (Ced.TyLam
                    Ced.Anon
-                   (Ced.TyApp
+                   (Some (Ced.TyApp
                       (Ced.TyVar "eq")
                       [(false, inl eqty);
                          (false, inr y);
-                         (false, inr (Ced.TVar "x"))])
+                         (false, inr (Ced.TVar "x"))]))
                    (Ced.TyEq y (Ced.TVar "x")))
              )
           )
@@ -38,10 +38,10 @@ Definition False_ind_term : Ced.Assgn :=
                          (Ced.TyPi Ced.Anon (Ced.TyVar "False")
                                    (Ced.TyVar "P"))))
                 (Ced.TLamK (Ced.Named "P")
-                           Ced.KdStar
+                           (Some Ced.KdStar)
                            (Ced.TLam (Ced.Named "f")
                                      false
-                                     (Ced.TyVar "False")
+                                     (Some (Ced.TyVar "False"))
                                      (Ced.TApp (Ced.TVar "f")
                                                [(false, inl (Ced.TyVar "P"))]))).
 
@@ -76,43 +76,43 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                        [(false, inl (Ced.TyVar "y"))]
                                                                     )
                  )))))))
-                 (Ced.TLamK (Ced.Named "A") Ced.KdStar
+                 (Ced.TLamK (Ced.Named "A") (Some Ced.KdStar)
                             (Ced.TLam (Ced.Named "x") false
-                                      (Ced.TyVar "A")
+                                      (Some (Ced.TyVar "A"))
                                       (Ced.TLamK (Ced.Named "P")
-                                                 (Ced.KdAll Ced.Anon
-                                                            (inr (Ced.TyVar "A")) Ced.KdStar)
+                                                 (Some (Ced.KdAll Ced.Anon
+                                                            (inr (Ced.TyVar "A")) Ced.KdStar))
                                                  (Ced.TLam (Ced.Named "p") false
-                                                           (Ced.TyApp (Ced.TyVar "P")
-                                                                      [(false, inl (Ced.TyVar "x"))])
+                                                           (Some (Ced.TyApp (Ced.TyVar "P")
+                                                                      [(false, inl (Ced.TyVar "x"))]))
                                                            (Ced.TLam (Ced.Named "y") false
-                                                                     (Ced.TyVar "A")
+                                                                     (Some (Ced.TyVar "A"))
                                                                      (Ced.TLam
                                                                         (Ced.Named "H") false
-                                                                        (Ced.TyApp
+                                                                        (Some (Ced.TyApp
                                                                            (Ced.TyVar "JMeq")
                                                                            [(false, inl (Ced.TyVar "A"));
                                                                               (false, inl (Ced.TyVar "x"));
                                                                               (false, inl (Ced.TyVar "A"));
-                                                                              (false, inl (Ced.TyVar "y"))])
+                                                                              (false, inl (Ced.TyVar "y"))]))
                                                                         (Ced.TMu
                                                                            None
                                                                            (Ced.TVar "H")
                                                                            (Some (Ced.TyLamK
                                                                                     (Ced.Named "A1")
-                                                                                    Ced.KdStar
+                                                                                    (Some Ced.KdStar)
                                                                                     (Ced.TyLam
                                                                                        (Ced.Named "y1")
-                                                                                       (Ced.TyVar "A1")
+                                                                                       (Some (Ced.TyVar "A1"))
                                                                                        (Ced.TyLam
                                                                                           Ced.Anon
-                                                                                          (Ced.TyApp
+                                                                                          (Some (Ced.TyApp
                                                                                              (Ced.TyVar "JMeq")
                                                                                              [(false, inl (Ced.TyVar "A"));
                                                                                               (false, inl (Ced.TyVar "x"));
                                                                                               (false, inl (Ced.TyVar "A1"));
                                                                                               (false, inl (Ced.TyVar "y1"))
-                                                                                          ])
+                                                                                          ]))
                                                                                           (Ced.TyApp
                                                                                              (Ced.TyVar "P")
                                                                                              [(false, inl (Ced.TyVar "y"))])
