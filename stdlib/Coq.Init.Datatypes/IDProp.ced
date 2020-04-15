@@ -1,0 +1,6 @@
+module test.
+IDProp : ★ = ∀ A : ★ . A ➔ A.
+
+idProp : IDProp = Λ A : ★ . λ x : A . x.
+
+

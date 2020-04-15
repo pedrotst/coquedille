@@ -1,0 +1,57 @@
+module test.
+data comparison : ★ =
+  | Eq : comparison
+  | Lt : comparison
+  | Gt : comparison.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+CompOpp : Π r : comparison . comparison = λ r : comparison . σ r @(λ r' : comparison . comparison) {
+  | Eq ➔ Eq 
+  | Lt ➔ Gt 
+  | Gt ➔ Lt 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+CompOpp_inj : Π c : comparison . Π c' : comparison . eq ·comparison (CompOpp c) (CompOpp c') ➔ eq ·comparison c c' = λ c : comparison . σ c @(λ c' : comparison . Π c'' : comparison . eq ·comparison (CompOpp c') (CompOpp c'') ➔ eq ·comparison c' c'') {
+  | Eq ➔ λ c' : comparison . σ c' @(λ c' : comparison . eq ·comparison (CompOpp Eq) (CompOpp c') ➔ eq ·comparison Eq c') {
+  | Eq ➔ λ H : eq ·comparison (CompOpp Eq) (CompOpp Eq) . H 
+  | Lt ➔ λ H : eq ·comparison (CompOpp Eq) (CompOpp Lt) . δ - ( σ H @(λ x : comparison . λ _ : eq ·comparison (CompOpp Eq) x . { CompOpp Eq ≃ x }) {
+  | eq_refl ➔ β 
+ }) 
+  | Gt ➔ λ H : eq ·comparison (CompOpp Eq) (CompOpp Gt) . δ - ( σ H @(λ x : comparison . λ _ : eq ·comparison (CompOpp Eq) x . { CompOpp Eq ≃ x }) {
+  | eq_refl ➔ β 
+ }) 
+ } 
+  | Lt ➔ λ c' : comparison . σ c' @(λ c' : comparison . eq ·comparison (CompOpp Lt) (CompOpp c') ➔ eq ·comparison Lt c') {
+  | Eq ➔ λ H : eq ·comparison (CompOpp Lt) (CompOpp Eq) . δ - ( σ H @(λ x : comparison . λ _ : eq ·comparison (CompOpp Lt) x . { CompOpp Lt ≃ x }) {
+  | eq_refl ➔ β 
+ }) 
+  | Lt ➔ λ H : eq ·comparison (CompOpp Lt) (CompOpp Lt) . eq_refl ·comparison Lt 
+  | Gt ➔ λ H : eq ·comparison (CompOpp Lt) (CompOpp Gt) . eq_sym ·comparison Gt Lt H 
+ } 
+  | Gt ➔ λ c' : comparison . σ c' @(λ c' : comparison . eq ·comparison (CompOpp Gt) (CompOpp c') ➔ eq ·comparison Gt c') {
+  | Eq ➔ λ H : eq ·comparison (CompOpp Gt) (CompOpp Eq) . δ - ( σ H @(λ x : comparison . λ _ : eq ·comparison (CompOpp Gt) x . { CompOpp Gt ≃ x }) {
+  | eq_refl ➔ β 
+ }) 
+  | Lt ➔ λ H : eq ·comparison (CompOpp Gt) (CompOpp Lt) . eq_sym ·comparison Lt Gt H 
+  | Gt ➔ λ H : eq ·comparison (CompOpp Gt) (CompOpp Gt) . eq_refl ·comparison Gt 
+ } 
+ }.
+
+

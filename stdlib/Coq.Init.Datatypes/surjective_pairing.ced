@@ -1,0 +1,20 @@
+module test.
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+fst : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . A = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ }.
+
+snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ }.
+
+surjective_pairing : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . eq ·(prod ·A ·B) p (pair ·A ·B (fst ·A ·B p) (snd ·A ·B p)) = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . eq ·(prod ·A ·B) p' (pair ·A ·B (fst ·A ·B p') (snd ·A ·B p'))) {
+  | pair a b ➔ eq_refl ·(prod ·A ·B) (pair ·A ·B (fst ·A ·B (pair ·A ·B a b)) (snd ·A ·B (pair ·A ·B a b))) 
+ }.
+
+

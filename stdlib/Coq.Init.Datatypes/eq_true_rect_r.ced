@@ -1,0 +1,13 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data eq_true : bool ➔ ★ =
+  | is_eq_true : eq_true true.
+
+eq_true_rect_r : ∀ P : bool ➔ ★ . Π b : bool . P b ➔ eq_true b ➔ P true = Λ P : bool ➔ ★ . λ b : bool . λ H : P b . λ H0 : eq_true b . σ H0 @(λ b' : bool . λ _ : eq_true b' . Π H' : P b' . P true) {
+  | is_eq_true ➔ λ H' : P true . H' 
+ } H.
+
+

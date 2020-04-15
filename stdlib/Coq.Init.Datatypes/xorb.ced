@@ -1,0 +1,17 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+xorb : Π b1 : bool . Π b2 : bool . bool = λ b1 : bool . λ b2 : bool . σ b1 @(λ b1' : bool . bool) {
+  | true ➔ σ b2 @(λ b2' : bool . bool) {
+  | true ➔ false 
+  | false ➔ true 
+ } 
+  | false ➔ σ b2 @(λ b2' : bool . bool) {
+  | true ➔ true 
+  | false ➔ false 
+ } 
+ }.
+
+

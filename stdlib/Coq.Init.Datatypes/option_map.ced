@@ -1,0 +1,11 @@
+module test.
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+option_map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π o : option ·A . option ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ o : option ·A . σ o @(λ o' : option ·A . option ·B) {
+  | Some a ➔ Some ·B (f a) 
+  | None ➔ None ·B 
+ }.
+
+

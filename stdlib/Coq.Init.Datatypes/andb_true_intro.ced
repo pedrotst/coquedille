@@ -1,0 +1,36 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+andb : Π b1 : bool . Π b2 : bool . bool = λ b1 : bool . λ b2 : bool . σ b1 @(λ b1' : bool . bool) {
+  | true ➔ b2 
+  | false ➔ false 
+ }.
+
+andb_true_intro : Π b1 : bool . Π b2 : bool . and ·(eq ·bool b1 true) ·(eq ·bool b2 true) ➔ eq ·bool (andb b1 b2) true = λ b1 : bool . σ b1 @(λ b : bool . Π b2 : bool . and ·(eq ·bool b true) ·(eq ·bool b2 true) ➔ eq ·bool (andb b b2) true) {
+  | true ➔ λ b2 : bool . σ b2 @(λ b : bool . and ·(eq ·bool true true) ·(eq ·bool b true) ➔ eq ·bool (andb true b) true) {
+  | true ➔ λ H : and ·(eq ·bool true true) ·(eq ·bool true true) . σ H @(λ _ : and ·(eq ·bool true true) ·(eq ·bool true true) . eq ·bool true true) {
+  | conj H' H0 ➔ H0 
+ } 
+  | false ➔ λ H : and ·(eq ·bool true true) ·(eq ·bool false true) . σ H @(λ _ : and ·(eq ·bool true true) ·(eq ·bool false true) . eq ·bool false true) {
+  | conj H' H0 ➔ H0 
+ } 
+ } 
+  | false ➔ λ b2 : bool . σ b2 @(λ b : bool . and ·(eq ·bool false true) ·(eq ·bool b true) ➔ eq ·bool (andb false b) true) {
+  | true ➔ λ H : and ·(eq ·bool false true) ·(eq ·bool true true) . σ H @(λ _ : and ·(eq ·bool false true) ·(eq ·bool true true) . eq ·bool false true) {
+  | conj H' H0 ➔ H' 
+ } 
+  | false ➔ λ H : and ·(eq ·bool false true) ·(eq ·bool false true) . σ H @(λ _ : and ·(eq ·bool false true) ·(eq ·bool false true) . eq ·bool false true) {
+  | conj H' H0 ➔ H0 
+ } 
+ } 
+ }.
+
+

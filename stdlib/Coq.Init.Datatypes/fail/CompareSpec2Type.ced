@@ -1,0 +1,66 @@
+module test.
+data comparison : ★ =
+  | Eq : comparison
+  | Lt : comparison
+  | Gt : comparison.
+
+data CompareSpec (Peq : ★) (Plt : ★) (Pgt : ★) : comparison ➔ ★ =
+  | CompEq : Peq ➔ CompareSpec Eq
+  | CompLt : Plt ➔ CompareSpec Lt
+  | CompGt : Pgt ➔ CompareSpec Gt.
+
+data CompareSpecT (Peq : ★) (Plt : ★) (Pgt : ★) : comparison ➔ ★ =
+  | CompEqT : Peq ➔ CompareSpecT Eq
+  | CompLtT : Plt ➔ CompareSpecT Lt
+  | CompGtT : Pgt ➔ CompareSpecT Gt.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+data True : ★ =
+  | I : True.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+CompareSpec2Type : ∀ Peq : ★ . ∀ Plt : ★ . ∀ Pgt : ★ . Π c : comparison . CompareSpec ·Peq ·Plt ·Pgt c ➔ CompareSpecT ·Peq ·Plt ·Pgt c = Λ Peq : ★ . Λ Plt : ★ . Λ Pgt : ★ . λ c : comparison . σ c @(λ c' : comparison . CompareSpec ·Peq ·Plt ·Pgt c' ➔ CompareSpecT ·Peq ·Plt ·Pgt c') {
+  | Eq ➔ λ H : CompareSpec ·Peq ·Plt ·Pgt Eq .
+  [ H0 : eq ·comparison Eq Eq ➔ Peq = σ H @(λ c' : comparison . λ _ : CompareSpec ·Peq ·Plt ·Pgt c' . eq ·comparison c' Eq ➔ Peq) {
+        | CompEq H0 ➔ λ H1 : eq ·comparison Eq Eq . (λ H1' : eq ·comparison Eq Eq . λ H0' : Peq . H0') H1 H0
+        | CompLt H0 ➔ λ H1 : eq ·comparison Lt Eq .
+        (δ - ( σ H1 @(λ x : comparison . λ _ : eq ·comparison Lt x . { Lt ≃ x }) {
+            | eq_refl ➔ β
+            }))
+        | CompGt H0 ➔ λ H1 : eq ·comparison Gt Eq . (δ - ( σ H1 @(λ x : comparison . λ _ : eq ·comparison Gt x . { Gt ≃ x }) {
+            | eq_refl ➔ β
+ }))
+ } ]
+ - CompEqT ·Peq ·Plt ·Pgt (H0 (eq_refl ·comparison Eq))
+  | Lt ➔ λ H : CompareSpec ·Peq ·Plt ·Pgt Lt .
+  [ H0 : eq ·comparison Lt Lt ➔ Plt = σ H @(λ c' : comparison . λ _ : CompareSpec ·Peq ·Plt ·Pgt c' . eq ·comparison c' Lt ➔ Plt) {
+  | CompEq H0 ➔ λ H1 : eq ·comparison Eq Lt . (λ H1' : eq ·comparison Eq Lt . δ - ( σ H1' @(λ x : comparison . λ _ : eq ·comparison Eq x . { Eq ≃ x }) {
+  | eq_refl ➔ β 
+ })) (H0 H1)
+  | CompLt H0 ➔ λ H1 : eq ·comparison Lt Lt . (λ H1' : eq ·comparison Lt Lt . λ H0' : Plt . H0') H1 H0 
+  | CompGt H0 ➔ λ H1 : eq ·comparison Gt Lt . (λ H1' : eq ·comparison Gt Lt . δ - ( σ H1' @(λ x : comparison . λ _ : eq ·comparison Gt x . { Gt ≃ x }) {
+  | eq_refl ➔ β 
+ })) H1 H0 
+ } ] - CompLtT ·Peq ·Plt ·Pgt H0 (eq_refl ·comparison Lt)
+  | Gt ➔ λ H : CompareSpec ·Peq ·Plt ·Pgt Gt .
+  [ H0 : eq ·comparison Gt Gt ➔ Pgt = σ H @(λ c' : comparison . λ _ : CompareSpec ·Peq ·Plt ·Pgt c' . eq ·comparison c' Gt ➔ Pgt) {
+  | CompEq H0 ➔ λ H1 : eq ·comparison Eq Gt . (λ H1' : eq ·comparison Eq Gt . δ - ( σ H1' @(λ x : comparison . λ _ : eq ·comparison Eq x . { Eq ≃ x }) {
+  | eq_refl ➔ β 
+ })) H1 H0 
+  | CompLt H0 ➔ λ H1 : eq ·comparison Lt Gt . (λ H1' : eq ·comparison Lt Gt . δ - ( σ H1' @(λ x : comparison . λ _ : eq ·comparison Lt x . { Lt ≃ x }) {
+  | eq_refl ➔ β 
+ })) H1 H0 
+  | CompGt H0 ➔ λ H1 : eq ·comparison Gt Gt . (λ H1' : eq ·comparison Gt Gt . λ H0' : Pgt . H0') H1 H0 
+ } ] -  CompGtT ·Peq ·Plt ·Pgt H0 (eq_refl ·comparison Gt)
+ }.
+
+

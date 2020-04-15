@@ -1,0 +1,6 @@
+module test.
+ID : ★ = ∀ A : ★ . A ➔ A.
+
+id : ID = Λ A : ★ . λ x : A . x.
+
+

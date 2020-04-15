@@ -1,0 +1,9 @@
+module test.
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+prod_curry : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . Π f : A ➔ B ➔ C . Π p : prod ·A ·B . C = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ f : A ➔ B ➔ C . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . C) {
+  | pair x y ➔ f x y 
+ }.
+
+

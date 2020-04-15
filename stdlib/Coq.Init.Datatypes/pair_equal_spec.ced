@@ -1,0 +1,32 @@
+module test.
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+fst : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . A = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ }.
+
+snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+injective_projections : ∀ A : ★ . ∀ B : ★ . Π p1 : prod ·A ·B . Π p2 : prod ·A ·B . eq ·A (fst ·A ·B p1) (fst ·A ·B p2) ➔ eq ·B (snd ·A ·B p1) (snd ·A ·B p2) ➔ eq ·(prod ·A ·B) p1 p2 = Λ A : ★ . Λ B : ★ . λ p1 : prod ·A ·B . σ p1 @(λ p : prod ·A ·B . Π p2 : prod ·A ·B . eq ·A (fst ·A ·B p) (fst ·A ·B p2) ➔ eq ·B (snd ·A ·B p) (snd ·A ·B p2) ➔ eq ·(prod ·A ·B) p p2) {
+  | pair a b ➔ λ p2 : prod ·A ·B . σ p2 @(λ p : prod ·A ·B . eq ·A (fst ·A ·B (pair ·A ·B a b)) (fst ·A ·B p) ➔ eq ·B (snd ·A ·B (pair ·A ·B a b)) (snd ·A ·B p) ➔ eq ·(prod ·A ·B) (pair ·A ·B a b) p) {
+  | pair a0 b0 ➔ λ Hfst : eq ·A a a0 . λ Hsnd : eq ·B b b0 . eq_ind_r ·A a0 ·(λ a' : A . eq ·(prod ·A ·B) (pair ·A ·B a' b) (pair ·A ·B a0 b0)) (eq_ind_r ·B b0 ·(λ b' : B . eq ·(prod ·A ·B) (pair ·A ·B a0 b') (pair ·A ·B a0 b0)) (eq_refl ·(prod ·A ·B) (pair ·A ·B a0 b0)) b Hsnd) a Hfst 
+ } 
+ }.
+
+
