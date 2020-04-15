@@ -47,9 +47,9 @@ Extract Inlined Constant String.eqb => "(Prelude.==)".
 
 (* Adds Everything we will test here *)
 
-(* THISISMYLIB *)
 Require Import Nat.
 
 Quote Recursively Definition p := THISISPROGRAM.
+
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq p.
