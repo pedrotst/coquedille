@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sed "s/THISISPROGRAM/$1/g" t.v > out.v
+sed "s/THISISPROGRAM/$1/g" Extraction.v > out.v
 coqc -Q ../theories Coquedille out.v
 
 # Adds the necessary imports to the top of the file
