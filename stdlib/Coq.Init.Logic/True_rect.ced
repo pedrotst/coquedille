@@ -1,0 +1,9 @@
+module test.
+data True : ★ =
+  | I : True.
+
+True_rect : ∀ P : ★ . Π f : P . Π t : True . P = Λ P : ★ . λ f : P . λ t : True . σ t @(λ _ : True . P) {
+  | I ➔ f 
+ }.
+
+

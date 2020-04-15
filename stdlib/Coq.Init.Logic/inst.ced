@@ -1,0 +1,6 @@
+module test.
+all : Π A : ★ . Π P : A ➔ ★ . ★ = λ A : ★ . λ P : A ➔ ★ . Π x : A . P x.
+
+inst : ∀ A : ★ . ∀ P : A ➔ ★ . Π x : A . all ·A ·(λ x' : A . P x') ➔ P x = Λ A : ★ . Λ P : A ➔ ★ . λ x : A . λ H : Π x' : A . P x' . H x.
+
+

@@ -1,0 +1,8 @@
+module test.
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+absurd : ∀ A : ★ . ∀ C : ★ . A ➔ not ·A ➔ C = Λ A : ★ . Λ C : ★ . λ h1 : A . λ h2 : A ➔ False . delwrong.
+
+

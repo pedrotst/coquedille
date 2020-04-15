@@ -1,0 +1,92 @@
+progress: Checking True_rect progress: Checking True_rect
+progress: Checking True_ind progress: Checking True_ind
+progress: Checking True_rec progress: Checking True_rec
+progress: Checking False_rect progress: Checking False_rect Type Checking Failed
+progress: Checking False_ind progress: Checking False_ind
+progress: Checking False_rec progress: Checking False_rec Type Checking Failed
+progress: Checking not progress: Checking not
+progress: Checking and_rect progress: Checking and_rect Type Checking Failed
+progress: Checking and_ind progress: Checking and_ind Type Checking Failed
+progress: Checking and_rec progress: Checking and_rec Type Checking Failed
+progress: Checking proj1 progress: Checking proj1
+progress: Checking proj2 progress: Checking proj2
+progress: Checking or_ind progress: Checking or_ind Type Checking Failed
+progress: Checking iff progress: Checking iff Type Checking Failed
+progress: Checking iff_refl progress: Checking iff_refl Type Checking Failed
+progress: Checking iff_trans progress: Checking iff_trans Type Checking Failed
+progress: Checking iff_sym progress: Checking iff_sym Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_iff_compat_l.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_iff_compat_r.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_iff_compat_l.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_iff_compat_r.ced Type Checking Failed
+progress: Checking imp_iff_compat_l progress: Checking imp_iff_compat_l Type Checking Failed
+progress: Checking imp_iff_compat_r progress: Checking imp_iff_compat_r Type Checking Failed
+progress: Checking not_iff_compat progress: Checking not_iff_compat Type Checking Failed
+progress: Checking neg_false progress: Checking neg_false Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_cancel_l.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_cancel_r.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_comm.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/and_assoc.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_cancel_l.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_cancel_r.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_comm.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/or_assoc.ced Type Checking Failed
+progress: Checking iff_and progress: Checking iff_and Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/iff_to_and.ced Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/IF_then_else.ced Type Checking Failed
+progress: Checking ex_ind progress: Checking ex_ind Type Checking Failed
+progress: Checking ex2_ind progress: Checking ex2_ind Type Checking Failed
+progress: Checking all progress: Checking all
+progress: Checking inst progress: Checking inst
+progress: Checking gen progress: Checking gen
+progress: Checking eq_rect progress: Checking eq_rect
+progress: Checking eq_ind progress: Checking eq_ind
+progress: Checking eq_rec progress: Checking eq_rec
+progress: Checking absurd progress: Checking absurd Type Checking Failed
+progress: Checking eq_sym progress: Checking eq_sym
+progress: Checking eq_trans progress: Checking eq_trans
+progress: Checking f_equal progress: Checking f_equal
+progress: Checking not_eq_sym progress: Checking not_eq_sym
+progress: Checking eq_ind_r progress: Checking eq_ind_r
+progress: Checking eq_rec_r progress: Checking eq_rec_r
+progress: Checking eq_rect_r progress: Checking eq_rect_r
+progress: Checking rew_opp_r progress: Checking rew_opp_r
+progress: Checking rew_opp_l progress: Checking rew_opp_l
+progress: Checking f_equal2 progress: Checking f_equal2
+progress: Checking f_equal3 progress: Checking f_equal3
+progress: Checking f_equal4 progress: Checking f_equal4
+progress: Checking f_equal5 progress: Checking f_equal5
+progress: Checking f_equal_compose progress: Checking f_equal_compose
+progress: Checking eq_trans_refl_l progress: Checking eq_trans_refl_l
+progress: Checking eq_trans_refl_r progress: Checking eq_trans_refl_r
+progress: Checking eq_sym_involutive progress: Checking eq_sym_involutive
+progress: Checking eq_trans_sym_inv_l progress: Checking eq_trans_sym_inv_l
+progress: Checking eq_trans_sym_inv_r progress: Checking eq_trans_sym_inv_r
+progress: Checking eq_trans_assoc progress: Checking eq_trans_assoc Type Checking Failed
+progress: Checking eq_id_comm_l progress: Checking eq_id_comm_l
+progress: Checking eq_id_comm_r progress: Checking eq_id_comm_r
+progress: Checking eq_refl_map_distr progress: Checking eq_refl_map_distr
+progress: Checking eq_trans_map_distr progress: Checking eq_trans_map_distr
+progress: Checking eq_sym_map_distr progress: Checking eq_sym_map_distr
+progress: Checking eq_trans_sym_distr progress: Checking eq_trans_sym_distr
+progress: Checking eq_trans_rew_distr progress: Checking eq_trans_rew_distr
+progress: Checking rew_const progress: Checking rew_const
+progress: Checking subrelation progress: Checking subrelation
+progress: Checking unique progress: Checking unique Type Checking Failed
+progress: Checking uniqueness progress: Checking uniqueness
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/unique_existence.ced Type Checking Failed
+progress: Checking forall_exists_unique_domain_coincide progress: Checking forall_exists_unique_domain_coincide Type Checking Failed
+progress: Checking /Users/pedroabreu/gitprojects/coquedille/stdlib/Coq.Init.Logic/forall_exists_coincide_unique_domain.ced Type Checking Failed
+progress: Checking inhabited_ind progress: Checking inhabited_ind Type Checking Failed
+progress: Checking exists_inhabited progress: Checking exists_inhabited
+progress: Checking inhabited_covariant progress: Checking inhabited_covariant
+progress: Checking eq_stepl progress: Checking eq_stepl
+progress: Checking iff_stepl progress: Checking iff_stepl Type Checking Failed
+progress: Checking eq_ex_uncurried progress: Checking eq_ex_uncurried
+progress: Checking eq_ex progress: Checking eq_ex
+progress: Checking eq_ex_hprop progress: Checking eq_ex_hprop
+progress: Checking rew_ex progress: Checking rew_ex Type Checking Failed
+progress: Checking eq_ex2_uncurried progress: Checking eq_ex2_uncurried
+progress: Checking eq_ex2 progress: Checking eq_ex2
+progress: Checking eq_ex2_hprop progress: Checking eq_ex2_hprop
+progress: Checking rew_ex2 progress: Checking rew_ex2 Type Checking Failed

@@ -1,0 +1,10 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+unique : Π A : ★ . Π P : A ➔ ★ . Π x : A . ★ = λ A : ★ . λ P : A ➔ ★ . λ x : A . and ·(P x) ·(λ x' : A . λ _ : P x' . eq ·A x x').
+
+

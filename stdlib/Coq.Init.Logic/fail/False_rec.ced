@@ -1,0 +1,10 @@
+module test.
+False : ★ = ∀ X : ★ . X.
+
+False_rect : ∀ P : ★ . Π f : False . P = Λ P : ★ . λ f : False . σ f @(λ _ : False . P) {
+
+ }.
+
+False_rec : ∀ P : ★ . Π f : False . P = Λ P : ★ . False_rect ·P.
+
+

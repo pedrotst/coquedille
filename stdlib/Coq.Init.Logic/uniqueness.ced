@@ -1,0 +1,7 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+uniqueness : Π A : ★ . Π P : A ➔ ★ . ★ = λ A : ★ . λ P : A ➔ ★ . Π x : A . Π y : A . P x ➔ P y ➔ eq ·A x y.
+
+

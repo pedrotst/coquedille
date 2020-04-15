@@ -1,0 +1,11 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+imp_iff_compat_r : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . iff ·B ·C ➔ iff ·(λ _ : B . A) ·(λ _ : C . A) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ H : iff ·B ·C . σ H @(λ _ : and ·(λ _ : B . C) ·(λ _ : C . B) . iff ·(λ _ : B . A) ·(λ _ : C . A)) {
+  | conj Hl Hr ➔ conj ·(λ _ : B ➔ A . λ _ : C . A) ·(λ _ : C ➔ A . λ _ : B . A) (λ H' : B ➔ A . λ H0 : C . H' (Hr H0)) (λ H' : C ➔ A . λ H0 : B . H' (Hl H0)) 
+ }.
+
+

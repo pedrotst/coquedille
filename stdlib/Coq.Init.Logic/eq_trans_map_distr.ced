@@ -1,0 +1,17 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+eq_trans_map_distr : ∀ A : ★ . ∀ B : ★ . Π x : A . Π y : A . Π z : A . Π f : A ➔ B . Π e : eq ·A x y . Π e' : eq ·A y z . eq ·(eq ·B (f x) (f z)) (f_equal ·A ·B f x z (eq_trans ·A x y z e e')) (eq_trans ·B (f x) (f y) (f z) (f_equal ·A ·B f x y e) (f_equal ·A ·B f y z e')) = Λ A : ★ . Λ B : ★ . λ x : A . λ y : A . λ z : A . λ f : A ➔ B . λ e : eq ·A x y . λ e' : eq ·A y z . σ e' @(λ y' : A . λ e' : eq ·A y y' . eq ·(eq ·B (f x) (f y')) (f_equal ·A ·B f x y' (eq_trans ·A x y y' e e')) (eq_trans ·B (f x) (f y) (f y') (f_equal ·A ·B f x y e) (f_equal ·A ·B f y y' e'))) {
+  | eq_refl ➔ eq_refl ·(eq ·B (f x) (f y)) (eq_trans ·B (f x) (f y) (f y) (f_equal ·A ·B f x y e) (f_equal ·A ·B f y y (eq_refl ·A y))) 
+ }.
+
+

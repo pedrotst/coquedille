@@ -1,0 +1,13 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_sym_involutive : ∀ A : ★ . Π x : A . Π y : A . Π e : eq ·A x y . eq ·(eq ·A x y) (eq_sym ·A y x (eq_sym ·A x y e)) e = Λ A : ★ . λ x : A . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ e' : eq ·A x y' . eq ·(eq ·A x y') (eq_sym ·A y' x (eq_sym ·A x y' e')) e') {
+  | eq_refl ➔ eq_refl ·(eq ·A x x) (eq_refl ·A x) 
+ }.
+
+

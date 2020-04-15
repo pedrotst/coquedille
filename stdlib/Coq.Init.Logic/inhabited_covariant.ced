@@ -1,0 +1,9 @@
+module test.
+data inhabited (A : ★) : ★ =
+  | inhabits : A ➔ inhabited.
+
+inhabited_covariant : ∀ A : ★ . ∀ B : ★ . (A ➔ B) ➔ inhabited ·A ➔ inhabited ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ H : inhabited ·A . σ H @(λ _ : inhabited ·A . inhabited ·B) {
+  | inhabits x ➔ inhabits ·B (f x) 
+ }.
+
+

@@ -1,0 +1,12 @@
+module test.
+data ex (A : ★) (P : A ➔ ★) : ★ =
+  | ex_intro : Π x : A . P x ➔ ex.
+
+data inhabited (A : ★) : ★ =
+  | inhabits : A ➔ inhabited.
+
+exists_inhabited : ∀ A : ★ . ∀ P : A ➔ ★ . ex ·A ·(λ x : A . P x) ➔ inhabited ·A = Λ A : ★ . Λ P : A ➔ ★ . λ H : ex ·A ·(λ x : A . P x) . σ H @(λ _ : ex ·A ·(λ x : A . P x) . inhabited ·A) {
+  | ex_intro x H' ➔ inhabits ·A x 
+ }.
+
+

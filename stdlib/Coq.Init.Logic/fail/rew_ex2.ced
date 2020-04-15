@@ -1,0 +1,32 @@
+module test.
+data ex2 (A : ★) (P : A ➔ ★) (Q : A ➔ ★) : ★ =
+  | ex_intro2 : Π x : A . P x ➔ Q x ➔ ex2.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+rew_ex2 : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . ∀ Q : Π a : A . P a ➔ ★ . ∀ R : Π a : A . P a ➔ ★ . Π u : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . Π y : A . Π H : eq ·A x y . eq ·(ex2 ·(P y) ·(λ p : P y . Q y p) ·(λ p : P y . R y p)) (eq_rect ·A x ·(λ a : A . ex2 ·(P a) ·(λ p : P a . Q a p) ·(λ p : P a . R a p)) u y H) σ u @(λ u' : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . ex2 ·(P y) ·(λ p : P y . Q y p) ·(λ p : P y . R y p)) {
+  | ex_intro2 u1 u2 u3 ➔ ex_intro2 ·(P y) ·(Q y) ·(R y) (eq_rect ·A x ·P u1 y H) σ H @(λ a : A . λ x' : eq ·A x a . Q a (eq_rect ·A x ·P u1 a x')) {
+  | eq_refl ➔ u2 
+ } σ H @(λ a : A . λ x' : eq ·A x a . R a (eq_rect ·A x ·P u1 a x')) {
+  | eq_refl ➔ u3 
+ } 
+ } = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . Λ Q : Π a : A . P a ➔ ★ . Λ R : Π a : A . P a ➔ ★ . λ u : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ e : eq ·A x y' . eq ·(ex2 ·(P y') ·(λ p : P y' . Q y' p) ·(λ p : P y' . R y' p)) (eq_rect ·A x ·(λ a : A . ex2 ·(P a) ·(λ p : P a . Q a p) ·(λ p : P a . R a p)) u y' e) σ u @(λ u' : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . ex2 ·(P y') ·(λ p : P y' . Q y' p) ·(λ p : P y' . R y' p)) {
+  | ex_intro2 u1 u2 u3 ➔ ex_intro2 ·(P y') ·(Q y') ·(R y') (eq_rect ·A x ·P u1 y' e) σ e @(λ a : A . λ x' : eq ·A x a . Q a (eq_rect ·A x ·P u1 a x')) {
+  | eq_refl ➔ u2 
+ } σ e @(λ a : A . λ x' : eq ·A x a . R a (eq_rect ·A x ·P u1 a x')) {
+  | eq_refl ➔ u3 
+ } 
+ }) {
+  | eq_refl ➔ σ u @(λ e : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . eq ·(ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p)) (eq_rect ·A x ·(λ a : A . ex2 ·(P a) ·(λ p : P a . Q a p) ·(λ p : P a . R a p)) e x (eq_refl ·A x)) σ e @(λ u' : ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p) . ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p)) {
+  | ex_intro2 u1 u2 u3 ➔ ex_intro2 ·(P x) ·(Q x) ·(R x) (eq_rect ·A x ·P u1 x (eq_refl ·A x)) u2 u3 
+ }) {
+  | ex_intro2 x0 q r ➔ eq_refl ·(ex2 ·(P x) ·(λ p : P x . Q x p) ·(λ p : P x . R x p)) (ex_intro2 ·(P x) ·(Q x) ·(R x) (eq_rect ·A x ·P x0 x (eq_refl ·A x)) q r) 
+ } 
+ }.
+
+

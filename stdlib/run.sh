@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
 make -C ..
-sed "s/THISISPROGRAM/$1/g" Extraction.v > out.v
+sed "s/THISISPROGRAM/$1/g;s/THISISLIBRARY/$2/g" Extraction.v > out.v
 coqc -Q ../theories Coquedille out.v
 
 # Adds the necessary imports to the top of the file
 sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Bits' main.hs > m.hs
 sed -e '/import qualified Prelude/a\'$'\n''import GHC.IO.Encoding' m.hs > main.hs
-sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Char' main.hs > m.hs
-sed -e '/import qualified Prelude/a\'$'\n''import qualified GHC.Base' m.hs > main.hs
+sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Char' main.hs > m.hs sed -e '/import qualified Prelude/a\'$'\n''import qualified GHC.Base' m.hs > main.hs
 
 # mv m.hs main.hs
 
@@ -26,8 +25,8 @@ main = setLocaleEncoding utf8 GHC.Base.>>
 "
 
 echo $main_str >> main.hs
-mkdir -p outputs
+mkdir -p $2
 
 ghc main.hs
-./main > outputs/$1.ced
-cedille outputs/$1.ced
+./main > $2/$1.ced
+cedille $2/$1.ced

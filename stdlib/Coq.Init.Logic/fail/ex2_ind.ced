@@ -1,0 +1,9 @@
+module test.
+data ex2 (A : ★) (P : A ➔ ★) (Q : A ➔ ★) : ★ =
+  | ex_intro2 : Π x : A . P x ➔ Q x ➔ ex2.
+
+ex2_ind : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . ∀ P' : ★ . Π f : Π x : A . P x ➔ Q x ➔ P' . Π e : ex2 ·A ·P ·Q . P' = Λ A : ★ . Λ P : A ➔ ★ . Λ Q : A ➔ ★ . Λ P' : ★ . λ f : Π x : A . P x ➔ Q x ➔ P' . λ e : ex2 ·A ·P ·Q . σ e @(λ _ : ex2 ·A ·P ·Q . P') {
+  | ex_intro2 ➔ f 
+ }.
+
+

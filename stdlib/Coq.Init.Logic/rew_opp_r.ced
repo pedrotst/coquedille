@@ -1,0 +1,19 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_rect_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_rect ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+rew_opp_r : ∀ A : ★ . ∀ P : A ➔ ★ . Π x : A . Π y : A . Π H : eq ·A x y . Π a : P y . eq ·(P y) (eq_rect ·A x ·P (eq_rect_r ·A y ·P a x H) y H) a = Λ A : ★ . Λ P : A ➔ ★ . λ x : A . λ y : A . λ H : eq ·A x y . λ a : P y . σ H @(λ y' : A . λ e : eq ·A x y' . Π a' : P y' . eq ·(P y') (eq_rect ·A x ·P (eq_rect_r ·A y' ·P a' x e) y' e) a') {
+  | eq_refl ➔ λ a' : P x . eq_refl ·(P x) a' 
+ } a.
+
+

@@ -1,0 +1,19 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+or_comm : ∀ A : ★ . ∀ B : ★ . iff ·(or ·A ·B) ·(or ·B ·A) = Λ A : ★ . Λ B : ★ . conj ·or ·A ·B ➔ or ·B ·A ·or ·B ·A ➔ or ·A ·B (λ H : or ·A ·B . σ H @(λ _ : or ·A ·B . or ·B ·A) {
+  | or_introl H' ➔ or_intror ·B ·A H' 
+  | or_intror H' ➔ or_introl ·B ·A H' 
+ }) (λ H : or ·B ·A . σ H @(λ _ : or ·B ·A . or ·A ·B) {
+  | or_introl H' ➔ or_intror ·A ·B H' 
+  | or_intror H' ➔ or_introl ·A ·B H' 
+ }).
+
+

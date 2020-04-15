@@ -1,0 +1,57 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_trans_sym_inv_l : ∀ A : ★ . Π x : A . Π y : A . Π e : eq ·A x y . eq ·(eq ·A y y) (eq_trans ·A y x y (eq_sym ·A x y e) e) (eq_refl ·A y) = Λ A : ★ . λ x : A . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ e' : eq ·A x y' . eq ·(eq ·A y' y') (eq_trans ·A y' x y' (eq_sym ·A x y' e') e') (eq_refl ·A y')) {
+  | eq_refl ➔ eq_refl ·(eq ·A x x) (eq_refl ·A x) 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+eq_id_comm_l : ∀ A : ★ . Π f : A ➔ A . Π Hf : Π a : A . eq ·A a (f a) . Π a : A . eq ·(eq ·A (f a) (f (f a))) (f_equal ·A ·A f a (f a) (Hf a)) (Hf (f a)) = Λ A : ★ . λ f : A ➔ A . λ Hf : Π a : A . eq ·A a (f a) . λ a : A . eq_ind ·(eq ·A (f a) (f a)) (eq_trans ·A (f a) a (f a) (eq_sym ·A a (f a) (Hf a)) (Hf a)) ·(λ e : eq ·A (f a) (f a) . eq ·(eq ·A (f a) (f (f a))) σ Hf a @(λ y : A . λ _ : eq ·A a y . eq ·A (f a) (f y)) {
+  | eq_refl ➔ e 
+ } (Hf (f a))) ([ e : eq ·A a (f a) = Hf a ] - ([ a0 : A = f a ] - σ e @(λ y : A . λ e' : eq ·A a y . eq ·(eq ·A y (f y)) σ e' @(λ y' : A . λ _ : eq ·A a y' . eq ·A y (f y')) {
+  | eq_refl ➔ eq_trans ·A y a (f a) (eq_sym ·A a y e') (Hf a) 
+ } (Hf y)) {
+  | eq_refl ➔ ([ e' : eq ·A a (f a) = Hf a ] - ([ a0' : A = f a ] - σ e' @(λ y : A . λ e' : eq ·A a y . eq ·(eq ·A a y) (eq_trans ·A a a y (eq_sym ·A a a (eq_refl ·A a)) e') e') {
+  | eq_refl ➔ eq_refl ·(eq ·A a a) (eq_refl ·A a) 
+ })) 
+ })) (eq_refl ·A (f a)) (eq_trans_sym_inv_l ·A a (f a) (Hf a)).
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+eq_trans_refl_l : ∀ A : ★ . Π x : A . Π y : A . Π e : eq ·A x y . eq ·(eq ·A x y) (eq_trans ·A x x y (eq_refl ·A x) e) e = Λ A : ★ . λ x : A . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ e' : eq ·A x y' . eq ·(eq ·A x y') (eq_trans ·A x x y' (eq_refl ·A x) e') e') {
+  | eq_refl ➔ eq_refl ·(eq ·A x x) (eq_refl ·A x) 
+ }.
+
+eq_id_comm_r : ∀ A : ★ . Π f : A ➔ A . Π Hf : Π a : A . eq ·A (f a) a . Π a : A . eq ·(eq ·A (f (f a)) (f a)) (f_equal ·A ·A f (f a) a (Hf a)) (Hf (f a)) = Λ A : ★ . λ f : A ➔ A . λ Hf : Π a : A . eq ·A (f a) a . λ a : A . eq_ind ·(eq ·A (f (f a)) (f (f a))) (eq_trans ·A (f (f a)) (f (f (f a))) (f (f a)) (eq_sym ·A (f (f (f a))) (f (f a)) (Hf (f (f a)))) (Hf (f (f a)))) ·(λ e : eq ·A (f (f a)) (f (f a)) . eq ·(eq ·A (f (f a)) (f a)) σ Hf a @(λ y : A . λ _ : eq ·A (f a) y . eq ·A (f (f a)) (f y)) {
+  | eq_refl ➔ e 
+ } (Hf (f a))) ([ Hfsymf : Π a' : A . eq ·A a' (f a') = λ a' : A . eq_sym ·A (f a') a' (Hf a') ] - ([ e : eq ·(eq ·A (f (f a)) (f (f (f a)))) (f_equal ·A ·A f (f a) (f (f a)) (Hfsymf (f a))) (Hfsymf (f (f a))) = eq_id_comm_l ·A f Hfsymf (f a) ] - ([ e0 : eq ·A (f (f a)) (f (f (f a))) = Hfsymf (f (f a)) ] - σ e @(λ y : eq ·A (f (f a)) (f (f (f a))) . λ _ : eq ·(eq ·A (f (f a)) (f (f (f a)))) (f_equal ·A ·A f (f a) (f (f a)) (Hfsymf (f a))) y . eq ·(eq ·A (f (f a)) (f a)) σ Hf a @(λ y' : A . λ _ : eq ·A (f a) y' . eq ·A (f (f a)) (f y')) {
+  | eq_refl ➔ eq_trans ·A (f (f a)) (f (f (f a))) (f (f a)) y (Hf (f (f a))) 
+ } (Hf (f a))) {
+  | eq_refl ➔ ([ e' : eq ·(eq ·A (f a) (f (f a))) (f_equal ·A ·A f a (f a) (Hfsymf a)) (Hfsymf (f a)) = eq_id_comm_l ·A f Hfsymf a ] - ([ e0' : eq ·A (f a) (f (f a)) = Hfsymf (f a) ] - σ e' @(λ y : eq ·A (f a) (f (f a)) . λ _ : eq ·(eq ·A (f a) (f (f a))) (f_equal ·A ·A f a (f a) (Hfsymf a)) y . eq ·(eq ·A (f (f a)) (f a)) σ Hf a @(λ y' : A . λ _ : eq ·A (f a) y' . eq ·A (f (f a)) (f y')) {
+  | eq_refl ➔ eq_trans ·A (f (f a)) (f (f (f a))) (f (f a)) (f_equal ·A ·A f (f a) (f (f a)) y) (Hf (f (f a))) 
+ } (Hf (f a))) {
+  | eq_refl ➔ ([ e' : eq ·A (f a) a = Hf a ] - σ e' @(λ y : A . λ e' : eq ·A (f a) y . eq ·(eq ·A (f (f y)) (f y)) σ e' @(λ y' : A . λ _ : eq ·A (f a) y' . eq ·A (f (f y)) (f y')) {
+  | eq_refl ➔ eq_trans ·A (f (f y)) (f (f (f a))) (f (f a)) (f_equal ·A ·A f (f y) (f (f a)) (f_equal ·A ·A f y (f a) (eq_sym ·A (f a) y e'))) (Hf (f (f a))) 
+ } (Hf (f y))) {
+  | eq_refl ➔ eq_ind_r ·(eq ·A (f (f (f a))) (f (f a))) (Hf (f (f a))) ·(λ e' : eq ·A (f (f (f a))) (f (f a)) . eq ·(eq ·A (f (f (f a))) (f (f a))) e' (Hf (f (f a)))) (eq_refl ·(eq ·A (f (f (f a))) (f (f a))) (Hf (f (f a)))) (eq_trans ·A (f (f (f a))) (f (f (f a))) (f (f a)) (eq_refl ·A (f (f (f a)))) (Hf (f (f a)))) (eq_trans_refl_l ·A (f (f (f a))) (f (f a)) (Hf (f (f a)))) 
+ }) 
+ })) 
+ }))) (eq_refl ·A (f (f a))) (eq_trans_sym_inv_l ·A (f (f (f a))) (f (f a)) (Hf (f (f a)))).
+
+

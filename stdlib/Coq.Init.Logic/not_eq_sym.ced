@@ -1,0 +1,13 @@
+module test.
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+not_eq_sym : ∀ A : ★ . Π x : A . Π y : A . not ·(eq ·A x y) ➔ not ·(eq ·A y x) = Λ A : ★ . λ x : A . λ y : A . λ h1 : not ·(eq ·A x y) . λ h2 : eq ·A y x . h1 (σ h2 @(λ y' : A . λ _ : eq ·A y y' . Π h1' : not ·(eq ·A y' y) . eq ·A y' y) {
+  | eq_refl ➔ λ h1' : not ·(eq ·A y y) . eq_refl ·A y 
+ } h1).
+
+

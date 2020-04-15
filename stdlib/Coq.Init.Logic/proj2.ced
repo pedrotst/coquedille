@@ -1,0 +1,9 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+proj2 : ∀ A : ★ . ∀ B : ★ . and ·A ·B ➔ B = Λ A : ★ . Λ B : ★ . λ H : and ·A ·B . σ H @(λ _ : and ·A ·B . B) {
+  | conj H' H0 ➔ H0 
+ }.
+
+

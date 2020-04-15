@@ -1,0 +1,4 @@
+module test.
+all : Π A : ★ . Π P : A ➔ ★ . ★ = λ A : ★ . λ P : A ➔ ★ . Π x : A . P x.
+
+

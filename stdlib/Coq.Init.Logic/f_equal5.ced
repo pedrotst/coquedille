@@ -1,0 +1,17 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal5 : ∀ A1 : ★ . ∀ A2 : ★ . ∀ A3 : ★ . ∀ A4 : ★ . ∀ A5 : ★ . ∀ B : ★ . Π f : A1 ➔ A2 ➔ A3 ➔ A4 ➔ A5 ➔ B . Π x1 : A1 . Π y1 : A1 . Π x2 : A2 . Π y2 : A2 . Π x3 : A3 . Π y3 : A3 . Π x4 : A4 . Π y4 : A4 . Π x5 : A5 . Π y5 : A5 . eq ·A1 x1 y1 ➔ eq ·A2 x2 y2 ➔ eq ·A3 x3 y3 ➔ eq ·A4 x4 y4 ➔ eq ·A5 x5 y5 ➔ eq ·B (f x1 x2 x3 x4 x5) (f y1 y2 y3 y4 y5) = Λ A1 : ★ . Λ A2 : ★ . Λ A3 : ★ . Λ A4 : ★ . Λ A5 : ★ . Λ B : ★ . λ f : A1 ➔ A2 ➔ A3 ➔ A4 ➔ A5 ➔ B . λ x1 : A1 . λ y1 : A1 . λ x2 : A2 . λ y2 : A2 . λ x3 : A3 . λ y3 : A3 . λ x4 : A4 . λ y4 : A4 . λ x5 : A5 . λ y5 : A5 . λ H : eq ·A1 x1 y1 . σ H @(λ y : A1 . λ _ : eq ·A1 x1 y . eq ·A2 x2 y2 ➔ eq ·A3 x3 y3 ➔ eq ·A4 x4 y4 ➔ eq ·A5 x5 y5 ➔ eq ·B (f x1 x2 x3 x4 x5) (f y y2 y3 y4 y5)) {
+  | eq_refl ➔ λ H' : eq ·A2 x2 y2 . σ H' @(λ y : A2 . λ _ : eq ·A2 x2 y . eq ·A3 x3 y3 ➔ eq ·A4 x4 y4 ➔ eq ·A5 x5 y5 ➔ eq ·B (f x1 x2 x3 x4 x5) (f x1 y y3 y4 y5)) {
+  | eq_refl ➔ λ H' : eq ·A3 x3 y3 . σ H' @(λ y : A3 . λ _ : eq ·A3 x3 y . eq ·A4 x4 y4 ➔ eq ·A5 x5 y5 ➔ eq ·B (f x1 x2 x3 x4 x5) (f x1 x2 y y4 y5)) {
+  | eq_refl ➔ λ H' : eq ·A4 x4 y4 . σ H' @(λ y : A4 . λ _ : eq ·A4 x4 y . eq ·A5 x5 y5 ➔ eq ·B (f x1 x2 x3 x4 x5) (f x1 x2 x3 y y5)) {
+  | eq_refl ➔ λ H' : eq ·A5 x5 y5 . σ H' @(λ y : A5 . λ _ : eq ·A5 x5 y . eq ·B (f x1 x2 x3 x4 x5) (f x1 x2 x3 x4 y)) {
+  | eq_refl ➔ eq_refl ·B (f x1 x2 x3 x4 x5) 
+ } 
+ } 
+ } 
+ } 
+ }.
+
+

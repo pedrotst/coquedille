@@ -1,0 +1,4 @@
+module test.
+subrelation : Π A : ★ . Π B : ★ . Π R : A ➔ B ➔ ★ . Π R' : A ➔ B ➔ ★ . ★ = λ A : ★ . λ B : ★ . λ R : A ➔ B ➔ ★ . λ R' : A ➔ B ➔ ★ . Π x : A . Π y : B . R x y ➔ R' x y.
+
+

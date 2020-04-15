@@ -1,0 +1,19 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+eq_trans_rew_distr : ∀ A : ★ . ∀ P : A ➔ ★ . Π x : A . Π y : A . Π z : A . Π e : eq ·A x y . Π e' : eq ·A y z . Π k : P x . eq ·(P z) (eq_rect ·A x ·P k z (eq_trans ·A x y z e e')) (eq_rect ·A y ·P (eq_rect ·A x ·P k y e) z e') = Λ A : ★ . Λ P : A ➔ ★ . λ x : A . λ y : A . λ z : A . λ e : eq ·A x y . σ e @(λ y' : A . λ e' : eq ·A x y' . Π e'' : eq ·A y' z . Π k : P x . eq ·(P z) (eq_rect ·A x ·P k z (eq_trans ·A x y' z e' e'')) (eq_rect ·A y' ·P (eq_rect ·A x ·P k y' e') z e'')) {
+  | eq_refl ➔ λ e' : eq ·A x z . σ e' @(λ y' : A . λ e' : eq ·A x y' . Π k : P x . eq ·(P y') (eq_rect ·A x ·P k y' (eq_trans ·A x x y' (eq_refl ·A x) e')) (eq_rect ·A x ·P (eq_rect ·A x ·P k x (eq_refl ·A x)) y' e')) {
+  | eq_refl ➔ λ k : P x . eq_refl ·(P x) (eq_rect ·A x ·P (eq_rect ·A x ·P k x (eq_refl ·A x)) x (eq_refl ·A x)) 
+ } 
+ }.
+
+

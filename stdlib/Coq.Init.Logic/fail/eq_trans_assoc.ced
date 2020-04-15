@@ -1,0 +1,13 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+eq_trans_assoc : ∀ A : ★ . Π x : A . Π y : A . Π z : A . Π t : A . Π e : eq ·A x y . Π e' : eq ·A y z . Π e'' : eq ·A z t . eq ·(eq ·A x t) (eq_trans ·A x y t e (eq_trans ·A y z t e' e'')) (eq_trans ·A x z t (eq_trans ·A x y z e e') e'') = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ t : A . λ e : eq ·A x y . λ e' : eq ·A y z . λ e'' : eq ·A z t . σ e'' @(λ y' : A . λ e' : eq ·A z y' . eq ·(eq ·A x y') (eq_trans ·A x y y' e (eq_trans ·A y z y' e' e')) (eq_trans ·A x z y' (eq_trans ·A x y z e e') e')) {
+  | eq_refl ➔ eq_refl ·(eq ·A x z) (eq_trans ·A x z z (eq_trans ·A x y z e e') (eq_refl ·A z)) 
+ }.
+
+

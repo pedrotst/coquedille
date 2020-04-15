@@ -1,0 +1,26 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data ex2 (A : ★) (P : A ➔ ★) (Q : A ➔ ★) : ★ =
+  | ex_intro2 : Π x : A . P x ➔ Q x ➔ ex2.
+
+eq_ex2_uncurried : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . Π u1 : A . Π v1 : A . Π u2 : P u1 . Π v2 : P v1 . Π u3 : Q u1 . Π v3 : Q v1 . Π pq : ex2 ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) ·(λ p : eq ·A u1 v1 . eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) v3) . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 v2 v3) = Λ A : ★ . Λ P : A ➔ ★ . Λ Q : A ➔ ★ . λ u1 : A . λ v1 : A . λ u2 : P u1 . λ v2 : P v1 . λ u3 : Q u1 . λ v3 : Q v1 . λ pq : ex2 ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) ·(λ p : eq ·A u1 v1 . eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) v3) . σ pq @(λ _ : ex2 ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) ·(λ p : eq ·A u1 v1 . eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) v3) . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 v2 v3)) {
+  | ex_intro2 p q r ➔ σ r @(λ y : Q v1 . λ _ : eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) y . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 v2 y)) {
+  | eq_refl ➔ σ q @(λ y : P v1 . λ _ : eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) y . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 y (eq_rect ·A u1 ·Q u3 v1 p))) {
+  | eq_refl ➔ σ p @(λ y : A . λ e : eq ·A u1 y . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q y (eq_rect ·A u1 ·P u2 y e) (eq_rect ·A u1 ·Q u3 y e))) {
+  | eq_refl ➔ eq_refl ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) 
+ } 
+ } 
+ } 
+ }.
+
+eq_ex2 : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . Π u1 : A . Π v1 : A . Π u2 : P u1 . Π v2 : P v1 . Π u3 : Q u1 . Π v3 : Q v1 . Π p : eq ·A u1 v1 . Π q : eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2 . Π r : eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) v3 . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 v2 v3) = Λ A : ★ . Λ P : A ➔ ★ . Λ Q : A ➔ ★ . λ u1 : A . λ v1 : A . λ u2 : P u1 . λ v2 : P v1 . λ u3 : Q u1 . λ v3 : Q v1 . λ p : eq ·A u1 v1 . λ q : eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2 . λ r : eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p) v3 . eq_ex2_uncurried ·A ·P ·Q u1 v1 u2 v2 u3 v3 (ex_intro2 ·(eq ·A u1 v1) ·(λ p' : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p') v2) ·(λ p' : eq ·A u1 v1 . eq ·(Q v1) (eq_rect ·A u1 ·Q u3 v1 p') v3) p q r).
+
+eq_ex2_hprop : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . Π P_hprop : Π x : A . Π p : P x . Π q : P x . eq ·(P x) p q . Π Q_hprop : Π x : A . Π p : Q x . Π q : Q x . eq ·(Q x) p q . Π u1 : A . Π v1 : A . Π u2 : P u1 . Π v2 : P v1 . Π u3 : Q u1 . Π v3 : Q v1 . Π p : eq ·A u1 v1 . eq ·(ex2 ·A ·P ·Q) (ex_intro2 ·A ·P ·Q u1 u2 u3) (ex_intro2 ·A ·P ·Q v1 v2 v3) = Λ A : ★ . Λ P : A ➔ ★ . Λ Q : A ➔ ★ . λ P_hprop : Π x : A . Π p : P x . Π q : P x . eq ·(P x) p q . λ Q_hprop : Π x : A . Π p : Q x . Π q : Q x . eq ·(Q x) p q . λ u1 : A . λ v1 : A . λ u2 : P u1 . λ v2 : P v1 . λ u3 : Q u1 . λ v3 : Q v1 . λ p : eq ·A u1 v1 . eq_ex2 ·A ·P ·Q u1 v1 u2 v2 u3 v3 p (P_hprop v1 (eq_rect ·A u1 ·P u2 v1 p) v2) (Q_hprop v1 (eq_rect ·A u1 ·Q u3 v1 p) v3).
+
+

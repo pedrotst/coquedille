@@ -1,0 +1,20 @@
+module test.
+data ex (A : ★) (P : A ➔ ★) : ★ =
+  | ex_intro : Π x : A . P x ➔ ex.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_ex_uncurried : ∀ A : ★ . ∀ P : A ➔ ★ . Π u1 : A . Π v1 : A . Π u2 : P u1 . Π v2 : P v1 . Π pq : ex ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) . eq ·(ex ·A ·P) (ex_intro ·A ·P u1 u2) (ex_intro ·A ·P v1 v2) = Λ A : ★ . Λ P : A ➔ ★ . λ u1 : A . λ v1 : A . λ u2 : P u1 . λ v2 : P v1 . λ pq : ex ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) . σ pq @(λ _ : ex ·(eq ·A u1 v1) ·(λ p : eq ·A u1 v1 . eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) v2) . eq ·(ex ·A ·P) (ex_intro ·A ·P u1 u2) (ex_intro ·A ·P v1 v2)) {
+  | ex_intro p q ➔ σ q @(λ y : P v1 . λ _ : eq ·(P v1) (eq_rect ·A u1 ·P u2 v1 p) y . eq ·(ex ·A ·P) (ex_intro ·A ·P u1 u2) (ex_intro ·A ·P v1 y)) {
+  | eq_refl ➔ σ p @(λ y : A . λ e : eq ·A u1 y . eq ·(ex ·A ·P) (ex_intro ·A ·P u1 u2) (ex_intro ·A ·P y (eq_rect ·A u1 ·P u2 y e))) {
+  | eq_refl ➔ eq_refl ·(ex ·A ·P) (ex_intro ·A ·P u1 (eq_rect ·A u1 ·P u2 u1 (eq_refl ·A u1))) 
+ } 
+ } 
+ }.
+
+

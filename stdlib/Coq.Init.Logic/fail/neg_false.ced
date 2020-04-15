@@ -1,0 +1,17 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+False : ★ = ∀ X : ★ . X.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+neg_false : ∀ A : ★ . iff ·(not ·A) ·(iff ·A ·False) = Λ A : ★ . conj ·(λ _ : A ➔ False . iff ·A ·False) ·(λ _ : iff ·A ·False . λ _ : A . False) (λ H : A ➔ False . conj ·(λ _ : A . False) ·(λ _ : False . A) H (λ H1 : False . False_ind ·A H1)) (λ H0 : iff ·A ·False . σ H0 @(λ _ : and ·(λ _ : A . False) ·(λ _ : False . A) . A ➔ False) {
+  | conj H _tmp ➔ H 
+ }).
+
+

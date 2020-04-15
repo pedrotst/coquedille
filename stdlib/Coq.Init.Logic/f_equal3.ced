@@ -1,0 +1,13 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal3 : ∀ A1 : ★ . ∀ A2 : ★ . ∀ A3 : ★ . ∀ B : ★ . Π f : A1 ➔ A2 ➔ A3 ➔ B . Π x1 : A1 . Π y1 : A1 . Π x2 : A2 . Π y2 : A2 . Π x3 : A3 . Π y3 : A3 . eq ·A1 x1 y1 ➔ eq ·A2 x2 y2 ➔ eq ·A3 x3 y3 ➔ eq ·B (f x1 x2 x3) (f y1 y2 y3) = Λ A1 : ★ . Λ A2 : ★ . Λ A3 : ★ . Λ B : ★ . λ f : A1 ➔ A2 ➔ A3 ➔ B . λ x1 : A1 . λ y1 : A1 . λ x2 : A2 . λ y2 : A2 . λ x3 : A3 . λ y3 : A3 . λ H : eq ·A1 x1 y1 . σ H @(λ y : A1 . λ _ : eq ·A1 x1 y . eq ·A2 x2 y2 ➔ eq ·A3 x3 y3 ➔ eq ·B (f x1 x2 x3) (f y y2 y3)) {
+  | eq_refl ➔ λ H' : eq ·A2 x2 y2 . σ H' @(λ y : A2 . λ _ : eq ·A2 x2 y . eq ·A3 x3 y3 ➔ eq ·B (f x1 x2 x3) (f x1 y y3)) {
+  | eq_refl ➔ λ H' : eq ·A3 x3 y3 . σ H' @(λ y : A3 . λ _ : eq ·A3 x3 y . eq ·B (f x1 x2 x3) (f x1 x2 y)) {
+  | eq_refl ➔ eq_refl ·B (f x1 x2 x3) 
+ } 
+ } 
+ }.
+
+

@@ -1,0 +1,23 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+and_iff_compat_r : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . iff ·B ·C ➔ iff ·(and ·B ·A) ·(and ·C ·A) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ H : iff ·B ·C . σ H @(λ _ : and ·(λ _ : B . C) ·(λ _ : C . B) . iff ·(and ·B ·A) ·(and ·C ·A)) {
+  | conj Hl Hr ➔ conj ·and ·B ·A ➔ and ·C ·A ·and ·C ·A ➔ and ·B ·A (λ H' : and ·B ·A . σ H' @(λ _ : and ·B ·A . and ·C ·A) {
+  | conj H' H0 ➔ conj ·C ·A (Hl H') H0 
+ }) (λ H' : and ·C ·A . σ H' @(λ _ : and ·C ·A . and ·B ·A) {
+  | conj H' H0 ➔ conj ·B ·A (Hr H') H0 
+ }) 
+ }.
+
+and_cancel_r : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . (B ➔ A) ➔ (C ➔ A) ➔ iff ·(iff ·(and ·B ·A) ·(and ·C ·A)) ·(iff ·B ·C) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ Hl : B ➔ A . λ Hr : C ➔ A . conj ·iff ·(and ·B ·A) ·(and ·C ·A) ➔ iff ·B ·C ·iff ·B ·C ➔ iff ·(and ·B ·A) ·(and ·C ·A) (λ H : iff ·(and ·B ·A) ·(and ·C ·A) . σ H @(λ _ : and ·and ·B ·A ➔ and ·C ·A ·and ·C ·A ➔ and ·B ·A . iff ·B ·C) {
+  | conj HypL HypR ➔ conj ·(λ _ : B . C) ·(λ _ : C . B) (λ H' : B . ([ H0 : and ·B ·A ➔ C = λ _ : and ·B ·A . σ HypL _ @(λ _ : and ·C ·A . C) {
+  | conj XX XX ➔ _ 
+ } ] - H0 (conj ·B ·A H' (Hl H')))) (λ H' : C . ([ H0 : and ·C ·A ➔ B = λ _ : and ·C ·A . σ HypR _ @(λ _ : and ·B ·A . B) {
+  | conj XX XX ➔ _ 
+ } ] - H0 (conj ·C ·A H' (Hr H')))) 
+ }) (and_iff_compat_r ·A ·B ·C).
+
+

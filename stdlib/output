@@ -1,0 +1,266 @@
+Welcome to Coq 8.9.1 (January 2020)
+Module
+Logic
+:= Struct
+     Inductive True : Prop :=  I : True
+     Definition True_rect : forall P : Type, P -> True -> P.
+     Definition True_ind : forall P : Prop, P -> True -> P.
+     Definition True_rec : forall P : Set, P -> True -> P.
+     Inductive False : Prop :=  
+     Definition False_rect : forall P : Type, False -> P.
+     Definition False_ind : forall P : Prop, False -> P.
+     Definition False_rec : forall P : Set, False -> P.
+     Definition not : Prop -> Prop.
+     Inductive and (A B : Prop) : Prop :=  conj : A -> B -> A /\ B
+     Definition and_rect :
+       forall (A B : Prop) (P : Type), (A -> B -> P) -> A /\ B -> P.
+     Definition and_ind : forall A B P : Prop, (A -> B -> P) -> A /\ B -> P.
+     Definition and_rec :
+       forall (A B : Prop) (P : Set), (A -> B -> P) -> A /\ B -> P.
+     Parameter proj1 : forall A B : Prop, A /\ B -> A.
+     Parameter proj2 : forall A B : Prop, A /\ B -> B.
+     Inductive or (A B : Prop) : Prop :=
+         or_introl : A -> A \/ B | or_intror : B -> A \/ B
+     Definition or_ind :
+       forall A B P : Prop, (A -> P) -> (B -> P) -> A \/ B -> P.
+     Definition iff : Prop -> Prop -> Prop.
+     Parameter iff_refl : forall A : Prop, A <-> A.
+     Parameter iff_trans :
+       forall A B C : Prop, A <-> B -> B <-> C -> A <-> C.
+     Parameter iff_sym : forall A B : Prop, A <-> B -> B <-> A.
+     Parameter and_iff_compat_l :
+       forall A B C : Prop, B <-> C -> A /\ B <-> A /\ C.
+     Parameter and_iff_compat_r :
+       forall A B C : Prop, B <-> C -> B /\ A <-> C /\ A.
+     Parameter or_iff_compat_l :
+       forall A B C : Prop, B <-> C -> A \/ B <-> A \/ C.
+     Parameter or_iff_compat_r :
+       forall A B C : Prop, B <-> C -> B \/ A <-> C \/ A.
+     Parameter imp_iff_compat_l :
+       forall A B C : Prop, B <-> C -> (A -> B) <-> (A -> C).
+     Parameter imp_iff_compat_r :
+       forall A B C : Prop, B <-> C -> (B -> A) <-> (C -> A).
+     Parameter not_iff_compat : forall A B : Prop, A <-> B -> ~ A <-> ~ B.
+     Parameter neg_false : forall A : Prop, ~ A <-> (A <-> False).
+     Parameter and_cancel_l :
+       forall A B C : Prop,
+       (B -> A) -> (C -> A) -> (A /\ B <-> A /\ C) <-> (B <-> C).
+     Parameter and_cancel_r :
+       forall A B C : Prop,
+       (B -> A) -> (C -> A) -> (B /\ A <-> C /\ A) <-> (B <-> C).
+     Parameter and_comm : forall A B : Prop, A /\ B <-> B /\ A.
+     Parameter and_assoc :
+       forall A B C : Prop, (A /\ B) /\ C <-> A /\ B /\ C.
+     Parameter or_cancel_l :
+       forall A B C : Prop,
+       (B -> ~ A) -> (C -> ~ A) -> (A \/ B <-> A \/ C) <-> (B <-> C).
+     Parameter or_cancel_r :
+       forall A B C : Prop,
+       (B -> ~ A) -> (C -> ~ A) -> (B \/ A <-> C \/ A) <-> (B <-> C).
+     Parameter or_comm : forall A B : Prop, A \/ B <-> B \/ A.
+     Parameter or_assoc : forall A B C : Prop, (A \/ B) \/ C <-> A \/ B \/ C.
+     Parameter iff_and : forall A B : Prop, A <-> B -> (A -> B) /\ (B -> A).
+     Parameter iff_to_and :
+       forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
+     Definition IF_then_else : Prop -> Prop -> Prop -> Prop.
+     Inductive ex (A : Type) (P : A -> Prop) : Prop :=
+         ex_intro : forall x : A, P x -> exists y, P y
+     Definition ex_ind :
+       forall (A : Type) (P : A -> Prop) (P0 : Prop),
+       (forall x : A, P x -> P0) -> (exists y, P y) -> P0.
+     Inductive ex2 (A : Type) (P Q : A -> Prop) : Prop :=
+         ex_intro2 : forall x : A, P x -> Q x -> exists2 x : A, P x & Q x
+     Definition ex2_ind :
+       forall (A : Type) (P Q : A -> Prop) (P0 : Prop),
+       (forall x : A, P x -> Q x -> P0) -> (exists2 x : A, P x & Q x) -> P0.
+     Definition all : forall A : Type, (A -> Prop) -> Prop.
+     Parameter inst :
+       forall (A : Type) (P : A -> Prop) (x : A),
+       all (fun x0 : A => P x0) -> P x.
+     Parameter gen :
+       forall (A : Type) (P : A -> Prop) (B : Prop),
+       (forall y : A, B -> P y) -> B -> all P.
+     Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+     Definition eq_rect :
+       forall (A : Type) (x : A) (P : A -> Type),
+       P x -> forall y : A, x = y -> P y.
+     Definition eq_ind :
+       forall (A : Type) (x : A) (P : A -> Prop),
+       P x -> forall y : A, x = y -> P y.
+     Definition eq_rec :
+       forall (A : Type) (x : A) (P : A -> Set),
+       P x -> forall y : A, x = y -> P y.
+     Parameter absurd : forall A C : Prop, A -> ~ A -> C.
+     Definition eq_sym : forall (A : Type) (x y : A), x = y -> y = x.
+     Definition eq_trans :
+       forall (A : Type) (x y z : A), x = y -> y = z -> x = z.
+     Definition f_equal :
+       forall (A B : Type) (f : A -> B) (x y : A), x = y -> f x = f y.
+     Parameter not_eq_sym : forall (A : Type) (x y : A), x <> y -> y <> x.
+     Definition eq_ind_r :
+       forall (A : Type) (x : A) (P : A -> Prop),
+       P x -> forall y : A, y = x -> P y.
+     Definition eq_rec_r :
+       forall (A : Type) (x : A) (P : A -> Set),
+       P x -> forall y : A, y = x -> P y.
+     Definition eq_rect_r :
+       forall (A : Type) (x : A) (P : A -> Type),
+       P x -> forall y : A, y = x -> P y.
+     Module EqNotations
+     Definition rew_opp_r :
+       forall (A : Type) (P : A -> Type) (x y : A) (H : x = y) (a : P y),
+       eq_rect x P (eq_rect_r P a H) y H = a.
+     Definition rew_opp_l :
+       forall (A : Type) (P : A -> Type) (x y : A) (H : x = y) (a : P x),
+       eq_rect_r P (eq_rect x P a y H) H = a.
+     Parameter f_equal2 :
+       forall (A1 A2 B : Type) (f : A1 -> A2 -> B) (x1 y1 : A1) (x2 y2 : A2),
+       x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
+     Parameter f_equal3 :
+       forall (A1 A2 A3 B : Type) (f : A1 -> A2 -> A3 -> B) 
+         (x1 y1 : A1) (x2 y2 : A2) (x3 y3 : A3),
+       x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
+     Parameter f_equal4 :
+       forall (A1 A2 A3 A4 B : Type) (f : A1 -> A2 -> A3 -> A4 -> B)
+         (x1 y1 : A1) (x2 y2 : A2) (x3 y3 : A3) (x4 y4 : A4),
+       x1 = y1 ->
+       x2 = y2 -> x3 = y3 -> x4 = y4 -> f x1 x2 x3 x4 = f y1 y2 y3 y4.
+     Parameter f_equal5 :
+       forall (A1 A2 A3 A4 A5 B : Type) (f : A1 -> A2 -> A3 -> A4 -> A5 -> B)
+         (x1 y1 : A1) (x2 y2 : A2) (x3 y3 : A3) (x4 y4 : A4) 
+         (x5 y5 : A5),
+       x1 = y1 ->
+       x2 = y2 ->
+       x3 = y3 -> x4 = y4 -> x5 = y5 -> f x1 x2 x3 x4 x5 = f y1 y2 y3 y4 y5.
+     Definition f_equal_compose :
+       forall (A B C : Type) (a b : A) (f : A -> B) (g : B -> C) (e : a = b),
+       f_equal g (f_equal f e) = f_equal (fun a0 : A => g (f a0)) e.
+     Definition eq_trans_refl_l :
+       forall (A : Type) (x y : A) (e : x = y), eq_trans eq_refl e = e.
+     Definition eq_trans_refl_r :
+       forall (A : Type) (x y : A) (e : x = y), eq_trans e eq_refl = e.
+     Definition eq_sym_involutive :
+       forall (A : Type) (x y : A) (e : x = y), eq_sym (eq_sym e) = e.
+     Definition eq_trans_sym_inv_l :
+       forall (A : Type) (x y : A) (e : x = y),
+       eq_trans (eq_sym e) e = eq_refl.
+     Definition eq_trans_sym_inv_r :
+       forall (A : Type) (x y : A) (e : x = y),
+       eq_trans e (eq_sym e) = eq_refl.
+     Definition eq_trans_assoc :
+       forall (A : Type) (x y z t : A) (e : x = y) (e' : y = z) (e'' : z = t),
+       eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''.
+     Definition eq_id_comm_l :
+       forall (A : Type) (f : A -> A) (Hf : forall a : A, a = f a) (a : A),
+       f_equal f (Hf a) = Hf (f a).
+     Definition eq_id_comm_r :
+       forall (A : Type) (f : A -> A) (Hf : forall a : A, f a = a) (a : A),
+       f_equal f (Hf a) = Hf (f a).
+     Parameter eq_refl_map_distr :
+       forall (A B : Type) (x : A) (f : A -> B), f_equal f eq_refl = eq_refl.
+     Definition eq_trans_map_distr :
+       forall (A B : Type) (x y z : A) (f : A -> B) (e : x = y) (e' : y = z),
+       f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
+     Definition eq_sym_map_distr :
+       forall (A B : Type) (x y : A) (f : A -> B) (e : x = y),
+       eq_sym (f_equal f e) = f_equal f (eq_sym e).
+     Definition eq_trans_sym_distr :
+       forall (A : Type) (x y z : A) (e : x = y) (e' : y = z),
+       eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e).
+     Parameter eq_trans_rew_distr :
+       forall (A : Type) (P : A -> Type) (x y z : A) 
+         (e : x = y) (e' : y = z) (k : P x),
+       eq_rect x P k z (eq_trans e e') = eq_rect y P (eq_rect x P k y e) z e'.
+     Parameter rew_const :
+       forall (A P : Type) (x y : A) (e : x = y) (k : P),
+       eq_rect x (fun _ : A => P) k y e = k.
+     Definition subrelation :
+       forall A B : Type, (A -> B -> Prop) -> (A -> B -> Prop) -> Prop.
+     Definition unique : forall A : Type, (A -> Prop) -> A -> Prop.
+     Definition uniqueness : forall A : Type, (A -> Prop) -> Prop.
+     Parameter unique_existence :
+       forall (A : Type) (P : A -> Prop),
+       (exists x : A, P x) /\ uniqueness P <-> (exists ! x : A, P x).
+     Parameter forall_exists_unique_domain_coincide :
+       forall (A : Type) (P : A -> Prop),
+       (exists ! x : A, P x) ->
+       forall Q : A -> Prop,
+       (forall x : A, P x -> Q x) <-> (exists x : A, P x /\ Q x).
+     Parameter forall_exists_coincide_unique_domain :
+       forall (A : Type) (P : A -> Prop),
+       (forall Q : A -> Prop,
+        (forall x : A, P x -> Q x) <-> (exists x : A, P x /\ Q x)) ->
+       exists ! x : A, P x.
+     Inductive inhabited (A : Type) : Prop :=  inhabits : A -> inhabited A
+     Definition inhabited_ind :
+       forall (A : Type) (P : Prop), (A -> P) -> inhabited A -> P.
+     Parameter exists_inhabited :
+       forall (A : Type) (P : A -> Prop), (exists x : A, P x) -> inhabited A.
+     Parameter inhabited_covariant :
+       forall A B : Type, (A -> B) -> inhabited A -> inhabited B.
+     Parameter eq_stepl :
+       forall (A : Type) (x y z : A), x = y -> x = z -> z = y.
+     Parameter iff_stepl :
+       forall A B C : Prop, A <-> B -> A <-> C -> C <-> B.
+     Parameter eq_ex_uncurried :
+       forall (A : Type) (P : A -> Prop) (u1 v1 : A) (u2 : P u1) (v2 : P v1),
+       (exists p : u1 = v1, eq_rect u1 P u2 v1 p = v2) ->
+       ex_intro P u1 u2 = ex_intro P v1 v2.
+     Definition eq_ex :
+       forall (A : Type) (P : A -> Prop) (u1 v1 : A) 
+         (u2 : P u1) (v2 : P v1) (p : u1 = v1),
+       eq_rect u1 P u2 v1 p = v2 -> ex_intro P u1 u2 = ex_intro P v1 v2.
+     Definition eq_ex_hprop :
+       forall (A : Type) (P : A -> Prop),
+       (forall (x : A) (p q : P x), p = q) ->
+       forall (u1 v1 : A) (u2 : P u1) (v2 : P v1),
+       u1 = v1 -> ex_intro P u1 u2 = ex_intro P v1 v2.
+     Parameter rew_ex :
+       forall (A : Type) (x : A) (P : A -> Type)
+         (Q : forall a : A, P a -> Prop) (u : exists p : P x, Q x p) 
+         (y : A) (H : x = y),
+       eq_rect x (fun a : A => exists p : P a, Q a p) u y H =
+       match u with
+       | ex_intro _ u1 u2 =>
+           ex_intro (Q y) (eq_rect x P u1 y H)
+             match H as x0 in (_ = a) return (Q a (eq_rect x P u1 a x0)) with
+             | eq_refl => u2
+             end
+       end.
+     Parameter eq_ex2_uncurried :
+       forall (A : Type) (P Q : A -> Prop) (u1 v1 : A) 
+         (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1),
+       (exists2 p : u1 = v1,
+          eq_rect u1 P u2 v1 p = v2 & eq_rect u1 Q u3 v1 p = v3) ->
+       ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3.
+     Definition eq_ex2 :
+       forall (A : Type) (P Q : A -> Prop) (u1 v1 : A) 
+         (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1) 
+         (p : u1 = v1),
+       eq_rect u1 P u2 v1 p = v2 ->
+       eq_rect u1 Q u3 v1 p = v3 ->
+       ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3.
+     Definition eq_ex2_hprop :
+       forall (A : Type) (P Q : A -> Prop),
+       (forall (x : A) (p q : P x), p = q) ->
+       (forall (x : A) (p q : Q x), p = q) ->
+       forall (u1 v1 : A) (u2 : P u1) (v2 : P v1) (u3 : Q u1) (v3 : Q v1),
+       u1 = v1 -> ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3.
+     Parameter rew_ex2 :
+       forall (A : Type) (x : A) (P : A -> Type)
+         (Q R : forall a : A, P a -> Prop)
+         (u : exists2 p : P x, Q x p & R x p) (y : A) 
+         (H : x = y),
+       eq_rect x (fun a : A => exists2 p : P a, Q a p & R a p) u y H =
+       match u with
+       | ex_intro2 _ _ u1 u2 u3 =>
+           ex_intro2 (Q y) (R y) (eq_rect x P u1 y H)
+             match H as x0 in (_ = a) return (Q a (eq_rect x P u1 a x0)) with
+             | eq_refl => u2
+             end
+             match H as x0 in (_ = a) return (R a (eq_rect x P u1 a x0)) with
+             | eq_refl => u3
+             end
+       end.
+   End
+

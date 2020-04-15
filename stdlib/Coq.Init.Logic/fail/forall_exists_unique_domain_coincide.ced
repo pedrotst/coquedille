@@ -1,0 +1,35 @@
+module test.
+data ex (A : ★) (P : A ➔ ★) : ★ =
+  | ex_intro : Π x : A . P x ➔ ex.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+unique : Π A : ★ . Π P : A ➔ ★ . Π x : A . ★ = λ A : ★ . λ P : A ➔ ★ . λ x : A . and ·(P x) ·(λ x' : A . λ _ : P x' . eq ·A x x').
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+forall_exists_unique_domain_coincide : ∀ A : ★ . ∀ P : A ➔ ★ . ex ·A ·(unique ·A ·(λ x : A . P x)) ➔ ∀ Q : A ➔ ★ . iff ·(λ x : A . λ _ : P x . Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x))) = Λ A : ★ . Λ P : A ➔ ★ . λ H : ex ·A ·(unique ·A ·(λ x : A . P x)) . σ H @(λ _ : ex ·A ·(unique ·A ·(λ x : A . P x)) . ∀ Q : A ➔ ★ . iff ·(λ x : A . λ _ : P x . Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x)))) {
+  | ex_intro x H' ➔ σ H' @(λ _ : and ·(P x) ·(λ x' : A . λ _ : P x' . eq ·A x x') . ∀ Q : A ➔ ★ . iff ·(λ x' : A . λ _ : P x' . Q x') ·(ex ·A ·(λ x' : A . and ·(P x') ·(Q x')))) {
+  | conj Hp Huniq ➔ Λ Q : A ➔ ★ . conj ·(λ _ : Π x' : A . P x' ➔ Q x' . ex ·A ·(λ x' : A . and ·(P x') ·(Q x'))) ·(λ _ : ex ·A ·(λ x' : A . and ·(P x') ·(Q x')) . λ x' : A . λ _ : P x' . Q x') (λ H' : Π x' : A . P x' ➔ Q x' . ex_intro ·A ·(λ x' : A . and ·(P x') ·(Q x')) x (conj ·(P x) ·(Q x) Hp (H' x Hp))) (λ H' : ex ·A ·(λ x' : A . and ·(P x') ·(Q x')) . σ H' @(λ _ : ex ·A ·(λ x' : A . and ·(P x') ·(Q x')) . Π x' : A . P x' ➔ Q x') {
+  | ex_intro x0 H' ➔ σ H' @(λ _ : and ·(P x0) ·(Q x0) . Π x' : A . P x' ➔ Q x') {
+  | conj HPx0 HQx0 ➔ λ x1 : A . λ HPx1 : P x1 . ([ H' : eq ·A x0 x1 = eq_trans ·A x0 x x1 (eq_sym ·A x x0 (Huniq x0 HPx0)) (Huniq x1 HPx1) ] - σ H' @(λ y : A . λ _ : eq ·A x0 y . Π HPx1' : P y . Q y) {
+  | eq_refl ➔ λ HPx1' : P x0 . HQx0 
+ } HPx1) 
+ } 
+ }) 
+ } 
+ }.
+
+

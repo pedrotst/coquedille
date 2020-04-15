@@ -1,0 +1,13 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+f_equal_compose : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . Π a : A . Π b : A . Π f : A ➔ B . Π g : B ➔ C . Π e : eq ·A a b . eq ·(eq ·C (g (f a)) (g (f b))) (f_equal ·B ·C g (f a) (f b) (f_equal ·A ·B f a b e)) (f_equal ·A ·C (λ a' : A . g (f a')) a b e) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ a : A . λ b : A . λ f : A ➔ B . λ g : B ➔ C . λ e : eq ·A a b . σ e @(λ y : A . λ e' : eq ·A a y . eq ·(eq ·C (g (f a)) (g (f y))) (f_equal ·B ·C g (f a) (f y) (f_equal ·A ·B f a y e')) (f_equal ·A ·C (λ a' : A . g (f a')) a y e')) {
+  | eq_refl ➔ eq_refl ·(eq ·C (g (f a)) (g (f a))) (f_equal ·A ·C (λ a' : A . g (f a')) a a (eq_refl ·A a)) 
+ }.
+
+

@@ -1,0 +1,6 @@
+module test.
+all : Π A : ★ . Π P : A ➔ ★ . ★ = λ A : ★ . λ P : A ➔ ★ . Π x : A . P x.
+
+gen : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ B : ★ . Π f : Π y : A . B ➔ P y . B ➔ all ·A ·P = Λ A : ★ . Λ P : A ➔ ★ . Λ B : ★ . λ f : Π y : A . B ➔ P y . λ H : B . λ x : A . f x H.
+
+

@@ -1,0 +1,35 @@
+module test.
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+or_iff_compat_r : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . iff ·B ·C ➔ iff ·(or ·B ·A) ·(or ·C ·A) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ H : iff ·B ·C . σ H @(λ _ : and ·(λ _ : B . C) ·(λ _ : C . B) . iff ·(or ·B ·A) ·(or ·C ·A)) {
+  | conj Hl Hr ➔ conj ·or ·B ·A ➔ or ·C ·A ·or ·C ·A ➔ or ·B ·A (λ H' : or ·B ·A . σ H' @(λ _ : or ·B ·A . or ·C ·A) {
+  | or_introl H' ➔ or_introl ·C ·A (Hl H') 
+  | or_intror H' ➔ or_intror ·C ·A H' 
+ }) (λ H' : or ·C ·A . σ H' @(λ _ : or ·C ·A . or ·B ·A) {
+  | or_introl H' ➔ or_introl ·B ·A (Hr H') 
+  | or_intror H' ➔ or_intror ·B ·A H' 
+ }) 
+ }.
+
+or_cancel_r : ∀ A : ★ . ∀ B : ★ . ∀ C : ★ . (B ➔ not ·A) ➔ (C ➔ not ·A) ➔ iff ·(iff ·(or ·B ·A) ·(or ·C ·A)) ·(iff ·B ·C) = Λ A : ★ . Λ B : ★ . Λ C : ★ . λ Fl : B ➔ not ·A . λ Fr : C ➔ not ·A . conj ·iff ·(or ·B ·A) ·(or ·C ·A) ➔ iff ·B ·C ·iff ·B ·C ➔ iff ·(or ·B ·A) ·(or ·C ·A) (λ H : iff ·(or ·B ·A) ·(or ·C ·A) . σ H @(λ _ : and ·or ·B ·A ➔ or ·C ·A ·or ·C ·A ➔ or ·B ·A . iff ·B ·C) {
+  | conj Hl Hr ➔ conj ·(λ _ : B . C) ·(λ _ : C . B) (λ H' : B . ([ o : or ·C ·A = Hl (or_introl ·B ·A H') ] - σ o @(λ _ : or ·C ·A . C) {
+  | or_introl H0 ➔ H0 
+  | or_intror H0 ➔ delwrong 
+ })) (λ H' : C . ([ o : or ·B ·A = Hr (or_introl ·C ·A H') ] - σ o @(λ _ : or ·B ·A . B) {
+  | or_introl H0 ➔ H0 
+  | or_intror H0 ➔ delwrong 
+ })) 
+ }) (or_iff_compat_r ·A ·B ·C).
+
+

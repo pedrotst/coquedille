@@ -318,22 +318,22 @@ with ppTerm (barr bapp: bool) (t : Term) {struct t}: state type_ctx string :=
     ty' <- ppTyp false false ty ;;
     appendCtx name (inl k) ;;
     bdy' <- ppTerm false false bdy ;;
-    ret (TkOpenBrac ++ TkSpace ++ name ++ TkSpace
+    ret (TkOpenPar ++ TkOpenBrac ++ TkSpace ++ name ++ TkSpace
                     ++ TkColon ++ TkSpace ++ k' ++ TkSpace
                     ++ TkAssgn ++ TkSpace ++ ty' ++ TkSpace
                     ++ TkCloseBrac ++ TkSpace ++ TkDash
-                    ++ TkSpace ++ bdy')
+                    ++ TkSpace ++ bdy' ++ TkClosePar)
   | TLetTm x _ ty t bdy =>
     ty' <- ppTyp false false ty ;;
     let name := getName x in
     t' <- ppTerm false false t ;;
     appendCtx name (inr ty) ;;
     bdy' <- ppTerm false false bdy ;;
-    ret (TkOpenBrac ++ TkSpace ++ name ++ TkSpace
+    ret (TkOpenPar ++ TkOpenBrac ++ TkSpace ++ name ++ TkSpace
                     ++ TkColon ++ TkSpace ++ ty' ++ TkSpace
                     ++ TkAssgn ++ TkSpace ++ t' ++ TkSpace
                     ++ TkCloseBrac ++ TkSpace ++ TkDash
-                    ++ TkSpace ++ bdy')
+                    ++ TkSpace ++ bdy' ++ TkClosePar)
   | TMu b t mot brchs =>
     let printBranch (brch : Term * Term) : state type_ctx string :=
         let '(t1, t2) := brch in
