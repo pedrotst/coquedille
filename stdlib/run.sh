@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+make -C ..
 sed "s/THISISPROGRAM/$1/g" Extraction.v > out.v
 coqc -Q ../theories Coquedille out.v
 
