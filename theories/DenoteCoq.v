@@ -34,9 +34,9 @@ Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fma
 
 Definition ctx := list Ced.Var.
 
-Local Definition string_eq x y := utils.string_compare x y = Eq.
+Local Definition string_eq x y := string_compare x y = Eq.
 
-Local Instance string_RelDec : RelDec.RelDec string_eq :=
+Instance string_RelDec : RelDec.RelDec string_eq :=
   { rel_dec := String.eqb }.
 
 Fixpoint string_of_list_ascii (s : list ascii) : string
@@ -143,7 +143,7 @@ Section monadic.
   Fixpoint lookup_constant (id : ident) (decls : global_env)
     := match decls with
        | nil => None
-       | ConstantDecl kn d :: tl =>
+       | (kn , ConstantDecl d) :: tl =>
          if String.eqb kn id then Some d else lookup_constant id tl
        | _ :: tl => lookup_constant id tl
        end.
@@ -167,8 +167,8 @@ Section monadic.
   Fixpoint decl_exists (id : ident) (decls : global_env) : bool :=
   match decls with
   | [] => false
-  | ConstantDecl kn d :: tl => (String.eqb (kername_to_qualid kn) id) || decl_exists id tl
-  | InductiveDecl kn d :: tl =>
+  | (kn, ConstantDecl d) :: tl => (String.eqb (kername_to_qualid kn) id) || decl_exists id tl
+  | (kn, InductiveDecl d) :: tl =>
       if String.eqb (kername_to_qualid kn) id
       then true
       else
@@ -681,7 +681,7 @@ Section monadic.
   match t with
   | tRel n =>
     '(_, Γ, _) <- ask ;;
-     v <- option_m (nth_error Γ n) ("ty tRel " ++ utils.string_of_nat n ++ " not in environment " ++ showList Γ);;
+     v <- option_m (nth_error Γ n) ("ty tRel " ++ string_of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
     '(t2', x') <- localDenote x (denoteType t2) ;;
@@ -726,7 +726,7 @@ Section monadic.
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ, _) <- ask ;;
-     v <- option_m (nth_error Γ n) ("term Variable " ++ utils.string_of_nat n ++ " not in environment");;
+     v <- option_m (nth_error Γ n) ("term Variable " ++ string_of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
@@ -848,13 +848,13 @@ Section monadic.
   Fixpoint denoteGenv (genv: global_env): m Ced.Program :=
   match genv with
   | nil => ret nil
-  | e :: es' =>
+  | (kern, e) :: es' =>
     match e with
-    | InductiveDecl kern mbody =>
+    | InductiveDecl mbody =>
       p <- denoteInductive mbody ;;
       ps <- denoteGenv es';;
       ret (p :: ps)
-    | ConstantDecl kern cbody =>
+    | ConstantDecl cbody =>
       ps <- denoteGenv es';;
       if (String.eqb kern
                      "Coq.Init.Logic.False_ind")

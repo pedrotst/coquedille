@@ -2,7 +2,7 @@ Require Import Coquedille.Ast.
 Import Ced.
 
 Require Import List.
-Require Import String.
+Require Import Strings.String.
 Local Open Scope string.
 
 Require Import Coquedille.DenoteCoq.
@@ -72,11 +72,6 @@ Instance PrettySum {A} {x: Pretty A}: Pretty (string + A) :=
 Local Open Scope monad_scope.
 (* Can we simplify this to a simple list and mark what lives on the kind level? *)
 Definition type_ctx := alist Var (Kind + Typ).
-
-Local Definition string_eq x y := utils.string_compare x y = Eq.
-
-Local Instance string_RelDec : RelDec.RelDec string_eq :=
-  { rel_dec := String.eqb }.
 
 Definition alist_app {B} (a1 a2: alist string B) : alist string B :=
   @fold_alist _ _ _ (@alist_add _ _ _ _) a1 a2.
@@ -422,7 +417,7 @@ Fixpoint removeParams (data_name : Var) (params_count: nat) (t: Typ): Typ :=
   | TyApp t1 ts2 =>
     match t1 with
     | TyVar v =>
-      if (string_dec v data_name)
+      if (eqb v data_name)
       then let rs' := skipn params_count ts2 in
            flattenApp (TyApp t1 rs')
       else flattenApp (TyApp t1 ts2)

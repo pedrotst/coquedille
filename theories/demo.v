@@ -15,7 +15,9 @@ Quote Recursively Definition iff_syntax := iff.
 Eval compute in ((denoteCoq iff_syntax)).
 Eval compute in (pretty (denoteCoq iff_syntax)).
 
-Quote Recursively Definition and_iff_compat_l_syntax := and_iff_compat_l.
+Quote Recursively Definition and_cancel_l_syntax := and_cancel_l.
+Eval compute in ((denoteCoq and_cancel_l_syntax)).
+Eval compute in (pretty (denoteCoq and_cancel_l_syntax)).
 
 Inductive Ve (A : Type) : nat -> bool -> nat -> Type :=
 | vni : Ve A 0 false 2

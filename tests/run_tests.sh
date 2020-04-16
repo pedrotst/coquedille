@@ -18,6 +18,13 @@ sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Bits' main.hs >
 sed -e '/import qualified Prelude/a\'$'\n''import GHC.IO.Encoding' m.hs > main.hs
 sed -e '/import qualified Prelude/a\'$'\n''import qualified Data.Char' main.hs > m.hs
 
+# Deletes line that simply refuses to work
+del="eqb_spec0 :: T0 -> T0 -> Reflect\neqb_spec0 =\n eqb_spec"
+
+sed -e "/^eqb_spec0 :: T0 -> T0 -> Reflect/d" m.hs > main.hs
+sed -e "/neqb_spec0 =$/d" main.hs > m.hs
+sed -e "/^  eqb_spec$/d" m.hs > main.hs
+
 mv m.hs main.hs
 
 # Adds the main

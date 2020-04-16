@@ -80,6 +80,7 @@ Quote Recursively Definition nileqnil_syntax := nileqnil.
 Quote Recursively Definition zeroneqS_syntax := O_S.
 Quote Recursively Definition iff_syntax := iff.
 
+Set Extraction TypeExpand.
 (* We are finally ready to extract the programs we want *)
 Extraction "main.hs" PrettySum PrettyProgram denoteCoq
            nat_syntax list_syntax option_syntax vector_syntax le_syntax iff_syntax
