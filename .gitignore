@@ -9,6 +9,8 @@ main
 *.aux
 *.d
 *.conf
+*.vos
+*.vok
 
 # Haskell binaries
 dist
