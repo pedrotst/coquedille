@@ -11,6 +11,12 @@ Require Import String.
 Require Import List. Import ListNotations.
 Require Import Coq.Vectors.Vector.
 
+Quote Recursively Definition iff_syntax := iff.
+Eval compute in ((denoteCoq iff_syntax)).
+Eval compute in (pretty (denoteCoq iff_syntax)).
+
+Quote Recursively Definition and_iff_compat_l_syntax := and_iff_compat_l.
+
 Inductive Ve (A : Type) : nat -> bool -> nat -> Type :=
 | vni : Ve A 0 false 2
 | vcon : A -> forall (n : nat), Ve A n false 2 -> Ve A (S n) false 2

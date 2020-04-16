@@ -212,19 +212,21 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
     ts2' <- list_m (map ppApp ts2) ;;
     ret (parens bapp (t1' ++ TkSpace ++ string_of_list_aux id (TkSpace) ts2' 0))
   | TyPi x t1 t2 =>
+    let b := orb barr bapp in
     match x with
     | Anon =>
       t1' <- ppTyp true false t1 ;;
       t2' <- ppTyp false false t2 ;;
-      ret (parens barr (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
+      ret (parens b (t1' ++ TkSpace ++ TkArrow ++ TkSpace ++ t2'))
     | Named name =>
       t1' <- ppTyp false false t1 ;;
       appendCtx name (inr t1) ;;
       t2' <- ppTyp false false t2 ;;
-      ret (TkPi ++ TkSpace ++ name ++ TkSpace
+      ret (parens b
+                (TkPi ++ TkSpace ++ name ++ TkSpace
                 ++ TkColon ++ TkSpace
                 ++ t1' ++ TkSpace
-                ++ TkDot ++ TkSpace ++ t2')
+                ++ TkDot ++ TkSpace ++ t2'))
     end
   | TyAll x t1 t2 =>
     let name := getName x in

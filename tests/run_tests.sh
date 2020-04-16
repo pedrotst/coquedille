@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Modify here to add new test cases
-declare -a TESTCASES=("nat" "list" "option" "vector" "le" "asgn" "refl1" "lnil"
+declare -a TESTCASES=("nat" "list" "option" "vector" "le" "iff" "asgn" "refl1" "lnil"
 "lcons" "nileqnil" "zeroneqS" "mul")
 
 # Uncomment this line to see each command being run

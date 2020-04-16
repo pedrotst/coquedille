@@ -1,38 +1,20 @@
 module tas.
-
 data nat : ★ =
   | O : nat
   | S : nat ➔ nat.
 
-sub : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ sub. n @(λ n : nat . Π m : nat . nat) {
-  | O ➔ λ m' : nat . n
-  | S k ➔ λ m' : nat . μ' m @(λ m' : nat . nat) {
-  | O ➔ n
-  | S l ➔ sub k l
- }
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m
+  | S p ➔ λ _ . S (add p m)
  } m.
 
-data prod (A : ★) (B : ★) : ★ =
-  | pair : A ➔ B ➔ prod.
+mul : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ mul. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . O
+  | S p ➔ λ _ . add m (mul p m)
+ } m.
 
-snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . μ' p @(λ p' : prod ·A ·B . B) {
-  | pair x y ➔ y
- }.
 
-divmod : Π x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat = λ x : nat . λ y : nat . λ q : nat . λ u : nat . μ divmod. x @(λ x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat) {
-  | O ➔ λ y' : nat . λ q' : nat . λ u' : nat . pair ·nat ·nat q u
-  | S x' ➔ λ y' : nat . λ q' : nat . λ u' : nat . μ' u @(λ u' : nat . prod ·nat ·nat) {
-  | O ➔ divmod x' y (S q) y
-  | S u' ➔ divmod x' y q u'
- }
- } y q u.
-
-modulo : Π x : nat . Π y : nat . nat = λ x : nat . λ y : nat . μ' y @(λ y' : nat . nat) {
-  | O ➔ y
-  | S y' ➔ sub y' (snd ·nat ·nat (divmod x y' O y'))
- }.
-
-gcd : Π a : nat . Π b : nat . nat = λ a : nat . λ b : nat . μ gcd. a @(λ a : nat . Π b : nat . nat) {
-  | O ➔ λ b' : nat . b
-  | S a' ➔ λ b' : nat . gcd (modulo b (S a')) (S a')
- } b.
+pow : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ pow. m @(λ m : nat . Π n : nat . nat) {
+  | O ➔ λ _ . S O
+  | S m' ➔ λ _ . mul n (pow m' n)
+ } n.
