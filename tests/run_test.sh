@@ -25,7 +25,7 @@ ghc main.hs > /dev/null
 if cmp --silent expected.tst out
 then echo -e "${GREEN} Test Passed $1!${NC}"
 else echo -e "${RED}Failed!${NC}" \
-    && diff expected.tst out \
+    && diff expected out \
     && exit 1
 fi
 
