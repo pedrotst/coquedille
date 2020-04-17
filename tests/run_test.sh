@@ -22,7 +22,7 @@ echo $main_str >> main.hs
 ghc main.hs > /dev/null
 ./main > out
 
-if cmp --silent expected.tst out
+if cmp --silent expected out
 then echo -e "${GREEN} Test Passed $1!${NC}"
 else echo -e "${RED}Failed!${NC}" \
     && diff expected out \
