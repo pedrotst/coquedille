@@ -863,6 +863,9 @@ Section monadic.
       if (String.eqb kern "Coq.Logic.JMeq.JMeq_rect")
       then ret ((Ced.CmdAssgn JMeq_rect_term) :: ps)
       else
+      if (String.eqb kern "Coq.Init.Datatypes.nat_ind")
+      then ret ((Ced.CmdAssgn nat_ind_term) :: ps)
+      else
         (* Ignore JMeq_eq because it is an axiom *)
       if (String.eqb kern "Coq.Logic.JMeq.JMeq_eq")
       then ret ps

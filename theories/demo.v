@@ -1,6 +1,7 @@
-Require Import MetaCoq.Template.Ast.
-Require Import MetaCoq.Template.AstUtils.
-Require Import MetaCoq.Template.Loader.
+Require Import MetaCoq.Template.All.
+(* Require Import MetaCoq.Template.AstUtils. *)
+(* Require Import MetaCoq.Template.Loader. *)
+(* Require Import MetaCoq.Template.Typing. *)
 
 Require Import Coquedille.Ast.
 Require Import Coquedille.DenoteCoq.
@@ -15,7 +16,62 @@ Quote Recursively Definition iff_syntax := iff.
 Eval compute in ((denoteCoq iff_syntax)).
 Eval compute in (pretty (denoteCoq iff_syntax)).
 
-Quote Recursively Definition and_cancel_l_syntax := and_cancel_l.
+Quote Recursively Definition cancel_syntax := and_cancel_l.
+Open Scope string_scope.
+
+Definition z' := Eval compute in lookup_env (fst cancel_syntax) "Coq.Init.Logic.and_cancel_l".
+
+Test Quote (fun x : nat => x).
+
+Definition lookup_const (g : global_env) (cst : ident) :=
+  match (lookup_env g "Coq.Init.Logic.and_cancel_l") with
+  | Some (ConstantDecl d) =>
+    match d.(cst_body) with
+    | Some b => b
+    | None => tVar "decl without a body"
+    end
+  | Some _ => tVar "not a constant"
+  | None => tVar "decl not found"
+  end.
+
+Definition l := Eval compute in (lookup_const cancel_syntax.1 "Coq.Init.Logic.and_cancel_l").
+Make Definition unquote_cancel := l.
+(* Make Definition unquote_cancel := (lookup_const cancel_syntax.1 "Coq.Init.Logic.and_cancel_l"). *)
+Quote Recursively Definition quoteunquote_cancel := unquote_cancel.
+(* Make Definition x := quoteunquote_cancel. *)
+(* Eval compute in (pretty (denoteCoq quoteunquote_cancel)). *)
+
+Definition nat_id := (fun x : nat => x).
+(* Quote Definition nat_id_syntax := Eval compute in nat_id. *)
+
+Definition nat_id_syntax :=
+tLambda nAnon
+  (tInd
+     {|
+     inductive_mind := "Coq.Init.Datatypes.nat";
+     inductive_ind := 0 |} []) (tRel 0).
+Make Definition unquote_nat_id := nat_id_syntax.
+
+(* zzz =  *)
+(* fun (A B C : Prop) (Hl : B -> A) (Hr : C -> A) => *)
+(* conj *)
+(*   (fun H : A /\ B <-> A /\ C => *)
+(*    match H with *)
+(*    | conj HypL HypR => *)
+(*        conj *)
+(*          (fun H0 : B => *)
+(*           match HypL (conj (Hl H0) H0) with *)
+(*           | conj _ x0 => x0 *)
+(*           end) *)
+(*          (fun H0 : C => *)
+(*           match HypR (conj (Hr H0) H0) with *)
+(*           | conj _ x0 => x0 *)
+(*           end) *)
+(*    end) (and_iff_compat_l A (C:=C)) *)
+
+Metacoq Unquote Definition x := z'.
+
+
 Eval compute in ((denoteCoq and_cancel_l_syntax)).
 Eval compute in (pretty (denoteCoq and_cancel_l_syntax)).
 
