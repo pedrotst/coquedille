@@ -32,7 +32,7 @@ Module Import NatSort := Sort NatOrder.
 Definition inj1M {A B mon} `{Monad mon} : mon A -> mon (sum A B) := fun m => fmap inl m.
 Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fmap inr m.
 
-Definition ctx := list Ced.Var.
+Open Scope type_scope.
 
 Local Definition string_eq x y := string_compare x y = Eq.
 
@@ -62,6 +62,9 @@ Section monadic.
   Open Scope type_scope.
   Notation "f ̊ g" := (fun x => f (g x)) (at level 80).
 
+  Definition var_ctx := list Ced.Var.
+  (* Definition fresh_vars := alist Ced.Var nat. *)
+
   (* Here we define the states we will need to carry around in our Translation Functions *)
 
   (* In order to translate recursive functions we need the three following mappings:*)
@@ -84,18 +87,20 @@ Section monadic.
 
   Definition rec_env := a_rargs * a_rargspos * a_nrargs * a_motives * a_reorg.
 
+  Definition fresh_var_ctx := alist Ced.Var nat.
   Definition params_env := alist Ced.Var nat.
+  Definition envstate := params_env * fresh_var_ctx.
 
   Definition fresh_renv: rec_env := (nil, nil, nil, nil, nil).
 
-  Definition m A := stateT params_env
-                           (readerT (global_env * ctx * rec_env)
+  Definition m A := stateT envstate
+                           (readerT (global_env * var_ctx * rec_env)
                                     (eitherT string IdentityMonad.ident)) A.
 
-  Definition run_m {A} (params: params_env) (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
+  Definition run_m {A} (st: envstate) (env: global_env * var_ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev st) env)).
   Context {Monad_m : Monad m}.
-  Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
-  Context {State_m: MonadState params_env m}.
+  Context {Reader_m: MonadReader (global_env * var_ctx * rec_env) m}.
+  Context {State_m: MonadState envstate m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
@@ -184,7 +189,7 @@ Section monadic.
         end
   end.
 
-  Fixpoint bound_var (x : ident) (Γ : ctx) : bool :=
+  Fixpoint bound_var (x : ident) (Γ : var_ctx) : bool :=
   match Γ with
   | [] => false
   | x' :: xs => (String.eqb x x') || (bound_var x xs)
@@ -192,21 +197,32 @@ Section monadic.
 
   Definition fresh (x: ident) : m ident :=
   '(genv, Γ, _) <- ask ;;
-  if (bound_var x Γ) || (decl_exists x genv)
+  if (decl_exists x genv)
+  then
+    ret (append x "'")
   (* TODO: Implement a smarter / nicer fresh generator *)
-  then ret (append x "'")
-  else ret x.
+  else
+    '(penv, γ) <- get ;;
+     match (alist_find _ x γ) with
+     | None =>
+       let γ' := (alist_add _ x 1 γ) in
+       put (penv, γ') ;;
+       ret x
+     | Some n =>
+       let γ' := (alist_add _ x (S n) γ) in
+       put (penv, γ') ;;
+       ret (append x (string_of_nat n))
+     end.
+
 
   Definition localDenote {A} (x: name) (r: m A): m (A * Ced.Name):=
-  match x with
-  | nAnon =>
-    r' <- local (fun '(genv, Γ, renv) => (genv, "_" :: Γ, renv)) r ;;
-    ret (r', Ced.Anon)
-  | nNamed n =>
-    x' <- fresh n ;;
-    r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;;
-    ret (r' , Ced.Named x')
-  end.
+  '(penv, γ) <- get ;;
+  x' <- fresh (match x with
+              | nAnon => "H"
+              | nNamed n => n
+              end) ;;
+  r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;;
+  ret (r', Ced.Named x') .
 
   Fixpoint take_args' (acc: list (Ced.Typ + Ced.Term)) (n : nat) (t: term)
     : m (list (Ced.Typ + Ced.Term)) :=
@@ -624,7 +640,7 @@ Section monadic.
   Definition denoteMotive (mot: Ced.Typ) (rargpos: nat) fname : m rec_env:=
   let body := get_body mot in
   let fvars := build_env mot in
-  penv <- get ;;
+  '(penv, _) <- get ;;
   '(rarg, rarg_ty) <- option_m (nth_error fvars rargpos) ("error fetching recursive argument name for motive in " ++ showList (map fst fvars)) ;;
   let nargs := alist_remove _ rarg fvars in
   let deps := get_deps penv rarg_ty in
@@ -840,8 +856,9 @@ Section monadic.
     params <- denoteParams param_l;;
     let tki := ind_type body in
     ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;;
-    penv <- get ;;
-    put (alist_add _ name (length params) penv) ;;
+    '(penv, γ) <- get ;;
+    let penv' := alist_add _ name (length params) penv in
+    put (penv', γ) ;;
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
@@ -901,7 +918,7 @@ apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadReader : MonadReader (global_env * ctx * rec_env) m.
+Instance m_MonadReader : MonadReader (global_env * var_ctx * rec_env) m.
 apply MonadReader_stateT.
 apply Monad_readerT.
 apply Monad_eitherT.
@@ -921,7 +938,7 @@ apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadState : MonadState params_env m.
+Instance m_MonadState : MonadState envstate m.
 apply MonadState_stateT.
 apply Monad_readerT.
 apply Monad_eitherT.
@@ -930,7 +947,7 @@ Defined.
 
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-match run_m nil (genv, nil, fresh_renv) (denoteCoq' t) with
+match run_m (nil, nil) (genv, nil, fresh_renv) (denoteCoq' t) with
 | inl l => inl l
 | inr (p, _) => inr p
 end.
