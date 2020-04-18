@@ -241,7 +241,7 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
             ret ""
           end ;;
     t2' <- ppTyp false false t2 ;;
-    ret (TkLam ++ TkSpace ++ name ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
+    ret (parens bapp (TkLam ++ TkSpace ++ name ++ t1' ++ TkSpace ++ TkDot ++ TkSpace ++ t2'))
   | TyLamK x k t2 =>
     let name := getName x in
     k' <- match k with
@@ -253,7 +253,7 @@ with ppTyp (barr bapp: bool) (t : Typ) {struct t}: state type_ctx string :=
             ret ""
           end ;;
     t2' <- ppTyp false false t2 ;;
-    ret (TkLam ++ TkSpace ++ name ++ k' ++ TkSpace ++ TkDot ++ TkSpace ++ t2')
+    ret (parens bapp (TkLam ++ TkSpace ++ name ++ k' ++ TkSpace ++ TkDot ++ TkSpace ++ t2'))
   | TyVar v => ret v
   | TyEq t1 t2 =>
     t1' <- ppTerm false false t1 ;;
