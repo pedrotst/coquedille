@@ -656,6 +656,12 @@ Section monadic.
              end
   end.
 
+  Definition build_appargs : Ced.Var * Ced.Sort -> bool * Ced.TyTerm :=
+  fun '(v, s) => match s with
+              | inl _ => (false, inl (Ced.TyVar v))
+              | inr _ => (false, inr (Ced.TVar v))
+              end.
+
   Fixpoint bind_nrargs (nrargs: list (Ced.Var * Ced.Sort)) (tail: Ced.Term) :=
   let fresh x := append x "'" in
   match nrargs with
@@ -803,7 +809,7 @@ Section monadic.
        this may actually make anargs unecessary *)
     let nrargs_brchs := map (bind_nrargs app_args) trimmed_brchs' in
     (* FIXME: actually figure out if the argument is a type or a term, for now we assume its a term *)
-    let tapp_args := map (fun x => (false, (inr ̊ Ced.TVar ̊ fst) x)) app_args in
+    let tapp_args := map build_appargs app_args in
     let t' := Ced.TApp (Ced.TMu fname matchvar' (Some mot') (combine flat_constrs nrargs_brchs)) tapp_args in
     ret (flattenTApp t')
   end
@@ -856,12 +862,14 @@ Section monadic.
       ret (p :: ps)
     | ConstantDecl cbody =>
       ps <- denoteGenv es';;
-      if (String.eqb kern
-                     "Coq.Init.Logic.False_ind")
+      if (String.eqb kern "Coq.Init.Logic.False_ind")
       then ret ((Ced.CmdAssgn False_ind_term) :: ps)
       else
       if (String.eqb kern "Coq.Logic.JMeq.JMeq_rect")
       then ret ((Ced.CmdAssgn JMeq_rect_term) :: ps)
+      else
+      if (String.eqb kern "Coq.Init.Datatypes.nat_rect")
+      then ret ((Ced.CmdAssgn nat_rect_term) :: ps)
       else
       if (String.eqb kern "Coq.Init.Datatypes.nat_ind")
       then ret ((Ced.CmdAssgn nat_ind_term) :: ps)
