@@ -714,7 +714,9 @@ Section monadic.
     else ty <- denoteType kty ;;
          ret (Ced.TyLam x' (Some ty) t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
-  | tFix _ _ => raise "type tFix not implemented yet"
+  | tFix f _ =>
+    fdef <- option_m (head f) "No definition of fixpoint" ;;
+    raise (append (append "Error translating " (get_ident (dname fdef))) " : type tFix not implemented yet")
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
   | tEvar _ _ => raise "type tEvar not implemented yet"
