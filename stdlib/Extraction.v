@@ -34,7 +34,7 @@ Extract Constant TkMu      => "['μ']".
 Extract Constant TkDelta   => "['δ']".
 Extract Constant TkBeta    => "['β']".
 Extract Constant TkEq      => "['≃']".
-Extract Constant TkSigma      => "['σ']".
+Extract Constant TkSigma   => "['σ']".
 
 Extract Inductive ascii => "Prelude.Char"
   [ "(\b0 b1 b2 b3 b4 b5 b6 b7 -> Data.Char.chr ( (if b0 then Data.Bits.shiftL 1 0 else 0) Prelude.+ (if b1 then Data.Bits.shiftL 1 1 else 0) Prelude.+ (if b2 then Data.Bits.shiftL 1 2 else 0) Prelude.+ (if b3 then Data.Bits.shiftL 1 3 else 0) Prelude.+ (if b4 then Data.Bits.shiftL 1 4 else 0) Prelude.+ (if b5 then Data.Bits.shiftL 1 5 else 0) Prelude.+ (if b6 then Data.Bits.shiftL 1 6 else 0) Prelude.+ (if b7 then Data.Bits.shiftL 1 7 else 0)))" ]
@@ -47,10 +47,28 @@ Extract Inlined Constant String.eqb => "(Prelude.==)".
 
 (* Adds Everything we will test here *)
 
-(* Require Import THISISLIBRARY. *)
-(* Quote Recursively Definition p := THISISPROGRAM. *)
-
 (* LIBRARIES *)
+
+(* Quote Recursively Definition z := #DEF. *)
+Quote Recursively Definition prog := #DEF.
+Open Scope string_scope.
+
+Definition progname := "#LIBRARY.#DEF".
+(* Definition progname := "Coq.Lists.List.app_assoc". *)
+
+Definition lookup_const (g : global_env) (cst : ident) :=
+  match (lookup_env g progname) with
+  | Some (ConstantDecl d) =>
+    match d.(cst_body) with
+    | Some b => b
+    | None => tVar "decl without a body"
+    end
+  | Some _ => tVar "not a constant"
+  | None => tVar "decl not found"
+  end.
+
+Make Definition progdef := (lookup_const prog.1 progname).
+Definition #DEF := Eval compute in progdef.
 
 (* COMMANDS *)
 
