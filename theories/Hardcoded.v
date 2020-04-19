@@ -138,12 +138,12 @@ Definition JMeq_rect_term : Ced.Assgn :=
                                                                         )])
   ))))))).
 
-Definition appF :=
+Definition appF dname vname :=
   Ced.TApp (Ced.TVar "f'")
            [(false, inr
-                      (Ced.TApp (Ced.TVar "to/nat")
+                      (Ced.TApp (Ced.TVar ("to/" ++ dname) )
                                 [(true, (inr (Ced.TVar "isType/F"))) ;
-                                 (false, (inr (Ced.TVar "n'")))]));
+                                 (false, (inr (Ced.TVar vname)))]));
             (false,
              inr
                (Ced.TApp (Ced.TVar "F")
@@ -210,7 +210,7 @@ Definition nat_ind_term :=
                              [(Ced.TVar "O", Ced.TVar "f");
                              (Ced.TApp (Ced.TVar "S")
                                 [(false, inl (Ced.TyVar "n'"))],
-                              appF)])))))).
+                              appF "nat" "n'")])))))).
 
 Definition nat_rect_term :=
            (Ced.AssgnTerm "nat_rect"
@@ -273,11 +273,125 @@ Definition nat_rect_term :=
                              [(Ced.TVar "O", Ced.TVar "f");
                              (Ced.TApp (Ced.TVar "S")
                                 [(false, inl (Ced.TyVar "n'"))],
-                              appF)])))))).
+                              appF "nat" "n'")])))))).
 
-                             (* Ced.TApp (Ced.TVar "f'") *)
-                               (* [(false, inr (Ced.TVar "n'")); *)
-                               (* (false, *)
-                               (* inr *)
-                                 (* (Ced.TApp (Ced.TVar "F") *)
-                                    (* [(false, inr (Ced.TVar "n'"))]))])])))))). *)
+
+Definition list_ind_term :=
+  (Ced.AssgnTerm "list_ind"
+              (Some
+                 (Ced.TyAll (Ced.Named "A") Ced.KdStar
+                    (Ced.TyAll (Ced.Named "P")
+                       (Ced.KdAll (Ced.Named "l")
+                          (inr
+                             (Ced.TyApp (Ced.TyVar "list")
+                                [(false, inr (Ced.TVar "A"))]))
+                          Ced.KdStar)
+                       (Ced.TyPi (Ced.Named "f")
+                          (Ced.TyApp (Ced.TyVar "P")
+                             [(false,
+                              inr
+                                (Ced.TApp (Ced.TVar "nil")
+                                   [(false, inr (Ced.TVar "A"))]))])
+                          (Ced.TyPi (Ced.Named "f'")
+                             (Ced.TyPi (Ced.Named "a")
+                                (Ced.TyVar "A")
+                                (Ced.TyPi (Ced.Named "l")
+                                   (Ced.TyApp
+                                      (Ced.TyVar "list")
+                                      [(false, inr (Ced.TVar "A"))])
+                                   (Ced.TyPi Ced.Anon
+                                      (Ced.TyApp
+                                         (Ced.TyVar "P")
+                                         [(false,
+                                          inr (Ced.TVar "l"))])
+                                      (Ced.TyApp
+                                         (Ced.TyVar "P")
+                                         [(false,
+                                          inr
+                                           (Ced.TApp
+                                           (Ced.TVar "cons")
+                                           [
+                                           (false,
+                                           inr (Ced.TVar "A"));
+                                           (false,
+                                           inr (Ced.TVar "a"));
+                                           (false,
+                                           inr (Ced.TVar "l"))]))]))))
+                             (Ced.TyPi (Ced.Named "l")
+                                (Ced.TyApp (Ced.TyVar "list")
+                                   [(false, inr (Ced.TVar "A"))])
+                                (Ced.TyApp (Ced.TyVar "P")
+                                   [(false, inr (Ced.TVar "l"))])))))))
+              (Ced.TLamK (Ced.Named "A") (Some Ced.KdStar)
+                 (Ced.TLamK (Ced.Named "P")
+                    (Some
+                       (Ced.KdAll (Ced.Named "l")
+                          (inr
+                             (Ced.TyApp (Ced.TyVar "list")
+                                [(false, inr (Ced.TVar "A"))]))
+                          Ced.KdStar))
+                    (Ced.TLam (Ced.Named "f") false
+                       (Some
+                          (Ced.TyApp (Ced.TyVar "P")
+                             [(false,
+                              inr
+                                (Ced.TApp (Ced.TVar "nil")
+                                   [(false, inr (Ced.TVar "A"))]))]))
+                       (Ced.TLam (Ced.Named "f'") false
+                          (Some
+                             (Ced.TyPi (Ced.Named "a")
+                                (Ced.TyVar "A")
+                                (Ced.TyPi (Ced.Named "l")
+                                   (Ced.TyApp
+                                      (Ced.TyVar "list")
+                                      [(false, inr (Ced.TVar "A"))])
+                                   (Ced.TyPi Ced.Anon
+                                      (Ced.TyApp
+                                         (Ced.TyVar "P")
+                                         [(false,
+                                          inr (Ced.TVar "l"))])
+                                      (Ced.TyApp
+                                         (Ced.TyVar "P")
+                                         [(false,
+                                          inr
+                                           (Ced.TApp
+                                           (Ced.TVar "cons")
+                                           [
+                                           (false,
+                                           inr (Ced.TVar "A"));
+                                           (false,
+                                           inr (Ced.TVar "a"));
+                                           (false,
+                                           inr (Ced.TVar "l"))]))])))))
+                          (Ced.TLam (Ced.Named "l") false
+                             (Some
+                                (Ced.TyApp (Ced.TyVar "list")
+                                   [(false, inr (Ced.TVar "A"))]))
+                             (Ced.TMu (Some "F")
+                                (Ced.TVar "l")
+                                (Some
+                                   (Ced.TyLam
+                                      (Ced.Named "l")
+                                      (Some
+                                         (Ced.TyApp
+                                           (Ced.TyVar "list")
+                                           [(false,
+                                           inr (Ced.TVar "A"))]))
+                                      (Ced.TyApp
+                                         (Ced.TyVar "P")
+                                         [(false,
+                                          inr (Ced.TVar "l"))])))
+                                [(Ced.TVar "nil", Ced.TVar "f");
+                                (Ced.TApp (Ced.TVar "cons")
+                                   [(false, inr (Ced.TVar "y"));
+                                   (false, inl (Ced.TyVar "l'"))],
+                                Ced.TApp (Ced.TVar "f'")
+                                  [(false, inr (Ced.TVar "y"));
+                                   (false, inr
+                                             (Ced.TApp (Ced.TVar "to/list")
+                                                       [(true, (inr (Ced.TVar "isType/F"))) ;
+                                                        (false, (inr (Ced.TVar "l'")))]));
+                                   (false,
+                                    inr
+                                      (Ced.TApp (Ced.TVar "F")
+                                                [(false, inr (Ced.TVar "l'"))]))])]))))))).
