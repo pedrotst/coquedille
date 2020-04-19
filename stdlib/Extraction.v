@@ -67,8 +67,8 @@ Definition lookup_const (g : global_env) (cst : ident) :=
   | None => tVar "decl not found"
   end.
 
-Make Definition progdef := (lookup_const prog.1 progname).
-Definition #DEF := Eval compute in progdef.
+Make Definition #DEF := (lookup_const prog.1 progname).
+(* Definition #DEF := Eval compute in progdef. *)
 
 (* COMMANDS *)
 
