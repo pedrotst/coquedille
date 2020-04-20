@@ -1,0 +1,81 @@
+module test.
+data sumbool (A : ★) (B : ★) : ★ =
+  | left : A ➔ sumbool
+  | right : B ➔ sumbool.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_rect : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y l' (F l') 
+ }.
+
+list_rec : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . list_rect ·A ·P.
+
+data Forall (A : ★) (P : A ➔ ★) : list ·A ➔ ★ =
+  | Forall_nil : Forall (nil ·A)
+  | Forall_cons : Π x : A . Π l : list ·A . P x ➔ Forall l ➔ Forall (cons ·A x l).
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+Forall_dec_subproof : ∀ A : ★ . ∀ P : A ➔ ★ . Π a : A . Π l' : list ·A . Π Ha : not ·(P a) . not ·(Forall ·A ·P (cons ·A a l')) = Λ A : ★ . Λ P : A ➔ ★ . λ a : A . λ l' : list ·A . λ Ha : not ·(P a) . λ H : Forall ·A ·P (cons ·A a l') . ([ H0 : eq ·(list ·A) (cons ·A a l') (cons ·A a l') ➔ False = σ H @(λ l : list ·A . λ _ : Forall ·A ·P l . eq ·(list ·A) l (cons ·A a l') ➔ False) {
+  | Forall_nil ➔ λ H0 : eq ·(list ·A) (nil ·A) (cons ·A a l') . (λ H0' : eq ·(list ·A) (nil ·A) (cons ·A a l') . δ - ( σ H0' @(λ x : list ·A . λ _ : eq ·(list ·A) (nil ·A) x . { nil ·A ≃ x }) {
+  | eq_refl ➔ β 
+ })) H0 
+  | Forall_cons x l H0 H1 ➔ λ H2 : eq ·(list ·A) (cons ·A x l) (cons ·A a l') . (λ H2' : eq ·(list ·A) (cons ·A x l) (cons ·A a l') . ([ H0' : eq ·(list ·A) l l' = f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l 
+  | cons a' l' ➔ l' 
+ }) (cons ·A x l) (cons ·A a l') H2' ] - ([ H0' : eq ·A x a = f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x 
+  | cons a' l' ➔ a' 
+ }) (cons ·A x l) (cons ·A a l') H2' ] - (λ H0' : eq ·A x a . ([ H1' : eq ·A x a = H0' ] - eq_ind_r ·A a (λ a' : A . tprodT?) (λ H1' : eq ·(list ·A) l l' . ([ H3 : eq ·(list ·A) l l' = H1' ] - eq_ind_r ·(list ·A) l' (λ l' : list ·A . tprodT?) (λ H2' : P a . λ H3' : Forall ·A ·P l' . False_ind ·False (Ha H2')) l H3)) x H1')) H0') H0')) H2 H0 H1 
+ } ] - H0 (eq_refl ·(list ·A) (cons ·A a l'))).
+
+Forall_dec_subproof0 : ∀ A : ★ . ∀ P : A ➔ ★ . Π a : A . Π l' : list ·A . Π Hl' : not ·(Forall ·A ·P l') . not ·(Forall ·A ·P (cons ·A a l')) = Λ A : ★ . Λ P : A ➔ ★ . λ a : A . λ l' : list ·A . λ Hl' : not ·(Forall ·A ·P l') . λ H : Forall ·A ·P (cons ·A a l') . ([ H0 : eq ·(list ·A) (cons ·A a l') (cons ·A a l') ➔ False = σ H @(λ l : list ·A . λ _ : Forall ·A ·P l . eq ·(list ·A) l (cons ·A a l') ➔ False) {
+  | Forall_nil ➔ λ H0 : eq ·(list ·A) (nil ·A) (cons ·A a l') . (λ H0' : eq ·(list ·A) (nil ·A) (cons ·A a l') . δ - ( σ H0' @(λ x : list ·A . λ _ : eq ·(list ·A) (nil ·A) x . { nil ·A ≃ x }) {
+  | eq_refl ➔ β 
+ })) H0 
+  | Forall_cons x l H0 H1 ➔ λ H2 : eq ·(list ·A) (cons ·A x l) (cons ·A a l') . (λ H2' : eq ·(list ·A) (cons ·A x l) (cons ·A a l') . ([ H0' : eq ·(list ·A) l l' = f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l 
+  | cons a' l' ➔ l' 
+ }) (cons ·A x l) (cons ·A a l') H2' ] - ([ H0' : eq ·A x a = f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x 
+  | cons a' l' ➔ a' 
+ }) (cons ·A x l) (cons ·A a l') H2' ] - (λ H0' : eq ·A x a . ([ H1' : eq ·A x a = H0' ] - eq_ind_r ·A a (λ a' : A . tprodT?) (λ H1' : eq ·(list ·A) l l' . ([ H3 : eq ·(list ·A) l l' = H1' ] - eq_ind_r ·(list ·A) l' (λ l' : list ·A . tprodT?) (λ H2' : P a . λ H3' : Forall ·A ·P l' . False_ind ·False (Hl' H3')) l H3)) x H1')) H0') H0')) H2 H0 H1 
+ } ] - H0 (eq_refl ·(list ·A) (cons ·A a l'))).
+
+Forall_dec : ∀ A : ★ . ∀ P : A ➔ ★ . Π Pdec : Π x : A . sumbool ·(P x) ·(not ·(P x)) . Π l : list ·A . sumbool ·(Forall ·A ·P l) ·(not ·(Forall ·A ·P l)) = Λ A : ★ . Λ P : A ➔ ★ . λ Pdec : Π x : A . sumbool ·(P x) ·(not ·(P x)) . λ l : list ·A . list_rec ·A ·(λ l' : list ·A . sumbool ·(Forall ·A ·P l') ·(not ·(Forall ·A ·P l'))) (left ·(Forall ·A ·P (nil ·A)) ·(not ·(Forall ·A ·P (nil ·A))) (Forall_nil ·A ·P)) (λ a : A . λ l' : list ·A . λ Hrec : sumbool ·(Forall ·A ·P l') ·(not ·(Forall ·A ·P l')) . σ Hrec @(λ s : sumbool ·(Forall ·A ·P l') ·(not ·(Forall ·A ·P l')) . sumbool ·(Forall ·A ·P (cons ·A a l')) ·(not ·(Forall ·A ·P (cons ·A a l')))) {
+  | left Hl' ➔ σ Pdec a @(λ s : sumbool ·(P a) ·(not ·(P a)) . sumbool ·(Forall ·A ·P (cons ·A a l')) ·(not ·(Forall ·A ·P (cons ·A a l')))) {
+  | left Ha ➔ left ·(Forall ·A ·P (cons ·A a l')) ·(not ·(Forall ·A ·P (cons ·A a l'))) (Forall_cons ·A ·P a l' Ha Hl') 
+  | right Ha ➔ right ·(Forall ·A ·P (cons ·A a l')) ·(not ·(Forall ·A ·P (cons ·A a l'))) (Forall_dec_subproof ·A ·P a l' Ha) 
+ } 
+  | right Hl' ➔ right ·(Forall ·A ·P (cons ·A a l')) ·(not ·(Forall ·A ·P (cons ·A a l'))) (Forall_dec_subproof0 ·A ·P a l' Hl') 
+ }) l.
+
+

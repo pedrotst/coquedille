@@ -1,0 +1,74 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+skipn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ skipn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . l 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ skipn n' l' 
+ } 
+ } l.
+
+firstn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ firstn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l.
+
+sub : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ sub. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . n 
+  | S k ➔ λ _ . σ m @(λ m' : nat . nat) {
+  | O ➔ n 
+  | S l ➔ sub k l 
+ } 
+ } m.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+firstn_nil : ∀ A : ★ . Π n : nat . eq ·(list ·A) (firstn ·A n (nil ·A)) (nil ·A) = Λ A : ★ . λ n : nat . nat_ind ·(λ n' : nat . eq ·(list ·A) (firstn ·A n' (nil ·A)) (nil ·A)) (eq_refl ·(list ·A) (nil ·A)) (λ n' : nat . λ IHn : eq ·(list ·A) (firstn ·A n' (nil ·A)) (nil ·A) . eq_refl ·(list ·A) (nil ·A)) n.
+
+skipn_firstn_comm : ∀ A : ★ . Π m : nat . Π n : nat . Π l : list ·A . eq ·(list ·A) (skipn ·A m (firstn ·A n l)) (firstn ·A (sub n m) (skipn ·A m l)) = Λ A : ★ . λ m : nat . nat_ind (λ m' : nat . tprodT?) (λ n : nat . σ n @(λ n' : nat . Π l : list ·A . eq ·(list ·A) (skipn ·A O (firstn ·A n' l)) (firstn ·A (sub n' O) (skipn ·A O l))) {
+  | O ➔ λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) (skipn ·A O (firstn ·A O l')) (firstn ·A (sub O O) (skipn ·A O l'))) {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ eq_refl ·(list ·A) (nil ·A) 
+ } 
+  | S n' ➔ λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) (skipn ·A O (firstn ·A (S n') l')) (firstn ·A (sub (S n') O) (skipn ·A O l'))) {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ eq_refl ·(list ·A) (cons ·A a (firstn ·A n' l')) 
+ } 
+ }) (λ m' : nat . λ IHm : Π n : nat . Π l : list ·A . eq ·(list ·A) (skipn ·A m' (firstn ·A n l)) (firstn ·A (sub n m') (skipn ·A m' l)) . λ n : nat . σ n @(λ n' : nat . Π l : list ·A . eq ·(list ·A) (skipn ·A (S m') (firstn ·A n' l)) (firstn ·A (sub n' (S m')) (skipn ·A (S m') l))) {
+  | O ➔ λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) (skipn ·A (S m') (firstn ·A O l')) (firstn ·A (sub O (S m')) (skipn ·A (S m') l'))) {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ eq_refl ·(list ·A) (nil ·A) 
+ } 
+  | S n' ➔ λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) (skipn ·A (S m') (firstn ·A (S n') l')) (firstn ·A (sub (S n') (S m')) (skipn ·A (S m') l'))) {
+  | nil ➔ eq_ind_r ·(list ·A) (nil ·A) ·(λ l' : list ·A . eq ·(list ·A) (nil ·A) l') (eq_refl ·(list ·A) (nil ·A)) (firstn ·A (sub n' m') (nil ·A)) (firstn_nil ·A (sub n' m')) 
+  | cons a l' ➔ IHm n' l' 
+ } 
+ }) m.
+
+

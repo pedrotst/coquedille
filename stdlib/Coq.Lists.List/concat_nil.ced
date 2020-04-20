@@ -1,0 +1,11 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+concat_nil : ∀ A : ★ . eq ·(list ·A) (nil ·A) (nil ·A) = Λ A : ★ . eq_refl ·(list ·A) (nil ·A).
+
+

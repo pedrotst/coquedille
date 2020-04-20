@@ -1,0 +1,20 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+hd_error : ∀ A : ★ . Π l : list ·A . option ·A = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ }.
+
+hd_error_nil : ∀ A : ★ . eq ·(option ·A) (hd_error ·A (nil ·A)) (None ·A) = Λ A : ★ . eq_refl ·(option ·A) (None ·A).
+
+

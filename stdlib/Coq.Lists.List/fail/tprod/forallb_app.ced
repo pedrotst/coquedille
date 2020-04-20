@@ -1,0 +1,38 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+andb : Π b1 : bool . Π b2 : bool . bool = λ b1 : bool . λ b2 : bool . σ b1 @(λ b1' : bool . bool) {
+  | true ➔ b2 
+  | false ➔ false 
+ }.
+
+forallb : ∀ A : ★ . Π f : A ➔ bool . Π l : list ·A . bool = Λ A : ★ . λ f : A ➔ bool . λ l : list ·A . μ forallb. l @(λ l : list ·A . bool) {
+  | nil ➔ true 
+  | cons a l' ➔ andb (f a) (forallb l') 
+ }.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+forallb_app : ∀ A : ★ . Π f : A ➔ bool . Π l1 : list ·A . Π l2 : list ·A . eq ·bool (forallb ·A f (app ·A l1 l2)) (andb (forallb ·A f l1) (forallb ·A f l2)) = Λ A : ★ . λ f : A ➔ bool . λ l1 : list ·A . list_ind ·A (λ l1' : list ·A . tprodT?) (λ l2 : list ·A . eq_refl ·bool (forallb ·A f l2)) (λ a : A . λ l1' : list ·A . λ IHl1 : Π l2 : list ·A . eq ·bool (forallb ·A f (app ·A l1' l2)) (andb (forallb ·A f l1') (forallb ·A f l2)) . σ f a @(λ b : bool . Π l2 : list ·A . eq ·bool (andb b (forallb ·A f (app ·A l1' l2))) (andb (andb b (forallb ·A f l1')) (forallb ·A f l2))) {
+  | true ➔ IHl1 
+  | false ➔ λ l2 : list ·A . eq_refl ·bool false 
+ }) l1.
+
+

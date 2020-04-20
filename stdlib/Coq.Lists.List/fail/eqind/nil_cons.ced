@@ -1,0 +1,27 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+nil_cons : ∀ A : ★ . Π x : A . Π l : list ·A . not ·(eq ·(list ·A) (nil ·A) (cons ·A x l)) = Λ A : ★ . λ x : A . λ l : list ·A . λ H : eq ·(list ·A) (nil ·A) (cons ·A x l) . False_ind ·False (eq_ind ·(list ·A) (nil ·A) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ True 
+  | cons XX XX ➔ False 
+ }) I (cons ·A x l) H).
+
+

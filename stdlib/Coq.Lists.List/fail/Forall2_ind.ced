@@ -1,0 +1,15 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data Forall2 (A : ★) (B : ★) (R : A ➔ B ➔ ★) : list ·A ➔ list ·B ➔ ★ =
+  | Forall2_nil : Forall2 (nil ·A) (nil ·B)
+  | Forall2_cons : Π x : A . Π y : B . Π l : list ·A . Π l' : list ·B . R x y ➔ Forall2 l l' ➔ Forall2 (cons ·A x l) (cons ·B y l').
+
+Forall2_ind : ∀ A : ★ . ∀ B : ★ . ∀ R : A ➔ B ➔ ★ . ∀ P : list ·A ➔ list ·B ➔ ★ . Π f : P (nil ·A) (nil ·B) . Π f' : Π x : A . Π y : B . Π l : list ·A . Π l' : list ·B . R x y ➔ Forall2 ·A ·B ·R l l' ➔ P l l' ➔ P (cons ·A x l) (cons ·B y l') . Π l : list ·A . Π l' : list ·B . Π f' : Forall2 ·A ·B ·R l l' . P l l' = Λ A : ★ . Λ B : ★ . Λ R : A ➔ B ➔ ★ . Λ P : list ·A ➔ list ·B ➔ ★ . λ f : P (nil ·A) (nil ·B) . λ f' : Π x : A . Π y : B . Π l : list ·A . Π l' : list ·B . R x y ➔ Forall2 ·A ·B ·R l l' ➔ P l l' ➔ P (cons ·A x l) (cons ·B y l') . λ l : list ·A . λ l' : list ·B . λ f' : Forall2 ·A ·B ·R l l' . μ F. f' @(λ l : list ·A . λ l' : list ·B . λ f' : Forall2 ·A ·B ·R l l' . P l l') {
+  | Forall2_nil ➔ f 
+  | Forall2_cons x y l' l'' r f' ➔ f' x y l' l'' r f' (F -l' -l'' f') 
+ }.
+
+

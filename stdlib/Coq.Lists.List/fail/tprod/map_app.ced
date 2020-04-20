@@ -1,0 +1,36 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+map_app : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . Π l' : list ·A . eq ·(list ·B) (map ·A ·B f (app ·A l l')) (app ·B (map ·A ·B f l) (map ·A ·B f l')) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . list_ind ·A (λ l' : list ·A . tprodT?) (λ l' : list ·A . eq_refl ·(list ·B) (map ·A ·B f l')) (λ a : A . λ l' : list ·A . λ IHl : Π l'' : list ·A . eq ·(list ·B) (map ·A ·B f (app ·A l' l'')) (app ·B (map ·A ·B f l') (map ·A ·B f l'')) . λ l'' : list ·A . eq_ind_r ·(list ·B) (app ·B (map ·A ·B f l') (map ·A ·B f l'')) ·(λ l' : list ·B . eq ·(list ·B) (cons ·B (f a) l') (cons ·B (f a) (app ·B (map ·A ·B f l') (map ·A ·B f l'')))) (eq_refl ·(list ·B) (cons ·B (f a) (app ·B (map ·A ·B f l') (map ·A ·B f l'')))) (map ·A ·B f (app ·A l' l'')) (IHl l'')) l.
+
+

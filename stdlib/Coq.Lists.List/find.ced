@@ -1,0 +1,22 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+find : ∀ A : ★ . Π f : A ➔ bool . Π l : list ·A . option ·A = Λ A : ★ . λ f : A ➔ bool . λ l : list ·A . μ find. l @(λ l : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x tl ➔ σ f x @(λ _ : bool . option ·A) {
+  | true ➔ Some ·A x 
+  | false ➔ find tl 
+ } 
+ }.
+
+

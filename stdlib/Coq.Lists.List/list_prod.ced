@@ -1,0 +1,24 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+list_prod : ∀ A : ★ . ∀ B : ★ . Π l : list ·A . Π l' : list ·B . list ·(prod ·A ·B) = Λ A : ★ . Λ B : ★ . λ l : list ·A . λ l' : list ·B . μ list_prod. l @(λ l : list ·A . Π l' : list ·B . list ·(prod ·A ·B)) {
+  | nil ➔ λ _ . nil ·(prod ·A ·B) 
+  | cons x t ➔ λ _ . app ·(prod ·A ·B) (map ·B ·(prod ·A ·B) (λ y : B . pair ·A ·B x y) l') (list_prod t l') 
+ } l'.
+
+

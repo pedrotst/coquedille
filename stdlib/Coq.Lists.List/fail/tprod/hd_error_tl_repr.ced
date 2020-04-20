@@ -1,0 +1,85 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(A ➔ B) ·(B ➔ A).
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+hd_error : ∀ A : ★ . Π l : list ·A . option ·A = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ }.
+
+tl : ∀ A : ★ . Π l : list ·A . list ·A = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a m ➔ m 
+ }.
+
+and_ind : ∀ A : ★ . ∀ B : ★ . ∀ P : ★ . Π f : A ➔ B ➔ P . Π a : and ·A ·B . P = Λ A : ★ . Λ B : ★ . Λ P : ★ . λ f : A ➔ B ➔ P . λ a : and ·A ·B . σ a @(λ _ : and ·A ·B . P) {
+  | conj ➔ f 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+hd_error_tl_repr : ∀ A : ★ . Π l : list ·A . Π a : A . Π r : list ·A . iff ·(and ·(eq ·(option ·A) (hd_error ·A l) (Some ·A a)) ·(eq ·(list ·A) (tl ·A l) r)) ·(eq ·(list ·A) l (cons ·A a r)) = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . Π a : A . Π r : list ·A . iff ·(and ·(eq ·(option ·A) (hd_error ·A l') (Some ·A a)) ·(eq ·(list ·A) (tl ·A l') r)) ·(eq ·(list ·A) l' (cons ·A a r))) {
+  | nil ➔ λ a : A . λ r : list ·A . conj ·(and ·(eq ·(option ·A) (None ·A) (Some ·A a)) ·(eq ·(list ·A) (nil ·A) r) ➔ eq ·(list ·A) (nil ·A) (cons ·A a r)) ·(eq ·(list ·A) (nil ·A) (cons ·A a r) ➔ and ·(eq ·(option ·A) (None ·A) (Some ·A a)) ·(eq ·(list ·A) (nil ·A) r)) (λ H : and ·(eq ·(option ·A) (None ·A) (Some ·A a)) ·(eq ·(list ·A) (nil ·A) r) . and_ind ·(eq ·(option ·A) (None ·A) (Some ·A a)) ·(eq ·(list ·A) (nil ·A) r) ·(eq ·(list ·A) (nil ·A) (cons ·A a r)) (λ H' : eq ·(option ·A) (None ·A) (Some ·A a) . λ H0 : eq ·(list ·A) (nil ·A) r . False_ind ·(eq ·(list ·A) (nil ·A) (cons ·A a r)) (eq_ind ·(option ·A) (None ·A) (λ e : option ·A . σ e @(λ o : option ·A . xx) {
+  | Some XX ➔ False 
+  | None ➔ True 
+ }) I (Some ·A a) H')) H) (λ H : eq ·(list ·A) (nil ·A) (cons ·A a r) . conj ·(eq ·(option ·A) (None ·A) (Some ·A a)) ·(eq ·(list ·A) (nil ·A) r) (False_ind ·(eq ·(option ·A) (None ·A) (Some ·A a)) (eq_ind ·(list ·A) (nil ·A) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ True 
+  | cons XX XX ➔ False 
+ }) I (cons ·A a r) H)) (False_ind ·(eq ·(list ·A) (nil ·A) r) (eq_ind ·(list ·A) (nil ·A) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ True 
+  | cons XX XX ➔ False 
+ }) I (cons ·A a r) H))) 
+  | cons x xs ➔ λ a : A . λ r : list ·A . conj ·(and ·(eq ·(option ·A) (Some ·A x) (Some ·A a)) ·(eq ·(list ·A) xs r) ➔ eq ·(list ·A) (cons ·A x xs) (cons ·A a r)) ·(eq ·(list ·A) (cons ·A x xs) (cons ·A a r) ➔ and ·(eq ·(option ·A) (Some ·A x) (Some ·A a)) ·(eq ·(list ·A) xs r)) (λ H : and ·(eq ·(option ·A) (Some ·A x) (Some ·A a)) ·(eq ·(list ·A) xs r) . σ H @(λ _ : and ·(eq ·(option ·A) (Some ·A x) (Some ·A a)) ·(eq ·(list ·A) xs r) . eq ·(list ·A) (cons ·A x xs) (cons ·A a r)) {
+  | conj H1 H2 ➔ σ H1 @(λ y : option ·A . λ _ : eq ·(option ·A) (Some ·A x) y . eq ·(option ·A) y (Some ·A a) ➔ eq ·(list ·A) (cons ·A x xs) (cons ·A a r)) {
+  | eq_refl ➔ λ H' : eq ·(option ·A) (Some ·A x) (Some ·A a) . eq_ind_r ·A a ·(λ a' : A . eq ·(list ·A) (cons ·A a' xs) (cons ·A a r)) (eq_ind_r ·(list ·A) r ·(λ xs' : list ·A . eq ·(list ·A) (cons ·A a xs') (cons ·A a r)) (eq_refl ·(list ·A) (cons ·A a r)) xs H2) x (f_equal ·(option ·A) ·A (λ e : option ·A . σ e @(λ o : option ·A . A) {
+  | Some a' ➔ a' 
+  | None ➔ x 
+ }) (Some ·A x) (Some ·A a) H') 
+ } (eq_refl ·(option ·A) (Some ·A a)) 
+ }) (λ H : eq ·(list ·A) (cons ·A x xs) (cons ·A a r) . σ H @(λ y : list ·A . λ _ : eq ·(list ·A) (cons ·A x xs) y . eq ·(list ·A) y (cons ·A a r) ➔ and ·(eq ·(option ·A) (Some ·A x) (Some ·A a)) ·(eq ·(list ·A) xs r)) {
+  | eq_refl ➔ λ H0 : eq ·(list ·A) (cons ·A x xs) (cons ·A a r) . eq_ind_r ·A a (λ a' : A . tprodT?) (λ H2 : eq ·(list ·A) xs r . eq_ind_r ·(list ·A) r ·(λ l' : list ·A . and ·(eq ·(option ·A) (Some ·A a) (Some ·A a)) ·(eq ·(list ·A) l' r)) (eq_ind_r ·A a (λ x' : A . tprodT?) (λ H' : eq ·(list ·A) (cons ·A a xs) (cons ·A a r) . eq_ind_r ·(list ·A) r (λ xs' : list ·A . tprodT?) (λ H' : eq ·(list ·A) (cons ·A a r) (cons ·A a r) . conj ·(eq ·(option ·A) (Some ·A a) (Some ·A a)) ·(eq ·(list ·A) r r) (eq_refl ·(option ·A) (Some ·A a)) (eq_refl ·(list ·A) r)) xs H2 H') x (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x 
+  | cons a' l' ➔ a' 
+ }) (cons ·A x xs) (cons ·A a r) H0) H) xs H2) x (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x 
+  | cons a' l' ➔ a' 
+ }) (cons ·A x xs) (cons ·A a r) H0) (f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ xs 
+  | cons a' l' ➔ l' 
+ }) (cons ·A x xs) (cons ·A a r) H0) 
+ } (eq_refl ·(list ·A) (cons ·A a r))) 
+ }.
+
+

@@ -1,0 +1,15 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+seq : Π start : nat . Π len : nat . list ·nat = λ start : nat . λ len : nat . μ seq. len @(λ len : nat . Π start : nat . list ·nat) {
+  | O ➔ λ _ . nil ·nat 
+  | S len' ➔ λ _ . cons ·nat start (seq len' (S start)) 
+ } start.
+
+

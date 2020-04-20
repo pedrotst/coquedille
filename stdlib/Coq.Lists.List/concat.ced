@@ -1,0 +1,16 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+concat : ∀ A : ★ . Π l : list ·(list ·A) . list ·A = Λ A : ★ . λ l : list ·(list ·A) . μ concat. l @(λ l : list ·(list ·A) . list ·A) {
+  | nil ➔ nil ·A 
+  | cons x l' ➔ app ·A x (concat l') 
+ }.
+
+

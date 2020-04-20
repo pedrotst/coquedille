@@ -1,0 +1,26 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_rect : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y l' (F l') 
+ }.
+
+data sumor (A : ★) (B : ★) : ★ =
+  | inleft : A ➔ sumor
+  | inright : B ➔ sumor.
+
+data sigT (A : ★) (P : A ➔ ★) : ★ =
+  | existT : Π x : A . P x ➔ sigT.
+
+data sig (A : ★) (P : A ➔ ★) : ★ =
+  | exist : Π x : A . P x ➔ sig.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+destruct_list : ∀ A : ★ . Π l : list ·A . sumor ·(sigT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) l (cons ·A x tl)))) ·(eq ·(list ·A) l (nil ·A)) = Λ A : ★ . λ l : list ·A . list_rect ·A ·(λ l' : list ·A . sumor ·(sigT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) l' (cons ·A x tl)))) ·(eq ·(list ·A) l' (nil ·A))) (inright ·(sigT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) (nil ·A) (cons ·A x tl)))) ·(eq ·(list ·A) (nil ·A) (nil ·A)) (eq_refl ·(list ·A) (nil ·A))) (λ a : A . λ tail : list ·A . λ IHtail : sumor ·(sigT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) tail (cons ·A x tl)))) ·(eq ·(list ·A) tail (nil ·A)) . inleft ·(sigT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) (cons ·A a tail) (cons ·A x tl)))) ·(eq ·(list ·A) (cons ·A a tail) (nil ·A)) (existT ·A ·(λ x : A . sig ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) (cons ·A a tail) (cons ·A x tl))) a (exist ·(list ·A) ·(λ tl : list ·A . eq ·(list ·A) (cons ·A a tail) (cons ·A a tl)) tail (eq_refl ·(list ·A) (cons ·A a tail))))) l.
+
+

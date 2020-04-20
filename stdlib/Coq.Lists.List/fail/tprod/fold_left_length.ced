@@ -1,0 +1,60 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+fold_left : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B ➔ A . Π l : list ·B . Π a0 : A . A = Λ A : ★ . Λ B : ★ . λ f : A ➔ B ➔ A . λ l : list ·B . λ a0 : A . μ fold_left. l @(λ l : list ·B . Π a0 : A . A) {
+  | nil ➔ λ _ . a0 
+  | cons b t ➔ λ _ . fold_left t (f a0 b) 
+ } a0.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+length : ∀ A : ★ . list ·A ➔ nat = Λ A : ★ . λ l : list ·A . μ length. l @(λ l : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l' ➔ S (length l') 
+ }.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+f_equal_nat : ∀ B : ★ . Π f : nat ➔ B . Π x : nat . Π y : nat . eq ·nat x y ➔ eq ·B (f x) (f y) = f_equal ·nat.
+
+plus_n_O : Π n : nat . eq ·nat n (add n O) = λ n : nat . nat_ind ·(λ n' : nat . eq ·nat n' (add n' O)) (eq_refl ·nat O) (λ n' : nat . λ IHn : eq ·nat n' (add n' O) . f_equal_nat ·nat S n' (add n' O) IHn) n.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+plus_n_Sm : Π n : nat . Π m : nat . eq ·nat (S (add n m)) (add n (S m)) = λ n : nat . λ m : nat . nat_ind ·(λ n' : nat . eq ·nat (S (add n' m)) (add n' (S m))) (eq_refl ·nat (S m)) (λ n' : nat . λ IHn : eq ·nat (S (add n' m)) (add n' (S m)) . f_equal_nat ·nat S (S (add n' m)) (add n' (S m)) IHn) n.
+
+fold_left_length : ∀ A : ★ . Π l : list ·A . eq ·nat (fold_left ·nat ·A (λ x : nat . λ _ : A . S x) l O) (add O (length ·A l)) = Λ A : ★ . λ l : list ·A . list_ind ·A (λ l' : list ·A . tprodT?) (λ n : nat . plus_n_O n) (λ a : A . λ l' : list ·A . λ IHl : Π n : nat . eq ·nat (fold_left ·nat ·A (λ x : nat . λ _ : A . S x) l' n) (add n (length ·A l')) . λ n : nat . eq_ind_r ·nat (add (S n) (length ·A l')) ·(λ n' : nat . eq ·nat n' (add n (S (length ·A l')))) (plus_n_Sm n (length ·A l')) (fold_left ·nat ·A (λ x : nat . λ _ : A . S x) l' (S n)) (IHl (S n))) l O.
+
+

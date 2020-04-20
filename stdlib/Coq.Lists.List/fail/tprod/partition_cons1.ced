@@ -1,0 +1,41 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+partition : ∀ A : ★ . Π f : A ➔ bool . Π l : list ·A . prod ·(list ·A) ·(list ·A) = Λ A : ★ . λ f : A ➔ bool . λ l : list ·A . μ partition. l @(λ l : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+partition_cons1 : ∀ A : ★ . Π f : A ➔ bool . Π a : A . Π l : list ·A . Π l1 : list ·A . Π l2 : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) (partition ·A f l) (pair ·(list ·A) ·(list ·A) l1 l2) ➔ eq ·bool (f a) true ➔ eq ·(prod ·(list ·A) ·(list ·A)) (partition ·A f (cons ·A a l)) (pair ·(list ·A) ·(list ·A) (cons ·A a l1) l2) = Λ A : ★ . λ f : A ➔ bool . λ a : A . λ l : list ·A . λ l1 : list ·A . λ l2 : list ·A . λ H : eq ·(prod ·(list ·A) ·(list ·A)) (partition ·A f l) (pair ·(list ·A) ·(list ·A) l1 l2) . eq_ind_r ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) l1 l2) (λ p : prod ·(list ·A) ·(list ·A) . tprodT?) (λ H' : eq ·bool (f a) true . eq_ind_r ·bool true ·(λ b : bool . eq ·(prod ·(list ·A) ·(list ·A)) σ b @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A a l1) l2 
+  | false ➔ pair ·(list ·A) ·(list ·A) l1 (cons ·A a l2) 
+ } (pair ·(list ·A) ·(list ·A) (cons ·A a l1) l2)) (eq_refl ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A a l1) l2)) (f a) H') (partition ·A f l) H.
+
+

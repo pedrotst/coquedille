@@ -1,0 +1,40 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+length : ∀ A : ★ . list ·A ➔ nat = Λ A : ★ . λ l : list ·A . μ length. l @(λ l : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l' ➔ S (length l') 
+ }.
+
+repeat : ∀ A : ★ . Π x : A . Π n : nat . list ·A = Λ A : ★ . λ x : A . λ n : nat . μ repeat. n @(λ n : nat . Π x : A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S k ➔ λ _ . cons ·A x (repeat k x) 
+ } x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+repeat_length : ∀ A : ★ . Π x : A . Π n : nat . eq ·nat (length ·A (repeat ·A x n)) n = Λ A : ★ . λ x : A . λ n : nat . nat_ind ·(λ n' : nat . eq ·nat (length ·A (repeat ·A x n')) n') (eq_refl ·nat O) (λ k : nat . λ Hrec : eq ·nat (length ·A (repeat ·A x k)) k . eq_ind_r ·nat k ·(λ n' : nat . eq ·nat (S n') (S k)) (eq_refl ·nat (S k)) (length ·A (repeat ·A x k)) Hrec) n.
+
+

@@ -1,0 +1,11 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+

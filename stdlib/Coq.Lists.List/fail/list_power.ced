@@ -1,0 +1,29 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+flat_map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ list ·B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ list ·B . λ l : list ·A . μ flat_map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons x t ➔ app ·B (f x) (flat_map t) 
+ }.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+list_power : ∀ A : ★ . ∀ B : ★ . Π l : list ·A . Π l' : list ·B . list ·(list ·(prod ·A ·B)) = Λ A : ★ . Λ B : ★ . λ l : list ·A . λ l' : list ·B . μ list_power. l @(λ l : list ·A . ∀ A : ★ . ∀ B : ★ . Π l' : list ·B . list ·(list ·(prod ·A ·B))) {
+  | nil ➔ Λ A' . Λ B' . λ _ . cons ·(list ·(prod ·A' ·B')) (nil ·(prod ·A' ·B')) (nil ·(list ·(prod ·A' ·B')))
+  | cons x t ➔ Λ A' . Λ B' . λ l' . flat_map ·(list ·(prod ·A' ·B')) ·(list ·(prod ·A' ·B')) (λ f : list ·(prod ·A' ·B') . map ·B' ·(list ·(prod ·A' ·B')) (λ y : B' . cons ·(prod ·A' ·B') (pair ·A' ·B' x y) f) l') (list_power t ·A' ·B' l')
+ } ·A ·B l'.
+
+

@@ -1,0 +1,114 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data le (n : nat) : nat ➔ ★ =
+  | le_n : le n
+  | le_S : Π m : nat . le m ➔ le (S m).
+
+length : ∀ A : ★ . list ·A ➔ nat = Λ A : ★ . λ l : list ·A . μ length. l @(λ l : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l' ➔ S (length l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+firstn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ firstn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(A ➔ B) ·(B ➔ A).
+
+and_ind : ∀ A : ★ . ∀ B : ★ . ∀ P : ★ . Π f : A ➔ B ➔ P . Π a : and ·A ·B . P = Λ A : ★ . Λ B : ★ . Λ P : ★ . λ f : A ➔ B ➔ P . λ a : and ·A ·B . σ a @(λ _ : and ·A ·B . P) {
+  | conj ➔ f 
+ }.
+
+impl : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . A ➔ B.
+
+relation : Π A : ★ . ★ = λ A : ★ . A ➔ A ➔ xx.
+
+subrelation : Π A : ★ . Π R : relation ·A . Π R' : relation ·A . ★ = λ A : ★ . λ R : relation ·A . λ R' : relation ·A . Π x : A . Π y : A . R x y ➔ R' x y.
+
+iff_impl_subrelation : subrelation tSort ·iff ·impl = Λ x : ★ . Λ y : ★ . λ H : iff ·x ·y . λ H0 : x . and_ind ·(x ➔ y) ·(y ➔ x) ·y (λ H' : x ➔ y . λ H1 : y ➔ x . (λ H' : y . H') (H' H0)) H.
+
+False : ★ = ∀ X : ★ . X.
+
+data True : ★ =
+  | I : True.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+length_zero_iff_nil : ∀ A : ★ . Π l : list ·A . iff ·(eq ·nat (length ·A l) O) ·(eq ·(list ·A) l (nil ·A)) = Λ A : ★ . λ l : list ·A . conj ·(eq ·nat (length ·A l) O ➔ eq ·(list ·A) l (nil ·A)) ·(eq ·(list ·A) l (nil ·A) ➔ eq ·nat (length ·A l) O) σ l @(λ l' : list ·A . eq ·nat (length ·A l') O ➔ eq ·(list ·A) l' (nil ·A)) {
+  | nil ➔ λ H : eq ·nat (length ·A (nil ·A)) O . eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ λ H : eq ·nat (length ·A (cons ·A a l')) O . ([ H0 : eq ·nat O O ➔ eq ·(list ·A) (cons ·A a l') (nil ·A) = σ H @(λ y : nat . λ _ : eq ·nat (length ·A (cons ·A a l')) y . eq ·nat y O ➔ eq ·(list ·A) (cons ·A a l') (nil ·A)) {
+  | eq_refl ➔ λ H0 : eq ·nat (length ·A (cons ·A a l')) O . (λ H0' : eq ·nat (length ·A (cons ·A a l')) O . δ - ( σ H0' @(λ x : nat . λ _ : eq ·nat (length ·A (cons ·A a l')) x . { length ·A (cons ·A a l') ≃ x }) {
+  | eq_refl ➔ β 
+ })) H0 
+ } ] - H0 (eq_refl ·nat O)) 
+ } (λ H : eq ·(list ·A) l (nil ·A) . eq_ind_r ·(list ·A) (nil ·A) ·(λ l' : list ·A . eq ·nat (length ·A l') O) (eq_refl ·nat O) l H).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+le_ind : Π n : nat . ∀ P : nat ➔ ★ . Π f : P n . Π f' : Π m : nat . le n m ➔ P m ➔ P (S m) . Π n' : nat . Π l : le n n' . P n' = λ n : nat . Λ P : nat ➔ ★ . λ f : P n . λ f' : Π m : nat . le n m ➔ P m ➔ P (S m) . λ n' : nat . λ l : le n n' . μ F. l @(λ n' : nat . λ l : le n n' . P n') {
+  | le_n ➔ f 
+  | le_S m l' ➔ f' m l' (F -m l') 
+ }.
+
+pred : Π n : nat . nat = λ n : nat . σ n @(λ n' : nat . nat) {
+  | O ➔ n 
+  | S u ➔ u 
+ }.
+
+le_pred : Π n : nat . Π m : nat . le n m ➔ le (pred n) (pred m) = λ n : nat . λ m : nat . λ H : le n m . le_ind n ·(λ m' : nat . le (pred n) (pred m')) (le_n (pred n)) (λ m' : nat . λ H' : le n m' . λ IHle : le (pred n) (pred m') . σ m' @(λ n' : nat . Π H' : le n n' . Π IHle' : le (pred n) (pred n') . le (pred n) (pred (S n'))) {
+  | O ➔ λ H' : le n O . λ IHle' : le (pred n) (pred O) . IHle' 
+  | S m' ➔ λ H' : le n (S m') . λ IHle' : le (pred n) (pred (S m')) . le_S (pred n) m' IHle' 
+ } H' IHle) m H.
+
+le_S_n : Π n : nat . Π m : nat . le (S n) (S m) ➔ le n m = λ n : nat . λ m : nat . le_pred (S n) (S m).
+
+firstn_all2 : ∀ A : ★ . Π n : nat . Π l : list ·A . le (length ·A l) n ➔ eq ·(list ·A) (firstn ·A n l) l = Λ A : ★ . λ n : nat . nat_ind (λ n' : nat . tprodT?) (λ l : list ·A . λ H : le (length ·A l) O . σ H @(λ n' : nat . λ _ : le (length ·A l) n' . eq ·nat n' O ➔ eq ·(list ·A) (firstn ·A O l) l) {
+  | le_n ➔ λ H0 : eq ·nat (length ·A l) O . eq_ind ·nat (length ·A l) ·(λ n' : nat . eq ·(list ·A) (firstn ·A n' l) l) (eq_ind_r ·(list ·A) (nil ·A) (λ l' : list ·A . tprodT?) (λ H' : le (length ·A (nil ·A)) O . eq_refl ·(list ·A) (nil ·A)) l (iff_impl_subrelation ·(eq ·nat (length ·A l) O) ·(eq ·(list ·A) l (nil ·A)) (length_zero_iff_nil ·A l) (f_equal ·nat ·nat (λ e : nat . e) (length ·A l) O H0)) H) O (f_equal ·nat ·nat (λ e : nat . e) (length ·A l) O H0) 
+  | le_S m H0 ➔ λ H1 : eq ·nat (S m) O . False_ind ·(Π H0' : le (length ·A l) m . eq ·(list ·A) (firstn ·A O l) l) (eq_ind ·nat (S m) (λ e : nat . σ e @(λ n' : nat . xx) {
+  | O ➔ False 
+  | S XX ➔ True 
+ }) I O H1) H0 
+ } (eq_refl ·nat O)) (λ k : nat . λ iHk : Π l : list ·A . le (length ·A l) k ➔ eq ·(list ·A) (firstn ·A k l) l . λ l : list ·A . σ l @(λ l' : list ·A . le (length ·A l') (S k) ➔ eq ·(list ·A) (firstn ·A (S k) l') l') {
+  | nil ➔ λ H : le O (S k) . eq_refl ·(list ·A) (nil ·A) 
+  | cons x xs ➔ λ H : le (S (length ·A xs)) (S k) . eq_trans ·(list ·A) (cons ·A x (firstn ·A k xs)) (cons ·A x (firstn ·A k xs)) (cons ·A x xs) (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (firstn ·A k xs)) (cons ·A x) (cons ·A x) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A x))) (f_equal ·(list ·A) ·(list ·A) (cons ·A x) (firstn ·A k xs) xs (iHk xs (le_S_n (length ·A xs) k H))) 
+ }) n.
+
+

@@ -1,0 +1,11 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+fold_left : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B ➔ A . Π l : list ·B . Π a0 : A . A = Λ A : ★ . Λ B : ★ . λ f : A ➔ B ➔ A . λ l : list ·B . λ a0 : A . μ fold_left. l @(λ l : list ·B . Π a0 : A . A) {
+  | nil ➔ λ _ . a0 
+  | cons b t ➔ λ _ . fold_left t (f a0 b) 
+ } a0.
+
+

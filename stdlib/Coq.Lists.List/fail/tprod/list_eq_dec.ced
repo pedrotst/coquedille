@@ -1,0 +1,68 @@
+module test.
+data sumbool (A : ★) (B : ★) : ★ =
+  | left : A ➔ sumbool
+  | right : B ➔ sumbool.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_rect : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y l' (F l') 
+ }.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+sumbool_rect : ∀ A : ★ . ∀ B : ★ . ∀ P : Π s : sumbool ·A ·B . ★ . Π f : Π a : A . P (left ·A ·B a) . Π f' : Π b : B . P (right ·A ·B b) . Π s : sumbool ·A ·B . P s = Λ A : ★ . Λ B : ★ . Λ P : Π s : sumbool ·A ·B . ★ . λ f : Π a : A . P (left ·A ·B a) . λ f' : Π b : B . P (right ·A ·B b) . λ s : sumbool ·A ·B . σ s @(λ s' : sumbool ·A ·B . P s') {
+  | left ➔ f 
+  | right ➔ f' 
+ }.
+
+sumbool_rec : ∀ A : ★ . ∀ B : ★ . ∀ P : Π s : sumbool ·A ·B . ★ . Π f : Π a : A . P (left ·A ·B a) . Π f' : Π b : B . P (right ·A ·B b) . Π s : sumbool ·A ·B . P s = Λ A : ★ . Λ B : ★ . Λ P : Π s : sumbool ·A ·B . ★ . sumbool_rect ·A ·B ·P.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+list_eq_dec : ∀ A : ★ . Π eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . Π l : list ·A . Π l' : list ·A . sumbool ·(eq ·(list ·A) l l') ·(not ·(eq ·(list ·A) l l')) = Λ A : ★ . λ eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . λ l : list ·A . λ l' : list ·A . list_rect ·A (λ l' : list ·A . tprodT?) (λ x : list ·A . σ x @(λ l' : list ·A . sumbool ·(eq ·(list ·A) (nil ·A) l') ·(not ·(eq ·(list ·A) (nil ·A) l'))) {
+  | nil ➔ left ·(eq ·(list ·A) (nil ·A) (nil ·A)) ·(not ·(eq ·(list ·A) (nil ·A) (nil ·A))) (eq_refl ·(list ·A) (nil ·A)) 
+  | cons a l0 ➔ right ·(eq ·(list ·A) (nil ·A) (cons ·A a l0)) ·(not ·(eq ·(list ·A) (nil ·A) (cons ·A a l0))) (λ H : eq ·(list ·A) (nil ·A) (cons ·A a l0) . False_ind ·False (eq_ind ·(list ·A) (nil ·A) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ True 
+  | cons XX XX ➔ False 
+ }) I (cons ·A a l0) H)) 
+ }) (λ a : A . λ l0 : list ·A . λ X : Π x : list ·A . sumbool ·(eq ·(list ·A) l0 x) ·(not ·(eq ·(list ·A) l0 x)) . λ x : list ·A . σ x @(λ l' : list ·A . sumbool ·(eq ·(list ·A) (cons ·A a l0) l') ·(not ·(eq ·(list ·A) (cons ·A a l0) l'))) {
+  | nil ➔ right ·(eq ·(list ·A) (cons ·A a l0) (nil ·A)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (nil ·A))) (λ H : eq ·(list ·A) (cons ·A a l0) (nil ·A) . False_ind ·False (eq_ind ·(list ·A) (cons ·A a l0) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·A) H)) 
+  | cons a0 l1 ➔ sumbool_rec ·(eq ·A a a0) ·(not ·(eq ·A a a0)) ·(λ s : sumbool ·(eq ·A a a0) ·(not ·(eq ·A a a0)) . sumbool ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)))) (λ a1 : eq ·A a a0 . sumbool_rec ·(eq ·(list ·A) l0 l1) ·(not ·(eq ·(list ·A) l0 l1)) ·(λ s : sumbool ·(eq ·(list ·A) l0 l1) ·(not ·(eq ·(list ·A) l0 l1)) . sumbool ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)))) (λ a2 : eq ·(list ·A) l0 l1 . left ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1))) (eq_ind_r ·A a0 ·(λ a' : A . eq ·(list ·A) (cons ·A a' l0) (cons ·A a0 l1)) (eq_ind_r ·(list ·A) l1 ·(λ l0' : list ·A . eq ·(list ·A) (cons ·A a0 l0') (cons ·A a0 l1)) (eq_refl ·(list ·A) (cons ·A a0 l1)) l0 a2) a a1)) (λ diseq : not ·(eq ·(list ·A) l0 l1) . right ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1))) (eq_ind_r ·A a0 ·(λ a' : A . not ·(eq ·(list ·A) (cons ·A a' l0) (cons ·A a0 l1))) (λ absurd : eq ·(list ·A) (cons ·A a0 l0) (cons ·A a0 l1) . diseq (f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l0 
+  | cons a' l' ➔ l' 
+ }) (cons ·A a0 l0) (cons ·A a0 l1) absurd)) a a1)) (X l1)) (λ diseq : not ·(eq ·A a a0) . right ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1)) ·(not ·(eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1))) (λ absurd : eq ·(list ·A) (cons ·A a l0) (cons ·A a0 l1) . diseq (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ a 
+  | cons a' l' ➔ a' 
+ }) (cons ·A a l0) (cons ·A a0 l1) absurd))) (eq_dec a a0) 
+ }) l l'.
+
+

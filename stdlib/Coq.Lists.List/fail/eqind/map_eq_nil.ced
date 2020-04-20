@@ -1,0 +1,33 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+map_eq_nil : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . eq ·(list ·B) (map ·A ·B f l) (nil ·B) ➔ eq ·(list ·A) l (nil ·A) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·B) (map ·A ·B f l') (nil ·B) ➔ eq ·(list ·A) l' (nil ·A)) {
+  | nil ➔ λ H : eq ·(list ·B) (nil ·B) (nil ·B) . eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ λ H : eq ·(list ·B) (cons ·B (f a) (map ·A ·B f l')) (nil ·B) . False_ind ·(eq ·(list ·A) (cons ·A a l') (nil ·A)) (eq_ind ·(list ·B) (cons ·B (f a) (map ·A ·B f l')) (λ e : list ·B . σ e @(λ l' : list ·B . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·B) H) 
+ }.
+
+

@@ -1,0 +1,54 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data Exists (A : ★) (P : A ➔ ★) : list ·A ➔ ★ =
+  | Exists_cons_hd : Π x : A . Π l : list ·A . P x ➔ Exists (cons ·A x l)
+  | Exists_cons_tl : Π x : A . Π l : list ·A . Exists l ➔ Exists (cons ·A x l).
+
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+Exists_cons : ∀ A : ★ . ∀ P : A ➔ ★ . Π x : A . Π l : list ·A . and ·(Exists ·A ·P (cons ·A x l) ➔ or ·(P x) ·(Exists ·A ·P l)) ·(or ·(P x) ·(Exists ·A ·P l) ➔ Exists ·A ·P (cons ·A x l)) = Λ A : ★ . Λ P : A ➔ ★ . λ x : A . λ l : list ·A . conj ·(Exists ·A ·P (cons ·A x l) ➔ or ·(P x) ·(Exists ·A ·P l)) ·(or ·(P x) ·(Exists ·A ·P l) ➔ Exists ·A ·P (cons ·A x l)) (λ H : Exists ·A ·P (cons ·A x l) . σ H @(λ l' : list ·A . λ _ : Exists ·A ·P l' . eq ·(list ·A) l' (cons ·A x l) ➔ or ·(P x) ·(Exists ·A ·P l)) {
+  | Exists_cons_hd x0 l0 H0 ➔ λ H1 : eq ·(list ·A) (cons ·A x0 l0) (cons ·A x l) . eq_ind_r ·A x (λ a : A . tprodT?) (λ H2 : eq ·(list ·A) l0 l . eq_ind_r ·(list ·A) l (λ l' : list ·A . tprodT?) (λ H1' : P x . or_introl ·(P x) ·(Exists ·A ·P l) H1') l0 H2) x0 (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x0 
+  | cons a l' ➔ a 
+ }) (cons ·A x0 l0) (cons ·A x l) H1) (f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l0 
+  | cons a l' ➔ l' 
+ }) (cons ·A x0 l0) (cons ·A x l) H1) H0 
+  | Exists_cons_tl x0 l0 H0 ➔ λ H1 : eq ·(list ·A) (cons ·A x0 l0) (cons ·A x l) . eq_ind_r ·A x (λ a : A . tprodT?) (λ H2 : eq ·(list ·A) l0 l . eq_ind_r ·(list ·A) l (λ l' : list ·A . tprodT?) (λ H1' : Exists ·A ·P l . or_intror ·(P x) ·(Exists ·A ·P l) H1') l0 H2) x0 (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x0 
+  | cons a l' ➔ a 
+ }) (cons ·A x0 l0) (cons ·A x l) H1) (f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l0 
+  | cons a l' ➔ l' 
+ }) (cons ·A x0 l0) (cons ·A x l) H1) H0 
+ } (eq_refl ·(list ·A) (cons ·A x l))) (λ H : or ·(P x) ·(Exists ·A ·P l) . σ H @(λ _ : or ·(P x) ·(Exists ·A ·P l) . Exists ·A ·P (cons ·A x l)) {
+  | or_introl H0 ➔ Exists_cons_hd ·A ·P x l H0 
+  | or_intror H0 ➔ Exists_cons_tl ·A ·P x l H0 
+ }).
+
+

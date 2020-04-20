@@ -1,0 +1,26 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+skipn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ skipn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . l 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ skipn n' l' 
+ } 
+ } l.
+
+skipn_nil : ∀ A : ★ . Π n : nat . eq ·(list ·A) (skipn ·A n (nil ·A)) (nil ·A) = Λ A : ★ . λ n : nat . σ n @(λ n' : nat . eq ·(list ·A) (skipn ·A n' (nil ·A)) (nil ·A)) {
+  | O ➔ eq_refl ·(list ·A) (nil ·A) 
+  | S n' ➔ eq_refl ·(list ·A) (nil ·A) 
+ }.
+
+

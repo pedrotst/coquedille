@@ -1,0 +1,16 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+map_cons : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π l : list ·A . eq ·(list ·B) (cons ·B (f x) (map ·A ·B f l)) (cons ·B (f x) (map ·A ·B f l)) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ l : list ·A . eq_refl ·(list ·B) (cons ·B (f x) (map ·A ·B f l)).
+
+

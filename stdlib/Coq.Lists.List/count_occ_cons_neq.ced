@@ -1,0 +1,39 @@
+module test.
+data sumbool (A : ★) (B : ★) : ★ =
+  | left : A ➔ sumbool
+  | right : B ➔ sumbool.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+count_occ : ∀ A : ★ . Π eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . Π l : list ·A . Π x : A . nat = Λ A : ★ . λ eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . λ l : list ·A . λ x : A . μ count_occ. l @(λ l : list ·A . Π x : A . nat) {
+  | nil ➔ λ _ . O 
+  | cons y tl ➔ λ _ . ([ n : nat = count_occ tl x ] - σ eq_dec y x @(λ _ : sumbool ·(eq ·A y x) ·(not ·(eq ·A y x)) . nat) {
+  | left XX ➔ S n 
+  | right XX ➔ n 
+ }) 
+ } x.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+count_occ_cons_neq : ∀ A : ★ . Π eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . Π l : list ·A . Π x : A . Π y : A . Π H : not ·(eq ·A x y) . eq ·nat (count_occ ·A eq_dec (cons ·A x l) y) (count_occ ·A eq_dec l y) = Λ A : ★ . λ eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . λ l : list ·A . λ x : A . λ y : A . λ H : not ·(eq ·A x y) . σ eq_dec x y @(λ s : sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . eq ·nat σ s @(λ _ : sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . nat) {
+  | left XX ➔ S (count_occ ·A eq_dec l y) 
+  | right XX ➔ count_occ ·A eq_dec l y 
+ } (count_occ ·A eq_dec l y)) {
+  | left e ➔ False_ind ·(eq ·nat (S (count_occ ·A eq_dec l y)) (count_occ ·A eq_dec l y)) (H e) 
+  | right n ➔ eq_refl ·nat (count_occ ·A eq_dec l y) 
+ }.
+
+

@@ -1,0 +1,18 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+firstn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ firstn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l.
+
+

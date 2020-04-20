@@ -1,0 +1,64 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data Forall2 (A : ★) (B : ★) (R : A ➔ B ➔ ★) : list ·A ➔ list ·B ➔ ★ =
+  | Forall2_nil : Forall2 (nil ·A) (nil ·B)
+  | Forall2_cons : Π x : A . Π y : B . Π l : list ·A . Π l' : list ·B . R x y ➔ Forall2 l l' ➔ Forall2 (cons ·A x l) (cons ·B y l').
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+data True : ★ =
+  | I : True.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+Forall2_app : ∀ A : ★ . ∀ B : ★ . ∀ R : A ➔ B ➔ ★ . Π l1 : list ·A . Π l2 : list ·A . Π l1' : list ·B . Π l2' : list ·B . Π H : Forall2 ·A ·B ·R l1 l1' . Π H0 : Forall2 ·A ·B ·R l2 l2' . Forall2 ·A ·B ·R (app ·A l1 l2) (app ·B l1' l2') = Λ A : ★ . Λ B : ★ . Λ R : A ➔ B ➔ ★ . λ l1 : list ·A . λ l2 : list ·A . λ l1' : list ·B . λ l2' : list ·B . λ H : Forall2 ·A ·B ·R l1 l1' . λ H0 : Forall2 ·A ·B ·R l2 l2' . list_ind ·A (λ l1' : list ·A . tprodT?) (λ l1'' : list ·B . λ H' : Forall2 ·A ·B ·R (nil ·A) l1'' . λ H0' : Forall2 ·A ·B ·R l2 l2' . σ H' @(λ l : list ·A . λ l' : list ·B . λ _ : Forall2 ·A ·B ·R l l' . eq ·(list ·A) l (nil ·A) ➔ eq ·(list ·B) l' l1'' ➔ Forall2 ·A ·B ·R (app ·A (nil ·A) l2) (app ·B l1'' l2')) {
+  | Forall2_nil ➔ λ H1 : eq ·(list ·A) (nil ·A) (nil ·A) . λ H2 : eq ·(list ·B) (nil ·B) l1'' . eq_ind ·(list ·B) (nil ·B) ·(λ l : list ·B . Forall2 ·A ·B ·R (app ·A (nil ·A) l2) (app ·B l l2')) (eq_ind ·(list ·B) (nil ·B) (λ l1'' : list ·B . tprodT?) (λ H' : Forall2 ·A ·B ·R (nil ·A) (nil ·B) . H0') l1'' H2 H') l1'' H2 
+  | Forall2_cons x y l l' H1 H2 ➔ λ H3 : eq ·(list ·A) (cons ·A x l) (nil ·A) . λ H4 : eq ·(list ·B) (cons ·B y l') l1'' . False_ind ·(Π H4' : eq ·(list ·B) (cons ·B y l') l1'' . Π H1' : R x y . Π H2' : Forall2 ·A ·B ·R l l' . Forall2 ·A ·B ·R (app ·A (nil ·A) l2) (app ·B l1'' l2')) (eq_ind ·(list ·A) (cons ·A x l) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·A) H3) H4 H1 H2 
+ } (eq_refl ·(list ·A) (nil ·A)) (eq_refl ·(list ·B) l1'')) (λ a : A . λ l1' : list ·A . λ IHl1 : Π l1'' : list ·B . Π H' : Forall2 ·A ·B ·R l1' l1'' . Π H0' : Forall2 ·A ·B ·R l2 l2' . Forall2 ·A ·B ·R (app ·A l1' l2) (app ·B l1'' l2') . λ l1'' : list ·B . λ H' : Forall2 ·A ·B ·R (cons ·A a l1') l1'' . λ H0' : Forall2 ·A ·B ·R l2 l2' . σ H' @(λ l : list ·A . λ l' : list ·B . λ _ : Forall2 ·A ·B ·R l l' . eq ·(list ·A) l (cons ·A a l1') ➔ eq ·(list ·B) l' l1'' ➔ Forall2 ·A ·B ·R (app ·A (cons ·A a l1') l2) (app ·B l1'' l2')) {
+  | Forall2_nil ➔ λ H1 : eq ·(list ·A) (nil ·A) (cons ·A a l1') . λ H2 : eq ·(list ·B) (nil ·B) l1'' . False_ind ·(Π H2' : eq ·(list ·B) (nil ·B) l1'' . Forall2 ·A ·B ·R (app ·A (cons ·A a l1') l2) (app ·B l1'' l2')) (eq_ind ·(list ·A) (nil ·A) (λ e : list ·A . σ e @(λ l : list ·A . xx) {
+  | nil ➔ True 
+  | cons XX XX ➔ False 
+ }) I (cons ·A a l1') H1) H2 
+  | Forall2_cons x y l l' H1 H2 ➔ λ H3 : eq ·(list ·A) (cons ·A x l) (cons ·A a l1') . λ H4 : eq ·(list ·B) (cons ·B y l') l1'' . eq_ind_r ·A a (λ a' : A . tprodT?) (λ H2' : eq ·(list ·A) l l1' . eq_ind_r ·(list ·A) l1' (λ l' : list ·A . tprodT?) (λ H4' : eq ·(list ·B) (cons ·B y l') l1'' . eq_ind ·(list ·B) (cons ·B y l') (λ l' : list ·B . tprodT?) (λ H3' : R a y . λ H5 : Forall2 ·A ·B ·R l1' l' . eq_ind ·(list ·B) (cons ·B y l') (λ l1'' : list ·B . tprodT?) (λ H' : Forall2 ·A ·B ·R (cons ·A a l1') (cons ·B y l') . Forall2_cons ·A ·B ·R a y (app ·A l1' l2) (app ·B l' l2') H3' (IHl1 l' H5 H0')) l1'' H4' H') l1'' H4') l H2') x (f_equal ·(list ·A) ·A (λ e : list ·A . σ e @(λ l' : list ·A . A) {
+  | nil ➔ x 
+  | cons a' l' ➔ a' 
+ }) (cons ·A x l) (cons ·A a l1') H3) (f_equal ·(list ·A) ·(list ·A) (λ e : list ·A . σ e @(λ l' : list ·A . list ·A) {
+  | nil ➔ l 
+  | cons a' l' ➔ l' 
+ }) (cons ·A x l) (cons ·A a l1') H3) H4 H1 H2 
+ } (eq_refl ·(list ·A) (cons ·A a l1')) (eq_refl ·(list ·B) l1'')) l1 l1' H H0.
+
+

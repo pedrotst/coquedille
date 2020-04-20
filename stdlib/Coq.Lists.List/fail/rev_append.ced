@@ -1,0 +1,11 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+rev_append : ∀ A : ★ . Π l : list ·A . Π l' : list ·A . list ·A = Λ A : ★ . λ l : list ·A . λ l' : list ·A . μ rev_append. l @(λ l : list ·A . Π l' : list ·A . list ·A) {
+  | nil ➔ λ _ . l' 
+  | cons a l' ➔ λ _ . rev_append l' (cons ·A a l') 
+ } l'.
+
+

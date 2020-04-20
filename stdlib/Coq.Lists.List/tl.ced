@@ -1,0 +1,11 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+tl : ∀ A : ★ . Π l : list ·A . list ·A = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a m ➔ m 
+ }.
+
+

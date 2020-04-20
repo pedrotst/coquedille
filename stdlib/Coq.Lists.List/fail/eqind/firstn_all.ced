@@ -1,0 +1,43 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+firstn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ firstn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l.
+
+length : ∀ A : ★ . list ·A ➔ nat = Λ A : ★ . λ l : list ·A . μ length. l @(λ l : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l' ➔ S (length l') 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+firstn_all : ∀ A : ★ . Π l : list ·A . eq ·(list ·A) (firstn ·A (length ·A l) l) l = Λ A : ★ . λ l : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (firstn ·A (length ·A l') l') l') (eq_refl ·(list ·A) (nil ·A)) (λ a : A . λ l' : list ·A . λ H : eq ·(list ·A) (firstn ·A (length ·A l') l') l' . eq_ind_r ·(list ·A) l' ·(λ l' : list ·A . eq ·(list ·A) (cons ·A a l') (cons ·A a l')) (eq_refl ·(list ·A) (cons ·A a l')) (firstn ·A (length ·A l') l') H) l.
+
+

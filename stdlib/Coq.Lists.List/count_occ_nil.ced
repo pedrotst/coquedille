@@ -1,0 +1,19 @@
+module test.
+data sumbool (A : ★) (B : ★) : ★ =
+  | left : A ➔ sumbool
+  | right : B ➔ sumbool.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+count_occ_nil : ∀ A : ★ . Π eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . Π x : A . eq ·nat O O = Λ A : ★ . λ eq_dec : Π x : A . Π y : A . sumbool ·(eq ·A x y) ·(not ·(eq ·A x y)) . λ x : A . eq_refl ·nat O.
+
+

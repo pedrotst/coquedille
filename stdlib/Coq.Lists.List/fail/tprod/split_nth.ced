@@ -1,0 +1,97 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+nth : ∀ A : ★ . Π n : nat . Π l : list ·A . Π default : A . A = Λ A : ★ . λ n : nat . λ l : list ·A . λ default : A . σ n @(λ n' : nat . A) {
+  | O ➔ μ nth. l @(λ l : list ·A . Π n : nat . Π default : A . A) {
+  | nil ➔ λ _ . λ _ . default 
+  | cons x l' ➔ λ _ . λ _ . x 
+ } n default 
+  | S m ➔ μ nth. l @(λ l : list ·A . Π n : nat . Π default : A . A) {
+  | nil ➔ λ _ . λ _ . default 
+  | cons x t ➔ λ _ . λ _ . nth t m default 
+ } n default 
+ }.
+
+fst : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . A = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ }.
+
+split : ∀ A : ★ . ∀ B : ★ . Π l : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B) = Λ A : ★ . Λ B : ★ . λ l : list ·(prod ·A ·B) . μ split. l @(λ l : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }.
+
+snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ }.
+
+split_nth : ∀ A : ★ . ∀ B : ★ . Π l : list ·(prod ·A ·B) . Π n : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n l d) (pair ·A ·B (nth ·A n (fst ·(list ·A) ·(list ·B) (split ·A ·B l)) (fst ·A ·B d)) (nth ·B n (snd ·(list ·A) ·(list ·B) (split ·A ·B l)) (snd ·A ·B d))) = Λ A : ★ . Λ B : ★ . λ l : list ·(prod ·A ·B) . list_ind ·(prod ·A ·B) (λ l' : list ·(prod ·A ·B) . tprodT?) (λ n : nat . σ n @(λ n' : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' (nil ·(prod ·A ·B)) d) (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (fst ·A ·B d)) (nth ·B n' (snd ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (snd ·A ·B d)))) {
+  | O ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) O (nil ·(prod ·A ·B)) p) (pair ·A ·B (nth ·A O (fst ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (fst ·A ·B p)) (nth ·B O (snd ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (snd ·A ·B p)))) {
+  | pair a b ➔ eq_refl ·(prod ·A ·B) (pair ·A ·B a b) 
+ } 
+  | S n' ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) (S n') (nil ·(prod ·A ·B)) p) (pair ·A ·B (nth ·A (S n') (fst ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (fst ·A ·B p)) (nth ·B (S n') (snd ·(list ·A) ·(list ·B) (split ·A ·B (nil ·(prod ·A ·B)))) (snd ·A ·B p)))) {
+  | pair a b ➔ eq_refl ·(prod ·A ·B) (pair ·A ·B a b) 
+ } 
+ }) (λ a : prod ·A ·B . λ l' : list ·(prod ·A ·B) . λ IHl : Π n : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n l' d) (pair ·A ·B (nth ·A n (fst ·(list ·A) ·(list ·B) (split ·A ·B l')) (fst ·A ·B d)) (nth ·B n (snd ·(list ·A) ·(list ·B) (split ·A ·B l')) (snd ·A ·B d))) . λ n : nat . σ n @(λ n' : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' (cons ·(prod ·A ·B) a l') d) (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (fst ·A ·B d)) (nth ·B n' (snd ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (snd ·A ·B d)))) {
+  | O ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) O (cons ·(prod ·A ·B) a l') p) (pair ·A ·B (nth ·A O (fst ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (fst ·A ·B p)) (nth ·B O (snd ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (snd ·A ·B p)))) {
+  | pair a0 b ➔ σ a @(λ p : prod ·A ·B . eq ·(prod ·A ·B) p (pair ·A ·B (nth ·A O (fst ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split ·A ·B l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ }) a0) (nth ·B O (snd ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split ·A ·B l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ }) b))) {
+  | pair a' b0 ➔ σ split ·A ·B l' @(λ p : prod ·(list ·A) ·(list ·B) . Π IHl' : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' d') (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) p) (fst ·A ·B d')) (nth ·B n' (snd ·(list ·A) ·(list ·B) p) (snd ·A ·B d'))) . eq ·(prod ·A ·B) (pair ·A ·B a' b0) (pair ·A ·B (nth ·A O (fst ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a' left) (cons ·B b0 right) 
+ }) a0) (nth ·B O (snd ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a' left) (cons ·B b0 right) 
+ }) b))) {
+  | pair l0 l1 ➔ λ IHl' : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' d') (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) (pair ·(list ·A) ·(list ·B) l0 l1)) (fst ·A ·B d')) (nth ·B n' (snd ·(list ·A) ·(list ·B) (pair ·(list ·A) ·(list ·B) l0 l1)) (snd ·A ·B d'))) . eq_refl ·(prod ·A ·B) (pair ·A ·B a' b0) 
+ } IHl 
+ } 
+ } 
+  | S n' ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) (S n') (cons ·(prod ·A ·B) a l') p) (pair ·A ·B (nth ·A (S n') (fst ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (fst ·A ·B p)) (nth ·B (S n') (snd ·(list ·A) ·(list ·B) (split ·A ·B (cons ·(prod ·A ·B) a l'))) (snd ·A ·B p)))) {
+  | pair a0 b ➔ σ a @(λ p : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' (pair ·A ·B a0 b)) (pair ·A ·B (nth ·A (S n') (fst ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split ·A ·B l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ }) a0) (nth ·B (S n') (snd ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split ·A ·B l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ }) b))) {
+  | pair a' b0 ➔ σ split ·A ·B l' @(λ p : prod ·(list ·A) ·(list ·B) . Π IHl' : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' d') (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) p) (fst ·A ·B d')) (nth ·B n' (snd ·(list ·A) ·(list ·B) p) (snd ·A ·B d'))) . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' (pair ·A ·B a0 b)) (pair ·A ·B (nth ·A (S n') (fst ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a' left) (cons ·B b0 right) 
+ }) a0) (nth ·B (S n') (snd ·(list ·A) ·(list ·B) σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a' left) (cons ·B b0 right) 
+ }) b))) {
+  | pair l0 l1 ➔ λ IHl' : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) (nth ·(prod ·A ·B) n' l' d') (pair ·A ·B (nth ·A n' (fst ·(list ·A) ·(list ·B) (pair ·(list ·A) ·(list ·B) l0 l1)) (fst ·A ·B d')) (nth ·B n' (snd ·(list ·A) ·(list ·B) (pair ·(list ·A) ·(list ·B) l0 l1)) (snd ·A ·B d'))) . IHl' n' (pair ·A ·B a0 b) 
+ } IHl 
+ } 
+ } 
+ }) l.
+
+

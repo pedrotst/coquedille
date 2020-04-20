@@ -1,0 +1,48 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+length : ∀ A : ★ . list ·A ➔ nat = Λ A : ★ . λ l : list ·A . μ length. l @(λ l : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l' ➔ S (length l') 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+length_zero_iff_nil : ∀ A : ★ . Π l : list ·A . and ·(eq ·nat (length ·A l) O ➔ eq ·(list ·A) l (nil ·A)) ·(eq ·(list ·A) l (nil ·A) ➔ eq ·nat (length ·A l) O) = Λ A : ★ . λ l : list ·A . conj ·(eq ·nat (length ·A l) O ➔ eq ·(list ·A) l (nil ·A)) ·(eq ·(list ·A) l (nil ·A) ➔ eq ·nat (length ·A l) O) σ l @(λ l' : list ·A . eq ·nat (length ·A l') O ➔ eq ·(list ·A) l' (nil ·A)) {
+  | nil ➔ λ H : eq ·nat (length ·A (nil ·A)) O . eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ λ H : eq ·nat (length ·A (cons ·A a l')) O . σ H @(λ y : nat . λ _ : eq ·nat (length ·A (cons ·A a l')) y . eq ·nat y O ➔ eq ·(list ·A) (cons ·A a l') (nil ·A)) {
+  | eq_refl ➔ λ H0 : eq ·nat (length ·A (cons ·A a l')) O . False_ind ·(eq ·(list ·A) (cons ·A a l') (nil ·A)) (eq_ind ·nat (length ·A (cons ·A a l')) (λ e : nat . σ e @(λ n : nat . xx) {
+  | O ➔ False 
+  | S XX ➔ True 
+ }) I O H0) 
+ } (eq_refl ·nat O) 
+ } (λ H : eq ·(list ·A) l (nil ·A) . eq_ind_r ·(list ·A) (nil ·A) ·(λ l' : list ·A . eq ·nat (length ·A l') O) (eq_refl ·nat O) l H).
+
+

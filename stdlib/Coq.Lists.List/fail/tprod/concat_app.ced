@@ -1,0 +1,46 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+concat : ∀ A : ★ . Π l : list ·(list ·A) . list ·A = Λ A : ★ . λ l : list ·(list ·A) . μ concat. l @(λ l : list ·(list ·A) . list ·A) {
+  | nil ➔ nil ·A 
+  | cons x l' ➔ app ·A x (concat l') 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+app_assoc : ∀ A : ★ . Π l : list ·A . Π m : list ·A . Π n : list ·A . eq ·(list ·A) (app ·A l (app ·A m n)) (app ·A (app ·A l m) n) = Λ A : ★ . λ l : list ·A . λ m : list ·A . λ n : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n)) ([ H : eq ·(list ·A) n n = eq_refl ·(list ·A) n ] - ([ H' : eq ·(list ·A) m m = eq_refl ·(list ·A) m ] - ([ H' : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . λ H0 : eq ·(list ·A) m m . λ H1 : eq ·(list ·A) n n . eq_refl ·(list ·A) (app ·A m n)) H') H') H) (λ a : A . λ l' : list ·A . λ IHl : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) . ([ H : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) = IHl ] - ([ H' : eq ·A a a = eq_refl ·A a ] - ([ H' : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . λ H0 : eq ·A a a . λ H1 : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) . eq_trans ·(list ·A) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A (app ·A l' m) n)) (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (app ·A l' (app ·A m n))) (cons ·A a) (cons ·A a) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A a))) (f_equal ·(list ·A) ·(list ·A) (cons ·A a) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) H1)) H') H') H)) l.
+
+concat_app : ∀ A : ★ . Π l1 : list ·(list ·A) . Π l2 : list ·(list ·A) . eq ·(list ·A) (concat ·A (app ·(list ·A) l1 l2)) (app ·A (concat ·A l1) (concat ·A l2)) = Λ A : ★ . λ l1 : list ·(list ·A) . list_ind ·(list ·A) (λ l1' : list ·(list ·A) . tprodT?) (λ l2 : list ·(list ·A) . eq_refl ·(list ·A) (concat ·A l2)) (λ x : list ·A . λ l1' : list ·(list ·A) . λ IH : Π l2 : list ·(list ·A) . eq ·(list ·A) (concat ·A (app ·(list ·A) l1' l2)) (app ·A (concat ·A l1') (concat ·A l2)) . λ l2 : list ·(list ·A) . eq_ind_r ·(list ·A) (app ·A (concat ·A l1') (concat ·A l2)) ·(λ l : list ·A . eq ·(list ·A) (app ·A x l) (app ·A (app ·A x (concat ·A l1')) (concat ·A l2))) (app_assoc ·A x (concat ·A l1') (concat ·A l2)) (concat ·A (app ·(list ·A) l1' l2)) (IH l2)) l1.
+
+

@@ -1,0 +1,29 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+app_assoc : ∀ A : ★ . Π l : list ·A . Π m : list ·A . Π n : list ·A . eq ·(list ·A) (app ·A l (app ·A m n)) (app ·A (app ·A l m) n) = Λ A : ★ . λ l : list ·A . λ m : list ·A . λ n : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n)) (eq_refl ·(list ·A) (app ·A m n)) (λ a : A . λ l' : list ·A . λ IHl : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) . eq_trans ·(list ·A) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A (app ·A l' m) n)) (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (app ·A l' (app ·A m n))) (cons ·A a) (cons ·A a) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A a))) (f_equal ·(list ·A) ·(list ·A) (cons ·A a) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) IHl)) l.
+
+

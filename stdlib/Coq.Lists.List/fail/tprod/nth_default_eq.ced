@@ -1,0 +1,66 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+nth_error : ∀ A : ★ . Π l : list ·A . Π n : nat . option ·A = Λ A : ★ . λ l : list ·A . λ n : nat . μ nth_error. n @(λ n : nat . Π l : list ·A . option ·A) {
+  | O ➔ λ _ . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l.
+
+nth : ∀ A : ★ . Π n : nat . Π l : list ·A . Π default : A . A = Λ A : ★ . λ n : nat . λ l : list ·A . λ default : A . σ n @(λ n' : nat . A) {
+  | O ➔ μ nth. l @(λ l : list ·A . Π n : nat . Π default : A . A) {
+  | nil ➔ λ _ . λ _ . default 
+  | cons x l' ➔ λ _ . λ _ . x 
+ } n default 
+  | S m ➔ μ nth. l @(λ l : list ·A . Π n : nat . Π default : A . A) {
+  | nil ➔ λ _ . λ _ . default 
+  | cons x t ➔ λ _ . λ _ . nth t m default 
+ } n default 
+ }.
+
+nth_default : ∀ A : ★ . Π default : A . Π l : list ·A . Π n : nat . A = Λ A : ★ . λ default : A . λ l : list ·A . λ n : nat . σ nth_error ·A l n @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ default 
+ }.
+
+nth_default_eq : ∀ A : ★ . Π n : nat . Π l : list ·A . Π d : A . eq ·A (nth_default ·A d l n) (nth ·A n l d) = Λ A : ★ . λ n : nat . nat_ind (λ n' : nat . tprodT?) (λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·A σ nth_error ·A l' O @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } (nth ·A O l' d)) {
+  | nil ➔ λ d : A . eq_refl ·A d 
+  | cons a l' ➔ λ d : A . eq_refl ·A a 
+ }) (λ n' : nat . λ IHn : Π l : list ·A . Π d : A . eq ·A σ nth_error ·A l n' @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } (nth ·A n' l d) . λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·A σ nth_error ·A l' (S n') @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } (nth ·A (S n') l' d)) {
+  | nil ➔ λ d : A . eq_refl ·A d 
+  | cons a l' ➔ λ d : A . IHn l' d 
+ }) n.
+
+

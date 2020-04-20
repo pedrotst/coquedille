@@ -1,0 +1,15 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+repeat : ∀ A : ★ . Π x : A . Π n : nat . list ·A = Λ A : ★ . λ x : A . λ n : nat . μ repeat. n @(λ n : nat . Π x : A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S k ➔ λ _ . cons ·A x (repeat k x) 
+ } x.
+
+

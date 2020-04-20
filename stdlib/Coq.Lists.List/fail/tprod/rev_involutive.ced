@@ -1,0 +1,55 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+list_ind : ∀ A : ★ . ∀ P : Π l : list ·A . ★ . Π f : P (nil ·A) . Π f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . Π l : list ·A . P l = Λ A : ★ . Λ P : Π l : list ·A . ★ . λ f : P (nil ·A) . λ f' : Π a : A . Π l : list ·A . P l ➔ P (cons ·A a l) . λ l : list ·A . μ F. l @(λ l : list ·A . P l) {
+  | nil ➔ f 
+  | cons y l' ➔ f' y (to/list -isType/F l') (F l') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+rev : ∀ A : ★ . Π l : list ·A . list ·A = Λ A : ★ . λ l : list ·A . μ rev. l @(λ l : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons x l' ➔ app ·A (rev l') (cons ·A x (nil ·A)) 
+ }.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+app_nil_r : ∀ A : ★ . Π l : list ·A . eq ·(list ·A) (app ·A l (nil ·A)) l = Λ A : ★ . λ l : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (app ·A l' (nil ·A)) l') ([ H : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . eq_refl ·(list ·A) (nil ·A)) H) (λ a : A . λ l' : list ·A . λ IHl : eq ·(list ·A) (app ·A l' (nil ·A)) l' . ([ H : eq ·(list ·A) (app ·A l' (nil ·A)) l' = IHl ] - ([ H' : eq ·A a a = eq_refl ·A a ] - ([ H' : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . λ H0 : eq ·A a a . λ H1 : eq ·(list ·A) (app ·A l' (nil ·A)) l' . eq_trans ·(list ·A) (cons ·A a (app ·A l' (nil ·A))) (cons ·A a (app ·A l' (nil ·A))) (cons ·A a l') (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (app ·A l' (nil ·A))) (cons ·A a) (cons ·A a) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A a))) (f_equal ·(list ·A) ·(list ·A) (cons ·A a) (app ·A l' (nil ·A)) l' H1)) H') H') H)) l.
+
+app_assoc : ∀ A : ★ . Π l : list ·A . Π m : list ·A . Π n : list ·A . eq ·(list ·A) (app ·A l (app ·A m n)) (app ·A (app ·A l m) n) = Λ A : ★ . λ l : list ·A . λ m : list ·A . λ n : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n)) ([ H : eq ·(list ·A) n n = eq_refl ·(list ·A) n ] - ([ H' : eq ·(list ·A) m m = eq_refl ·(list ·A) m ] - ([ H' : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . λ H0 : eq ·(list ·A) m m . λ H1 : eq ·(list ·A) n n . eq_refl ·(list ·A) (app ·A m n)) H') H') H) (λ a : A . λ l' : list ·A . λ IHl : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) . ([ H : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) = IHl ] - ([ H' : eq ·A a a = eq_refl ·A a ] - ([ H' : eq tSort ·A ·A = eq_refl tSort ·A ] - (λ H' : eq tSort ·A ·A . λ H0 : eq ·A a a . λ H1 : eq ·(list ·A) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) . eq_trans ·(list ·A) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A l' (app ·A m n))) (cons ·A a (app ·A (app ·A l' m) n)) (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (app ·A l' (app ·A m n))) (cons ·A a) (cons ·A a) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A a))) (f_equal ·(list ·A) ·(list ·A) (cons ·A a) (app ·A l' (app ·A m n)) (app ·A (app ·A l' m) n) H1)) H') H') H)) l.
+
+rev_app_distr : ∀ A : ★ . Π x : list ·A . Π y : list ·A . eq ·(list ·A) (rev ·A (app ·A x y)) (app ·A (rev ·A y) (rev ·A x)) = Λ A : ★ . λ x : list ·A . list_ind ·A (λ x' : list ·A . tprodT?) (λ y : list ·A . σ y @(λ l : list ·A . eq ·(list ·A) (rev ·A (app ·A (nil ·A) l)) (app ·A (rev ·A l) (rev ·A (nil ·A)))) {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l ➔ eq_ind_r ·(list ·A) (app ·A (rev ·A l) (cons ·A a (nil ·A))) ·(λ l' : list ·A . eq ·(list ·A) (app ·A (rev ·A l) (cons ·A a (nil ·A))) l') (eq_refl ·(list ·A) (app ·A (rev ·A l) (cons ·A a (nil ·A)))) (app ·A (app ·A (rev ·A l) (cons ·A a (nil ·A))) (nil ·A)) (app_nil_r ·A (app ·A (rev ·A l) (cons ·A a (nil ·A)))) 
+ }) (λ a : A . λ l : list ·A . λ IHl : Π y : list ·A . eq ·(list ·A) (rev ·A (app ·A l y)) (app ·A (rev ·A y) (rev ·A l)) . λ y : list ·A . eq_ind_r ·(list ·A) (app ·A (rev ·A y) (rev ·A l)) ·(λ l' : list ·A . eq ·(list ·A) (app ·A l' (cons ·A a (nil ·A))) (app ·A (rev ·A y) (app ·A (rev ·A l) (cons ·A a (nil ·A))))) (eq_ind_r ·(list ·A) (app ·A (app ·A (rev ·A y) (rev ·A l)) (cons ·A a (nil ·A))) ·(λ l' : list ·A . eq ·(list ·A) (app ·A (app ·A (rev ·A y) (rev ·A l)) (cons ·A a (nil ·A))) l') (eq_refl ·(list ·A) (app ·A (app ·A (rev ·A y) (rev ·A l)) (cons ·A a (nil ·A)))) (app ·A (rev ·A y) (app ·A (rev ·A l) (cons ·A a (nil ·A)))) (app_assoc ·A (rev ·A y) (rev ·A l) (cons ·A a (nil ·A)))) (rev ·A (app ·A l y)) (IHl y)) x.
+
+rev_unit : ∀ A : ★ . Π l : list ·A . Π a : A . eq ·(list ·A) (rev ·A (app ·A l (cons ·A a (nil ·A)))) (cons ·A a (rev ·A l)) = Λ A : ★ . λ l : list ·A . λ a : A . rev_app_distr ·A l (cons ·A a (nil ·A)).
+
+rev_involutive : ∀ A : ★ . Π l : list ·A . eq ·(list ·A) (rev ·A (rev ·A l)) l = Λ A : ★ . λ l : list ·A . list_ind ·A ·(λ l' : list ·A . eq ·(list ·A) (rev ·A (rev ·A l')) l') (eq_refl ·(list ·A) (nil ·A)) (λ a : A . λ l' : list ·A . λ IHl : eq ·(list ·A) (rev ·A (rev ·A l')) l' . eq_ind_r ·(list ·A) (cons ·A a (rev ·A (rev ·A l'))) ·(λ l' : list ·A . eq ·(list ·A) l' (cons ·A a l')) (eq_ind_r ·(list ·A) l' ·(λ l' : list ·A . eq ·(list ·A) (cons ·A a l') (cons ·A a l')) (eq_refl ·(list ·A) (cons ·A a l')) (rev ·A (rev ·A l')) IHl) (rev ·A (app ·A (rev ·A l') (cons ·A a (nil ·A)))) (rev_unit ·A (rev ·A l') a)) l.
+
+

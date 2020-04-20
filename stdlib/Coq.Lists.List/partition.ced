@@ -1,0 +1,23 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+partition : ∀ A : ★ . Π f : A ➔ bool . Π l : list ·A . prod ·(list ·A) ·(list ·A) = Λ A : ★ . λ f : A ➔ bool . λ l : list ·A . μ partition. l @(λ l : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }.
+
+

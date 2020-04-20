@@ -1,0 +1,84 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+nth_error : ∀ A : ★ . Π l : list ·A . Π n : nat . option ·A = Λ A : ★ . λ l : list ·A . λ n : nat . μ nth_error. n @(λ n : nat . Π l : list ·A . option ·A) {
+  | O ➔ λ _ . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l.
+
+map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . list ·B = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . μ map. l @(λ l : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+map_nth_error : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π n : nat . Π l : list ·A . Π d : A . eq ·(option ·A) (nth_error ·A l n) (Some ·A d) ➔ eq ·(option ·B) (nth_error ·B (map ·A ·B f l) n) (Some ·B (f d)) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ n : nat . nat_ind (λ n' : nat . tprodT?) (λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·(option ·A) (nth_error ·A l' O) (Some ·A d) ➔ eq ·(option ·B) (nth_error ·B (map ·A ·B f l') O) (Some ·B (f d))) {
+  | nil ➔ λ d : A . λ Heq : eq ·(option ·A) (nth_error ·A (nil ·A) O) (Some ·A d) . σ Heq @(λ y : option ·A . λ _ : eq ·(option ·A) (None ·A) y . eq ·(option ·A) y (Some ·A d) ➔ eq ·(option ·B) (None ·B) (Some ·B (f d))) {
+  | eq_refl ➔ λ H : eq ·(option ·A) (None ·A) (Some ·A d) . False_ind ·(eq ·(option ·B) (None ·B) (Some ·B (f d))) (eq_ind ·(option ·A) (None ·A) (λ e : option ·A . σ e @(λ o : option ·A . xx) {
+  | Some XX ➔ False 
+  | None ➔ True 
+ }) I (Some ·A d) H) 
+ } (eq_refl ·(option ·A) (Some ·A d)) 
+  | cons a l' ➔ λ d : A . λ Heq : eq ·(option ·A) (nth_error ·A (cons ·A a l') O) (Some ·A d) . σ Heq @(λ y : option ·A . λ _ : eq ·(option ·A) (Some ·A a) y . eq ·(option ·A) y (Some ·A d) ➔ eq ·(option ·B) (Some ·B (f a)) (Some ·B (f d))) {
+  | eq_refl ➔ λ H : eq ·(option ·A) (Some ·A a) (Some ·A d) . eq_ind_r ·A d ·(λ a' : A . eq ·(option ·B) (Some ·B (f a')) (Some ·B (f d))) (eq_refl ·(option ·B) (Some ·B (f d))) a (f_equal ·(option ·A) ·A (λ e : option ·A . σ e @(λ o : option ·A . A) {
+  | Some a' ➔ a' 
+  | None ➔ a 
+ }) (Some ·A a) (Some ·A d) H) 
+ } (eq_refl ·(option ·A) (Some ·A d)) 
+ }) (λ n' : nat . λ IHn : Π l : list ·A . Π d : A . eq ·(option ·A) (nth_error ·A l n') (Some ·A d) ➔ eq ·(option ·B) (nth_error ·B (map ·A ·B f l) n') (Some ·B (f d)) . λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·(option ·A) (nth_error ·A l' (S n')) (Some ·A d) ➔ eq ·(option ·B) (nth_error ·B (map ·A ·B f l') (S n')) (Some ·B (f d))) {
+  | nil ➔ λ d : A . λ Heq : eq ·(option ·A) (nth_error ·A (nil ·A) (S n')) (Some ·A d) . σ Heq @(λ y : option ·A . λ _ : eq ·(option ·A) (None ·A) y . eq ·(option ·A) y (Some ·A d) ➔ eq ·(option ·B) (None ·B) (Some ·B (f d))) {
+  | eq_refl ➔ λ H : eq ·(option ·A) (None ·A) (Some ·A d) . False_ind ·(eq ·(option ·B) (None ·B) (Some ·B (f d))) (eq_ind ·(option ·A) (None ·A) (λ e : option ·A . σ e @(λ o : option ·A . xx) {
+  | Some XX ➔ False 
+  | None ➔ True 
+ }) I (Some ·A d) H) 
+ } (eq_refl ·(option ·A) (Some ·A d)) 
+  | cons a l' ➔ λ d : A . λ Heq : eq ·(option ·A) (nth_error ·A (cons ·A a l') (S n')) (Some ·A d) . σ Heq @(λ y : option ·A . λ _ : eq ·(option ·A) (nth_error ·A l' n') y . eq ·(option ·A) y (Some ·A d) ➔ eq ·(option ·B) (nth_error ·B (map ·A ·B f l') n') (Some ·B (f d))) {
+  | eq_refl ➔ λ H : eq ·(option ·A) (nth_error ·A l' n') (Some ·A d) . eq_ind ·(option ·A) (nth_error ·A l' n') ·(λ o : option ·A . eq ·(option ·B) (nth_error ·B (map ·A ·B f l') n') (Some ·B (f d))) (IHn l' d (f_equal ·(option ·A) ·(option ·A) (λ e : option ·A . e) (nth_error ·A l' n') (Some ·A d) H)) (Some ·A d) (f_equal ·(option ·A) ·(option ·A) (λ e : option ·A . e) (nth_error ·A l' n') (Some ·A d) H) 
+ } (eq_refl ·(option ·A) (Some ·A d)) 
+ }) n.
+
+

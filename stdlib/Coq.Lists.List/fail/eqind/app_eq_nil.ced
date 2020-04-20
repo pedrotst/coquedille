@@ -1,0 +1,45 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+False : ★ = ∀ X : ★ . X.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+app_eq_nil : ∀ A : ★ . Π l : list ·A . Π l' : list ·A . eq ·(list ·A) (app ·A l l') (nil ·A) ➔ and ·(eq ·(list ·A) l (nil ·A)) ·(eq ·(list ·A) l' (nil ·A)) = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . Π l'' : list ·A . eq ·(list ·A) (app ·A l' l'') (nil ·A) ➔ and ·(eq ·(list ·A) l' (nil ·A)) ·(eq ·(list ·A) l'' (nil ·A))) {
+  | nil ➔ λ l' : list ·A . σ l' @(λ l' : list ·A . eq ·(list ·A) (app ·A (nil ·A) l') (nil ·A) ➔ and ·(eq ·(list ·A) (nil ·A) (nil ·A)) ·(eq ·(list ·A) l' (nil ·A))) {
+  | nil ➔ λ H : eq ·(list ·A) (nil ·A) (nil ·A) . conj ·(eq ·(list ·A) (nil ·A) (nil ·A)) ·(eq ·(list ·A) (nil ·A) (nil ·A)) H H 
+  | cons y l'' ➔ λ H : eq ·(list ·A) (cons ·A y l'') (nil ·A) . conj ·(eq ·(list ·A) (nil ·A) (nil ·A)) ·(eq ·(list ·A) (cons ·A y l'') (nil ·A)) (eq_refl ·(list ·A) (nil ·A)) H 
+ } 
+  | cons x l' ➔ λ l'' : list ·A . σ l'' @(λ l' : list ·A . eq ·(list ·A) (app ·A (cons ·A x l') l') (nil ·A) ➔ and ·(eq ·(list ·A) (cons ·A x l') (nil ·A)) ·(eq ·(list ·A) l' (nil ·A))) {
+  | nil ➔ λ H : eq ·(list ·A) (cons ·A x (app ·A l' (nil ·A))) (nil ·A) . False_ind ·(and ·(eq ·(list ·A) (cons ·A x l') (nil ·A)) ·(eq ·(list ·A) (nil ·A) (nil ·A))) (eq_ind ·(list ·A) (cons ·A x (app ·A l' (nil ·A))) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·A) H) 
+  | cons y l'' ➔ λ H : eq ·(list ·A) (cons ·A x (app ·A l' (cons ·A y l''))) (nil ·A) . False_ind ·(and ·(eq ·(list ·A) (cons ·A x l') (nil ·A)) ·(eq ·(list ·A) (cons ·A y l'') (nil ·A))) (eq_ind ·(list ·A) (cons ·A x (app ·A l' (cons ·A y l''))) (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·A) H) 
+ } 
+ }.
+
+

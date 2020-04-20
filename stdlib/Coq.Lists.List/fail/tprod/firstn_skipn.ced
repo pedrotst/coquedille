@@ -1,0 +1,52 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ _ . m 
+  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+ } m.
+
+firstn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ firstn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . nil ·A 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l.
+
+skipn : ∀ A : ★ . Π n : nat . Π l : list ·A . list ·A = Λ A : ★ . λ n : nat . λ l : list ·A . μ skipn. n @(λ n : nat . Π l : list ·A . list ·A) {
+  | O ➔ λ _ . l 
+  | S n' ➔ λ _ . σ l @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ skipn n' l' 
+ } 
+ } l.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+firstn_skipn : ∀ A : ★ . Π n : nat . Π l : list ·A . eq ·(list ·A) (app ·A (firstn ·A n l) (skipn ·A n l)) l = Λ A : ★ . λ n : nat . nat_ind (λ n' : nat . tprodT?) (λ l : list ·A . eq_refl ·(list ·A) l) (λ n' : nat . λ IHn : Π l : list ·A . eq ·(list ·A) (app ·A (firstn ·A n' l) (skipn ·A n' l)) l . λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) (app ·A (firstn ·A (S n') l') (skipn ·A (S n') l')) l') {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ eq_trans ·(list ·A) (cons ·A a (app ·A (firstn ·A n' l') (skipn ·A n' l'))) (cons ·A a (app ·A (firstn ·A n' l') (skipn ·A n' l'))) (cons ·A a l') (f_equal ·(Π l' : list ·A . list ·A) ·(list ·A) (λ f : Π l' : list ·A . list ·A . f (app ·A (firstn ·A n' l') (skipn ·A n' l'))) (cons ·A a) (cons ·A a) (eq_refl ·(Π l' : list ·A . list ·A) (cons ·A a))) (f_equal ·(list ·A) ·(list ·A) (cons ·A a) (app ·A (firstn ·A n' l') (skipn ·A n' l')) l' (IHn l')) 
+ }) n.
+
+
