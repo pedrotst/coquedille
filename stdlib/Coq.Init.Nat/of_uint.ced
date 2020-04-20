@@ -1,0 +1,47 @@
+module test.
+data uint : ★ =
+  | Nil : uint
+  | D0 : uint ➔ uint
+  | D1 : uint ➔ uint
+  | D2 : uint ➔ uint
+  | D3 : uint ➔ uint
+  | D4 : uint ➔ uint
+  | D5 : uint ➔ uint
+  | D6 : uint ➔ uint
+  | D7 : uint ➔ uint
+  | D8 : uint ➔ uint
+  | D9 : uint ➔ uint.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+tail_add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ tail_add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S n' ➔ λ _ . tail_add n' (S m) 
+ } m.
+
+tail_addmul : Π r : nat . Π n : nat . Π m : nat . nat = λ r : nat . λ n : nat . λ m : nat . μ tail_addmul. n @(λ n : nat . Π r : nat . Π m : nat . nat) {
+  | O ➔ λ _ . λ _ . r 
+  | S n' ➔ λ _ . λ _ . tail_addmul n' (tail_add m r) m 
+ } r m.
+
+tail_mul : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . tail_addmul O n m.
+
+of_uint_acc : Π d : uint . Π acc : nat . nat = λ d : uint . λ acc : nat . μ of_uint_acc. d @(λ d : uint . Π acc : nat . nat) {
+  | Nil ➔ λ _ . acc 
+  | D0 d' ➔ λ _ . of_uint_acc d' (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc) 
+  | D1 d' ➔ λ _ . of_uint_acc d' (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)) 
+  | D2 d' ➔ λ _ . of_uint_acc d' (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))) 
+  | D3 d' ➔ λ _ . of_uint_acc d' (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))) 
+  | D4 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))) 
+  | D5 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))) 
+  | D6 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))))) 
+  | D7 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))))) 
+  | D8 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))))))) 
+  | D9 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))))))) 
+ } acc.
+
+of_uint : Π d : uint . nat = λ d : uint . of_uint_acc d O.
+
+

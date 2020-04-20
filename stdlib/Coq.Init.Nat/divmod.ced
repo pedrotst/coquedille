@@ -1,0 +1,17 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+divmod : Π x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat = λ x : nat . λ y : nat . λ q : nat . λ u : nat . μ divmod. x @(λ x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat) {
+  | O ➔ λ _ . λ _ . λ _ . pair ·nat ·nat q u 
+  | S x' ➔ λ _ . λ _ . λ _ . σ u @(λ u' : nat . prod ·nat ·nat) {
+  | O ➔ divmod x' y (S q) y 
+  | S u' ➔ divmod x' y q u' 
+ } 
+ } y q u.
+
+

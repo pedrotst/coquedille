@@ -1,9 +1,0 @@
-module test.
-data and (A : ★) (B : ★) : ★ =
-  | conj : A ➔ B ➔ and.
-
-iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
-
-iff_refl : ∀ A : ★ . iff ·A ·A = Λ A : ★ . conj ·(λ _ : A . A) ·(λ _ : A . A) (λ H : A . H) (λ H : A . H).
-
-

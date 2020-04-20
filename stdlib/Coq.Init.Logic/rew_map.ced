@@ -1,0 +1,17 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+rew_map : ∀ A : ★ . ∀ B : ★ . ∀ P : B ➔ ★ . Π f : A ➔ B . Π x1 : A . Π x2 : A . Π H : eq ·A x1 x2 . Π y : P (f x1) . eq ·(P (f x2)) (eq_rect ·A x1 ·(λ x : A . P (f x)) y x2 H) (eq_rect ·B (f x1) ·P y (f x2) (f_equal ·A ·B f x1 x2 H)) = Λ A : ★ . Λ B : ★ . Λ P : B ➔ ★ . λ f : A ➔ B . λ x1 : A . λ x2 : A . λ H : eq ·A x1 x2 . σ H @(λ y : A . λ e : eq ·A x1 y . Π y' : P (f x1) . eq ·(P (f y)) (eq_rect ·A x1 ·(λ x : A . P (f x)) y' y e) (eq_rect ·B (f x1) ·P y' (f y) (f_equal ·A ·B f x1 y e))) {
+  | eq_refl ➔ λ y : P (f x1) . eq_refl ·(P (f x1)) (eq_rect ·B (f x1) ·P y (f x1) (f_equal ·A ·B f x1 x1 (eq_refl ·A x1))) 
+ }.
+
+

@@ -1,0 +1,13 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+double : Π n : nat . nat = λ n : nat . add n n.
+
+

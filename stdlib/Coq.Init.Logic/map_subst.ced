@@ -1,0 +1,13 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+map_subst : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . Π f : Π x : A . P x ➔ Q x . Π x : A . Π y : A . Π H : eq ·A x y . Π z : P x . eq ·(Q y) (eq_rect ·A x ·Q (f x z) y H) (f y (eq_rect ·A x ·P z y H)) = Λ A : ★ . Λ P : A ➔ ★ . Λ Q : A ➔ ★ . λ f : Π x : A . P x ➔ Q x . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ e : eq ·A x y' . Π z : P x . eq ·(Q y') (eq_rect ·A x ·Q (f x z) y' e) (f y' (eq_rect ·A x ·P z y' e))) {
+  | eq_refl ➔ λ z : P x . eq_refl ·(Q x) (f x (eq_rect ·A x ·P z x (eq_refl ·A x))) 
+ }.
+
+

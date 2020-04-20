@@ -1,0 +1,14 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+min : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ min. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . O 
+  | S n' ➔ λ _ . σ m @(λ m' : nat . nat) {
+  | O ➔ O 
+  | S m' ➔ S (min n' m') 
+ } 
+ } m.
+
+

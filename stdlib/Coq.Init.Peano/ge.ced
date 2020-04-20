@@ -1,0 +1,12 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data le (n : nat) : nat ➔ ★ =
+  | le_n : le n
+  | le_S : Π m : nat . le m ➔ le (S m).
+
+ge : Π n : nat . Π m : nat . ★ = λ n : nat . λ m : nat . le m n.
+
+

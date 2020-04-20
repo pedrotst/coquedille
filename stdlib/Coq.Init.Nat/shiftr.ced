@@ -1,0 +1,21 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_rect : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+div2 : Π n : nat . nat = λ n : nat . μ div2. n @(λ n : nat . nat) {
+  | O ➔ O 
+  | S n0 ➔ σ n0 @(λ n0' : nat . nat) {
+  | O ➔ O 
+  | S n' ➔ S (div2 n') 
+ } 
+ }.
+
+shiftr : Π a : (λ _ : nat . nat) O . Π n : nat . (λ _ : nat . nat) n = λ a : (λ _ : nat . nat) O . nat_rect ·(λ _ : nat . nat) a (λ n : nat . div2).
+
+

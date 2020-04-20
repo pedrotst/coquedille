@@ -1,0 +1,38 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+negb : Π b : bool . bool = λ b : bool . σ b @(λ b' : bool . bool) {
+  | true ➔ false 
+  | false ➔ true 
+ }.
+
+even : Π n : nat . bool = λ n : nat . μ even. n @(λ n : nat . bool) {
+  | O ➔ true 
+  | S n0 ➔ σ n0 @(λ n0' : nat . bool) {
+  | O ➔ false 
+  | S n' ➔ even n' 
+ } 
+ }.
+
+odd : Π n : nat . bool = λ n : nat . negb (even n).
+
+div2 : Π n : nat . nat = λ n : nat . μ div2. n @(λ n : nat . nat) {
+  | O ➔ O 
+  | S n0 ➔ σ n0 @(λ n0' : nat . nat) {
+  | O ➔ O 
+  | S n' ➔ S (div2 n') 
+ } 
+ }.
+
+testbit : Π a : nat . Π n : nat . bool = λ a : nat . λ n : nat . μ testbit. n @(λ n : nat . Π a : nat . bool) {
+  | O ➔ λ _ . odd a 
+  | S n' ➔ λ _ . testbit n' (div2 a) 
+ } a.
+
+

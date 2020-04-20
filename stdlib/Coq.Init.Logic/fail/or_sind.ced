@@ -1,0 +1,11 @@
+module test.
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+or_sind : ∀ A : ★ . ∀ B : ★ . ∀ P : ★ . Π f : A ➔ P . Π f' : B ➔ P . Π o : or ·A ·B . P = Λ A : ★ . Λ B : ★ . Λ P : ★ . λ f : A ➔ P . λ f' : B ➔ P . λ o : or ·A ·B . σ o @(λ _ : or ·A ·B . P) {
+  | or_introl ➔ f 
+  | or_intror ➔ f' 
+ }.
+
+

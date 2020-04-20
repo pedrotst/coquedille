@@ -1,0 +1,15 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+eq_S : Π x : nat . Π y : nat . eq ·nat x y ➔ eq ·nat (S x) (S y) = f_equal ·nat ·nat S.
+
+

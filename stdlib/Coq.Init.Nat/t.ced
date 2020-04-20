@@ -1,0 +1,8 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+t : ★ = nat.
+
+

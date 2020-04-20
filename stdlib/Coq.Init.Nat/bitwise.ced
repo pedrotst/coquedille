@@ -1,0 +1,51 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+negb : Π b : bool . bool = λ b : bool . σ b @(λ b' : bool . bool) {
+  | true ➔ false 
+  | false ➔ true 
+ }.
+
+even : Π n : nat . bool = λ n : nat . μ even. n @(λ n : nat . bool) {
+  | O ➔ true 
+  | S n0 ➔ σ n0 @(λ n0' : nat . bool) {
+  | O ➔ false 
+  | S n' ➔ even n' 
+ } 
+ }.
+
+odd : Π n : nat . bool = λ n : nat . negb (even n).
+
+mul : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ mul. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . O 
+  | S p ➔ λ _ . add m (mul p m) 
+ } m.
+
+div2 : Π n : nat . nat = λ n : nat . μ div2. n @(λ n : nat . nat) {
+  | O ➔ O 
+  | S n0 ➔ σ n0 @(λ n0' : nat . nat) {
+  | O ➔ O 
+  | S n' ➔ S (div2 n') 
+ } 
+ }.
+
+bitwise : Π op : bool ➔ bool ➔ bool . Π n : nat . Π a : nat . Π b : nat . nat = λ op : bool ➔ bool ➔ bool . λ n : nat . λ a : nat . λ b : nat . μ bitwise. n @(λ n : nat . Π op : bool ➔ bool ➔ bool . Π a : nat . Π b : nat . nat) {
+  | O ➔ λ _ . λ _ . λ _ . O 
+  | S n' ➔ λ _ . λ _ . λ _ . add σ op (odd a) (odd b) @(λ _ : bool . nat) {
+  | true ➔ S O 
+  | false ➔ O 
+ } (mul (S (S O)) (bitwise n' op (div2 a) (div2 b))) 
+ } op a b.
+
+

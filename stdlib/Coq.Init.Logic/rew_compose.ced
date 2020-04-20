@@ -1,0 +1,17 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_rect : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
+  | eq_refl ➔ H 
+ }.
+
+rew_compose : ∀ A : ★ . ∀ P : A ➔ ★ . Π x1 : A . Π x2 : A . Π x3 : A . Π H1 : eq ·A x1 x2 . Π H2 : eq ·A x2 x3 . Π y : P x1 . eq ·(P x3) (eq_rect ·A x2 ·P (eq_rect ·A x1 ·P y x2 H1) x3 H2) (eq_rect ·A x1 ·P y x3 (eq_trans ·A x1 x2 x3 H1 H2)) = Λ A : ★ . Λ P : A ➔ ★ . λ x1 : A . λ x2 : A . λ x3 : A . λ H1 : eq ·A x1 x2 . λ H2 : eq ·A x2 x3 . σ H2 @(λ y : A . λ e : eq ·A x2 y . Π y' : P x1 . eq ·(P y) (eq_rect ·A x2 ·P (eq_rect ·A x1 ·P y' x2 H1) y e) (eq_rect ·A x1 ·P y' y (eq_trans ·A x1 x2 y H1 e))) {
+  | eq_refl ➔ λ y : P x1 . eq_refl ·(P x2) (eq_rect ·A x1 ·P y x2 (eq_trans ·A x1 x2 x2 H1 (eq_refl ·A x2))) 
+ }.
+
+

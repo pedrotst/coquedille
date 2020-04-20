@@ -1,0 +1,17 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data le (n : nat) : nat ➔ ★ =
+  | le_n : le n
+  | le_S : Π m : nat . le m ➔ le (S m).
+
+le_0_n : Π n : nat . le O n = λ n : nat . nat_ind ·(λ n' : nat . le O n') (le_n O) (λ n' : nat . λ IHn : le O n' . le_S O n' IHn) n.
+
+

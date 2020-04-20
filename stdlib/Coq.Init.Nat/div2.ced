@@ -1,0 +1,14 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+div2 : Π n : nat . nat = λ n : nat . μ div2. n @(λ n : nat . nat) {
+  | O ➔ O 
+  | S n0 ➔ σ n0 @(λ n0' : nat . nat) {
+  | O ➔ O 
+  | S n' ➔ S (div2 n') 
+ } 
+ }.
+
+

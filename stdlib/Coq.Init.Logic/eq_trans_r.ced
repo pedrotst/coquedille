@@ -1,0 +1,9 @@
+module test.
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+eq_trans_r : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A z y ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A z y . σ H0 @(λ y' : A . λ _ : eq ·A z y' . Π H' : eq ·A x y' . eq ·A x z) {
+  | eq_refl ➔ λ H' : eq ·A x z . H' 
+ } H.
+
+

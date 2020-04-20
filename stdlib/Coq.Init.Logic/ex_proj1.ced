@@ -1,0 +1,9 @@
+module test.
+data ex (A : ★) (P : A ➔ ★) : ★ =
+  | ex_intro : Π x : A . P x ➔ ex.
+
+ex_proj1 : ∀ A : ★ . ∀ P : A ➔ ★ . Π x : ex ·A ·P . A = Λ A : ★ . Λ P : A ➔ ★ . λ x : ex ·A ·P . σ x @(λ x' : ex ·A ·P . A) {
+  | ex_intro a p ➔ a 
+ }.
+
+

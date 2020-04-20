@@ -2,7 +2,7 @@ module test.
 data and (A : ★) (B : ★) : ★ =
   | conj : A ➔ B ➔ and.
 
-iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(λ _ : A . B) ·(λ _ : B . A).
+iff : Π A : ★ . Π B : ★ . ★ = λ A : ★ . λ B : ★ . and ·(A ➔ B) ·(B ➔ A).
 
 data ex (A : ★) (P : A ➔ ★) : ★ =
   | ex_intro : Π x : A . P x ➔ ex.
@@ -10,12 +10,12 @@ data ex (A : ★) (P : A ➔ ★) : ★ =
 data eq (A : ★) (x : A) : A ➔ ★ =
   | eq_refl : eq x.
 
-unique : Π A : ★ . Π P : A ➔ ★ . Π x : A . ★ = λ A : ★ . λ P : A ➔ ★ . λ x : A . and ·(P x) ·(λ x' : A . λ _ : P x' . eq ·A x x').
+unique : Π A : ★ . Π P : A ➔ ★ . Π x : A . ★ = λ A : ★ . λ P : A ➔ ★ . λ x : A . and ·(P x) ·(Π x' : A . P x' ➔ eq ·A x x').
 
-forall_exists_coincide_unique_domain : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . iff ·(λ x : A . λ _ : P x . Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x))) ➔ ex ·A ·(unique ·A ·(λ x : A . P x)) = Λ A : ★ . Λ P : A ➔ ★ . λ H : ∀ Q : A ➔ ★ . iff ·(λ x : A . λ _ : P x . Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x))) . ([ i : iff ·(λ x : A . λ _ : P x . P x) ·(ex ·A ·(λ x : A . and ·(P x) ·(P x))) = H ·P ] - σ i @(λ _ : and ·(λ _ : Π x : A . P x ➔ P x . ex ·A ·(λ x : A . and ·(P x) ·(P x))) ·(λ _ : ex ·A ·(λ x : A . and ·(P x) ·(P x)) . λ x : A . λ _ : P x . P x) . ex ·A ·(unique ·A ·(λ x : A . P x))) {
+forall_exists_coincide_unique_domain : ∀ A : ★ . ∀ P : A ➔ ★ . ∀ Q : A ➔ ★ . iff ·(Π x : A . P x ➔ Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x))) ➔ ex ·A ·(unique ·A ·(λ x : A . P x)) = Λ A : ★ . Λ P : A ➔ ★ . λ H : ∀ Q : A ➔ ★ . iff ·(Π x : A . P x ➔ Q x) ·(ex ·A ·(λ x : A . and ·(P x) ·(Q x))) . ([ i : iff ·(Π x : A . P x ➔ P x) ·(ex ·A ·(λ x : A . and ·(P x) ·(P x))) = H ·P ] - σ i @(λ _ : and ·((Π x : A . P x ➔ P x) ➔ ex ·A ·(λ x : A . and ·(P x) ·(P x))) ·(ex ·A ·(λ x : A . and ·(P x) ·(P x)) ➔ Π x : A . P x ➔ P x) . ex ·A ·(unique ·A ·(λ x : A . P x))) {
   | conj H0 ➔ σ H0 (λ x : A . λ H0' : P x . H0') @(λ _ : ex ·A ·(λ x : A . and ·(P x) ·(P x)) . (ex ·A ·(λ x : A . and ·(P x) ·(P x)) ➔ Π x : A . P x ➔ P x) ➔ ex ·A ·(unique ·A ·(λ x : A . P x))) {
   | ex_intro x H0' ➔ σ H0' @(λ _ : and ·(P x) ·(P x) . (ex ·A ·(λ x' : A . and ·(P x') ·(P x')) ➔ Π x' : A . P x' ➔ P x') ➔ ex ·A ·(unique ·A ·(λ x' : A . P x'))) {
-  | conj Hx _tmp ➔ λ _tmp0 : ex ·A ·(λ x' : A . and ·(P x') ·(P x')) ➔ Π x' : A . P x' ➔ P x' . ex_intro ·A ·(unique ·A ·(λ x' : A . P x')) x (conj ·(P x) ·(λ x' : A . λ _ : P x' . eq ·A x x') Hx ([ i' : iff ·(λ x' : A . λ _ : P x' . (λ x'' : A . eq ·A x x'') x') ·(ex ·A ·(λ x' : A . and ·(P x') ·((λ x'' : A . eq ·A x x'') x'))) = H ·(λ x' : A . eq ·A x x') ] - σ i' @(λ _ : and ·(λ _ : Π x' : A . P x' ➔ eq ·A x x' . ex ·A ·(λ x' : A . and ·(P x') ·(eq ·A x x'))) ·(λ _ : ex ·A ·(λ x' : A . and ·(P x') ·(eq ·A x x')) . λ x' : A . λ _ : P x' . eq ·A x x') . Π x' : A . P x' ➔ eq ·A x x') {
+  | conj Hx _tmp ➔ λ _tmp0 : ex ·A ·(λ x' : A . and ·(P x') ·(P x')) ➔ Π x' : A . P x' ➔ P x' . ex_intro ·A ·(unique ·A ·(λ x' : A . P x')) x (conj ·(P x) ·(Π x' : A . P x' ➔ eq ·A x x') Hx ([ i' : iff ·(Π x' : A . P x' ➔ (λ x'' : A . eq ·A x x'') x') ·(ex ·A ·(λ x' : A . and ·(P x') ·((λ x'' : A . eq ·A x x'') x'))) = H ·(λ x' : A . eq ·A x x') ] - σ i' @(λ _ : and ·((Π x' : A . P x' ➔ eq ·A x x') ➔ ex ·A ·(λ x' : A . and ·(P x') ·(eq ·A x x'))) ·(ex ·A ·(λ x' : A . and ·(P x') ·(eq ·A x x')) ➔ Π x' : A . P x' ➔ eq ·A x x') . Π x' : A . P x' ➔ eq ·A x x') {
   | conj _tmp' Huniq ➔ Huniq (ex_intro ·A ·(λ x' : A . and ·(P x') ·(eq ·A x x')) x (conj ·(P x) ·(eq ·A x x) Hx (eq_refl ·A x))) 
  })) 
  } 

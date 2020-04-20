@@ -1,0 +1,22 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data comparison : ★ =
+  | Eq : comparison
+  | Lt : comparison
+  | Gt : comparison.
+
+compare : Π n : nat . Π m : nat . comparison = λ n : nat . λ m : nat . μ compare. n @(λ n : nat . Π m : nat . comparison) {
+  | O ➔ λ _ . σ m @(λ m' : nat . comparison) {
+  | O ➔ Eq 
+  | S n0 ➔ Lt 
+ } 
+  | S n' ➔ λ _ . σ m @(λ m' : nat . comparison) {
+  | O ➔ Gt 
+  | S m' ➔ compare n' m' 
+ } 
+ } m.
+
+

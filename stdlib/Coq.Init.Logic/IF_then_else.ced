@@ -1,0 +1,15 @@
+module test.
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+IF_then_else : Π P : ★ . Π Q : ★ . Π R : ★ . ★ = λ P : ★ . λ Q : ★ . λ R : ★ . or ·(and ·P ·Q) ·(and ·(not ·P) ·R).
+
+

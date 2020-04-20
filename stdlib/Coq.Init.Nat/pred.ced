@@ -1,0 +1,11 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+pred : Π n : nat . nat = λ n : nat . σ n @(λ n' : nat . nat) {
+  | O ➔ n 
+  | S u ➔ u 
+ }.
+
+

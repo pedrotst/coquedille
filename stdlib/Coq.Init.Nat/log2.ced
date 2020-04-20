@@ -1,0 +1,21 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+log2_iter : Π k : nat . Π p : nat . Π q : nat . Π r : nat . nat = λ k : nat . λ p : nat . λ q : nat . λ r : nat . μ log2_iter. k @(λ k : nat . Π p : nat . Π q : nat . Π r : nat . nat) {
+  | O ➔ λ _ . λ _ . λ _ . p 
+  | S k' ➔ λ _ . λ _ . λ _ . σ r @(λ r' : nat . nat) {
+  | O ➔ log2_iter k' (S p) (S q) q 
+  | S r' ➔ log2_iter k' p (S q) r' 
+ } 
+ } p q r.
+
+pred : Π n : nat . nat = λ n : nat . σ n @(λ n' : nat . nat) {
+  | O ➔ n 
+  | S u ➔ u 
+ }.
+
+log2 : Π n : nat . nat = λ n : nat . log2_iter (pred n) O (S O) O.
+
+

@@ -1,0 +1,18 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+even : Π n : nat . bool = λ n : nat . μ even. n @(λ n : nat . bool) {
+  | O ➔ true 
+  | S n0 ➔ σ n0 @(λ n0' : nat . bool) {
+  | O ➔ false 
+  | S n' ➔ even n' 
+ } 
+ }.
+
+

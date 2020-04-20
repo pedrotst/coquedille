@@ -1,0 +1,26 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+pred : Π n : nat . nat = λ n : nat . σ n @(λ n' : nat . nat) {
+  | O ➔ n 
+  | S u ➔ u 
+ }.
+
+eq_add_S : Π n : nat . Π m : nat . Π H : eq ·nat (S n) (S m) . eq ·nat n m = λ n : nat . λ m : nat . λ H : eq ·nat (S n) (S m) . f_equal ·nat ·nat pred (S n) (S m) H.
+
+not_eq_S : Π n : nat . Π m : nat . not ·(eq ·nat n m) ➔ not ·(eq ·nat (S n) (S m)) = λ n : nat . λ m : nat . λ H : not ·(eq ·nat n m) . λ H0 : eq ·nat (S n) (S m) . H (eq_add_S n m H0).
+
+

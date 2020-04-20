@@ -1,0 +1,9 @@
+module test.
+data and (A : ★) (B : ★) : ★ =
+  | conj : A ➔ B ➔ and.
+
+and_sind : ∀ A : ★ . ∀ B : ★ . ∀ P : ★ . Π f : A ➔ B ➔ P . Π a : and ·A ·B . P = Λ A : ★ . Λ B : ★ . Λ P : ★ . λ f : A ➔ B ➔ P . λ a : and ·A ·B . σ a @(λ _ : and ·A ·B . P) {
+  | conj ➔ f 
+ }.
+
+

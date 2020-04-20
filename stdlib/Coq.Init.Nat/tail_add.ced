@@ -1,0 +1,11 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+tail_add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ tail_add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S n' ➔ λ _ . tail_add n' (S m) 
+ } m.
+
+

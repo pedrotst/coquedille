@@ -1,0 +1,27 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+f_equal_nat : ∀ B : ★ . Π f : nat ➔ B . Π x : nat . Π y : nat . eq ·nat x y ➔ eq ·B (f x) (f y) = f_equal ·nat.
+
+plus_n_O : Π n : nat . eq ·nat n (add n O) = λ n : nat . nat_ind ·(λ n' : nat . eq ·nat n' (add n' O)) (eq_refl ·nat O) (λ n' : nat . λ IHn : eq ·nat n' (add n' O) . f_equal_nat ·nat S n' (add n' O) IHn) n.
+
+

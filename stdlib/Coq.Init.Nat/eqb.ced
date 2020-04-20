@@ -1,0 +1,21 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+eqb : Π n : nat . Π m : nat . bool = λ n : nat . λ m : nat . μ eqb. n @(λ n : nat . Π m : nat . bool) {
+  | O ➔ λ _ . σ m @(λ m' : nat . bool) {
+  | O ➔ true 
+  | S n0 ➔ false 
+ } 
+  | S n' ➔ λ _ . σ m @(λ m' : nat . bool) {
+  | O ➔ false 
+  | S m' ➔ eqb n' m' 
+ } 
+ } m.
+
+

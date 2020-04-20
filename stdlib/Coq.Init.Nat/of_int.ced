@@ -1,0 +1,105 @@
+module test.
+data uint : ★ =
+  | Nil : uint
+  | D0 : uint ➔ uint
+  | D1 : uint ➔ uint
+  | D2 : uint ➔ uint
+  | D3 : uint ➔ uint
+  | D4 : uint ➔ uint
+  | D5 : uint ➔ uint
+  | D6 : uint ➔ uint
+  | D7 : uint ➔ uint
+  | D8 : uint ➔ uint
+  | D9 : uint ➔ uint.
+
+data int : ★ =
+  | Pos : Π d : uint . int
+  | Neg : Π d : uint . int.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nzhead : Π d : uint . uint = λ d : uint . μ nzhead. d @(λ d : uint . uint) {
+  | Nil ➔ d 
+  | D0 d' ➔ nzhead d' 
+  | D1 u ➔ d 
+  | D2 u ➔ d 
+  | D3 u ➔ d 
+  | D4 u ➔ d 
+  | D5 u ➔ d 
+  | D6 u ➔ d 
+  | D7 u ➔ d 
+  | D8 u ➔ d 
+  | D9 u ➔ d 
+ }.
+
+unorm : Π d : uint . uint = λ d : uint . σ nzhead d @(λ x : uint . uint) {
+  | Nil ➔ D0 Nil 
+  | D0 u ➔ D0 u 
+  | D1 u ➔ D1 u 
+  | D2 u ➔ D2 u 
+  | D3 u ➔ D3 u 
+  | D4 u ➔ D4 u 
+  | D5 u ➔ D5 u 
+  | D6 u ➔ D6 u 
+  | D7 u ➔ D7 u 
+  | D8 u ➔ D8 u 
+  | D9 u ➔ D9 u 
+ }.
+
+norm : Π d : int . int = λ d : int . σ d @(λ d' : int . int) {
+  | Pos d' ➔ Pos (unorm d') 
+  | Neg d' ➔ σ nzhead d' @(λ x : uint . int) {
+  | Nil ➔ Pos (D0 Nil) 
+  | D0 u ➔ Neg (D0 u) 
+  | D1 u ➔ Neg (D1 u) 
+  | D2 u ➔ Neg (D2 u) 
+  | D3 u ➔ Neg (D3 u) 
+  | D4 u ➔ Neg (D4 u) 
+  | D5 u ➔ Neg (D5 u) 
+  | D6 u ➔ Neg (D6 u) 
+  | D7 u ➔ Neg (D7 u) 
+  | D8 u ➔ Neg (D8 u) 
+  | D9 u ➔ Neg (D9 u) 
+ } 
+ }.
+
+tail_add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ tail_add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S n' ➔ λ _ . tail_add n' (S m) 
+ } m.
+
+tail_addmul : Π r : nat . Π n : nat . Π m : nat . nat = λ r : nat . λ n : nat . λ m : nat . μ tail_addmul. n @(λ n : nat . Π r : nat . Π m : nat . nat) {
+  | O ➔ λ _ . λ _ . r 
+  | S n' ➔ λ _ . λ _ . tail_addmul n' (tail_add m r) m 
+ } r m.
+
+tail_mul : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . tail_addmul O n m.
+
+of_uint_acc : Π d : uint . Π acc : nat . nat = λ d : uint . λ acc : nat . μ of_uint_acc. d @(λ d : uint . Π acc : nat . nat) {
+  | Nil ➔ λ _ . acc 
+  | D0 d' ➔ λ _ . of_uint_acc d' (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc) 
+  | D1 d' ➔ λ _ . of_uint_acc d' (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)) 
+  | D2 d' ➔ λ _ . of_uint_acc d' (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))) 
+  | D3 d' ➔ λ _ . of_uint_acc d' (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))) 
+  | D4 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))) 
+  | D5 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))) 
+  | D6 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))))) 
+  | D7 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))))) 
+  | D8 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc))))))))) 
+  | D9 d' ➔ λ _ . of_uint_acc d' (S (S (S (S (S (S (S (S (S (tail_mul (S (S (S (S (S (S (S (S (S (S O)))))))))) acc)))))))))) 
+ } acc.
+
+of_uint : Π d : uint . nat = λ d : uint . of_uint_acc d O.
+
+of_int : Π d : int . option ·nat = λ d : int . σ norm d @(λ x : int . option ·nat) {
+  | Pos u ➔ Some ·nat (of_uint u) 
+  | Neg d0 ➔ None ·nat 
+ }.
+
+

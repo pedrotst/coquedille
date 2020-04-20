@@ -1,0 +1,38 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data uint : ★ =
+  | Nil : uint
+  | D0 : uint ➔ uint
+  | D1 : uint ➔ uint
+  | D2 : uint ➔ uint
+  | D3 : uint ➔ uint
+  | D4 : uint ➔ uint
+  | D5 : uint ➔ uint
+  | D6 : uint ➔ uint
+  | D7 : uint ➔ uint
+  | D8 : uint ➔ uint
+  | D9 : uint ➔ uint.
+
+succ : Π d : uint . uint = λ d : uint . μ succ. d @(λ d : uint . uint) {
+  | Nil ➔ D1 Nil 
+  | D0 d' ➔ D1 d' 
+  | D1 d' ➔ D2 d' 
+  | D2 d' ➔ D3 d' 
+  | D3 d' ➔ D4 d' 
+  | D4 d' ➔ D5 d' 
+  | D5 d' ➔ D6 d' 
+  | D6 d' ➔ D7 d' 
+  | D7 d' ➔ D8 d' 
+  | D8 d' ➔ D9 d' 
+  | D9 d' ➔ D0 (succ d') 
+ }.
+
+to_little_uint : Π n : nat . Π acc : uint . uint = λ n : nat . λ acc : uint . μ to_little_uint. n @(λ n : nat . Π acc : uint . uint) {
+  | O ➔ λ _ . acc 
+  | S n' ➔ λ _ . to_little_uint n' (succ acc) 
+ } acc.
+
+

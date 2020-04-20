@@ -1,0 +1,16 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+plus_Sn_m : Π n : nat . Π m : nat . eq ·nat (add (S n) m) (S (add n m)) = λ n : nat . λ m : nat . eq_refl ·nat (S (add n m)).
+
+

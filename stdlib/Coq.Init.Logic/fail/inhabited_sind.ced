@@ -1,0 +1,9 @@
+module test.
+data inhabited (A : ★) : ★ =
+  | inhabits : A ➔ inhabited.
+
+inhabited_sind : ∀ A : ★ . ∀ P : ★ . Π f : A ➔ P . Π i : inhabited ·A . P = Λ A : ★ . Λ P : ★ . λ f : A ➔ P . λ i : inhabited ·A . σ i @(λ _ : inhabited ·A . P) {
+  | inhabits ➔ f 
+ }.
+
+

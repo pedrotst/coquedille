@@ -1,0 +1,36 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+nat_rect : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . m 
+  | S p ➔ λ _ . S (add p m) 
+ } m.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+eq_sym : ∀ A : ★ . Π x : A . Π y : A . eq ·A x y ➔ eq ·A y x = Λ A : ★ . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·A y' x) {
+  | eq_refl ➔ eq_refl ·A x 
+ }.
+
+eq_ind_r : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . P x ➔ Π y : A . eq ·A y x ➔ P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ H : P x . λ y : A . λ H0 : eq ·A y x . eq_ind ·A x ·(λ y' : A . P y') H y (eq_sym ·A y x H0).
+
+nat_rect_plus : Π n : nat . Π m : nat . ∀ A : ★ . Π f : A ➔ A . Π x : A . eq ·A (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) (add n m)) (nat_rect ·(λ n' : nat . A) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m) (λ n' : nat . f) n) = λ n : nat . nat_ind (λ n' : nat . tprodT?) (λ m : nat . Λ A : ★ . λ f : A ➔ A . λ x : A . eq_refl ·A (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m)) (λ n' : nat . λ IHn : Π m : nat . ∀ A : ★ . Π f : A ➔ A . Π x : A . eq ·A (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) (add n' m)) (nat_rect ·(λ n' : nat . A) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m) (λ n' : nat . f) n') . λ m : nat . Λ A : ★ . λ f : A ➔ A . λ x : A . eq_ind_r ·A (nat_rect ·(λ n' : nat . A) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m) (λ n' : nat . f) n') ·(λ a : A . eq ·A (f a) (f (nat_rect ·(λ n' : nat . A) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m) (λ n' : nat . f) n'))) (eq_refl ·A (f (nat_rect ·(λ n' : nat . A) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) m) (λ n' : nat . f) n'))) (nat_rect ·(λ n' : nat . A) x (λ n' : nat . f) (add n' m)) (IHn m ·A f x)) n.
+
+

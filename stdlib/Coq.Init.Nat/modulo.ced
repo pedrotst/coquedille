@@ -1,0 +1,34 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+sub : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ sub. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ _ . n 
+  | S k ➔ λ _ . σ m @(λ m' : nat . nat) {
+  | O ➔ n 
+  | S l ➔ sub k l 
+ } 
+ } m.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+snd : ∀ A : ★ . ∀ B : ★ . Π p : prod ·A ·B . B = Λ A : ★ . Λ B : ★ . λ p : prod ·A ·B . σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ }.
+
+divmod : Π x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat = λ x : nat . λ y : nat . λ q : nat . λ u : nat . μ divmod. x @(λ x : nat . Π y : nat . Π q : nat . Π u : nat . prod ·nat ·nat) {
+  | O ➔ λ _ . λ _ . λ _ . pair ·nat ·nat q u 
+  | S x' ➔ λ _ . λ _ . λ _ . σ u @(λ u' : nat . prod ·nat ·nat) {
+  | O ➔ divmod x' y (S q) y 
+  | S u' ➔ divmod x' y q u' 
+ } 
+ } y q u.
+
+modulo : Π x : nat . Π y : nat . nat = λ x : nat . λ y : nat . σ y @(λ y' : nat . nat) {
+  | O ➔ y 
+  | S y' ➔ sub y' (snd ·nat ·nat (divmod x y' O y')) 
+ }.
+
+
