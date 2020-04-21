@@ -666,8 +666,8 @@ Section monadic.
   let fresh x := append x "'" in
   match nrargs with
   | nil => tail
-  | (x, inr ty) :: ts => Ced.TLam (Ced.Named "_") false None (bind_nrargs ts tail)
-  | (x, inl k) :: ts => Ced.TLamK (Ced.Named (fresh x)) None (bind_nrargs ts tail)
+  | (x, inr ty) :: ts => Ced.TLam (Ced.Named x) false None (bind_nrargs ts tail)
+  | (x, inl k) :: ts => Ced.TLamK (Ced.Named x) None (bind_nrargs ts tail)
   end.
 
   Reserved Notation "⟦ x ⟧" (at level 9).

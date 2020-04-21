@@ -4,13 +4,13 @@ data nat : ★ =
   | S : nat ➔ nat.
 
 add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
-  | O ➔ λ _ . m 
-  | S p ➔ λ _ . S (add p m) 
+  | O ➔ λ m . m
+  | S p ➔ λ m . S (add p m)
  } m.
 
 mul : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ mul. n @(λ n : nat . Π m : nat . nat) {
-  | O ➔ λ _ . O 
-  | S p ➔ λ _ . add m (mul p m) 
+  | O ➔ λ m . O
+  | S p ➔ λ m . add m (mul p m)
  } m.
 
 
