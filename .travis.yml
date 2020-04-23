@@ -14,7 +14,7 @@ env:
     - NJOBS="1"
     - CONTRIB_NAME="coquedille"
   matrix:
-    - COQ_IMAGE="pedroabreu0/coquedille:v3"
+    - COQ_IMAGE="pedroabreu0/coquedille:v4"
 
 before_install:
   - |
