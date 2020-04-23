@@ -20,7 +20,7 @@ before_install:
   - |
     filename=$HOME/docker/saved_images.tar
     if [[ -f $filename ]]; then 
-        docker load < $filename; 
+        travis_wait 30 docker load < $filename; 
     else 
         mkdir -p $HOME/docker
         docker pull ${COQ_IMAGE}
