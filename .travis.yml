@@ -14,7 +14,7 @@ env:
     - NJOBS="1"
     - CONTRIB_NAME="coquedille"
   matrix:
-    - COQ_IMAGE="pedroabreu0/coquedille:v3"
+    - COQ_IMAGE="pedroabreu0/coquedille:v4"
 
 before_install:
   - |
@@ -23,7 +23,7 @@ before_install:
         docker load < $filename; 
     else 
         mkdir -p $HOME/docker
-        docker pull ${COQ_IMAGE}
+        travis_wait 30 sleep infinity & docker pull ${COQ_IMAGE};
         docker save ${COQ_IMAGE} | gzip > $filename
     fi
 
