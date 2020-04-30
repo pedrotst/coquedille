@@ -7,8 +7,8 @@ data eq (A : ★) (x : A) : A ➔ ★ =
   | eq_refl : eq x.
 
 app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
-  | nil ➔ λ _ . m 
-  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·A a (app l1 m) 
  } m.
 
 app_comm_cons : ∀ A : ★ . Π x : list ·A . Π y : list ·A . Π a : A . eq ·(list ·A) (app ·A (cons ·A a x) y) (app ·A (cons ·A a x) y) = Λ A : ★ . λ x : list ·A . λ y : list ·A . λ a : A . eq_refl ·(list ·A) (app ·A (cons ·A a x) y).

@@ -8,22 +8,28 @@
 
 
 # First of all get the list of definitions in COQLIB and write to libfuns file
-coqtop > libfuns <<EOF
-Require Import $1.
-Print $1.
-EOF
+# coqtop > libfuns <<EOF
+# Require Import $1.
+# Print $1.
+# EOF
 
 # Now get the names of definitions to be extracted
 # Currently it is extracting Corrolaries, Theorems, Definitions and Parameters
 # At first sight extract parameters may seem weird, but we do that because oddly Coq transforms most lemmas in the
 # Standard Library to Parameters. Go figure.
-params=$(pcregrep -o1 -e "Lemma (.*?) :" -e "Corollary (.*?) :" -e "Theorem (.*?) :" -e "Definition (.*?) :" -e "Parameter (.*?) :" libfuns)
+# params=$(pcregrep -o1 -e "Lemma (.*?) :" -e "Corollary (.*?) :" -e "Theorem (.*?) :" -e "Definition (.*?) :" -e "Parameter (.*?) :" libfuns)
+
+# [[ ! -z $2 ]] && ./gen_defs.sh $1
 
 make -C ..
 
-for def in $params; do
+def=$(head -1 extract_defs.txt)
+echo $def
+
+while [[ ! -z $def ]]; do
+# for def in $params; do
     v=${def}_syntax
-    echo $v
+    echo "Running $v"
     sed -e '/LIBRARIES/a\'$'\n'"Require Import $1." Extraction.v > Extract_lib.v
     sed -e "s/#LIBRARY/$1/g" Extract_lib.v > out
     sed -e "s/#DEF/$def/g" out > Extract_lib.v
@@ -73,10 +79,14 @@ program_err (Some p) = p
     # 3) Run the main and write the output to the correct folder
     ./main > $1/$def.ced
     # 4) Run cedille to the output of main and write it to a file
-    output="$(cedille $1/$def.ced 2>&1)"
-    echo $output |& tee -a output.txt
+    # output="$(cedille $1/$def.ced 2>&1)"
+    # echo $output |& tee -a output.txt
     # 5) Check if the file from 4 contains a failure
-    if echo $output | grep -q 'Type Checking Failed'; then
-        mv $1/$def.ced $1/fail
-    fi
+    # if echo $output | grep -q 'Type Checking Failed'; then
+        # mv $1/$def.ced $1/fail
+    # fi
+    sed "1d" extract_defs.txt > out
+    mv out extract_defs.txt
+    def=$(head -1 extract_defs.txt)
 done
+

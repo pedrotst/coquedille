@@ -1,0 +1,45 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+False : ★ = ∀ X : ★ . X.
+
+not : Π A : ★ . ★ = λ A : ★ . A ➔ False.
+
+False_ind : ∀ P : ★ . False ➔ P = Λ P : ★ . λ f : False . f ·P.
+
+eq_ind : ∀ A : ★ . Π x : A . ∀ P : A ➔ ★ . Π f : P x . Π y : A . Π e : eq ·A x y . P y = Λ A : ★ . λ x : A . Λ P : A ➔ ★ . λ f : P x . λ y : A . λ e : eq ·A x y . σ e @(λ y' : A . λ _ : eq ·A x y' . P y') {
+  | eq_refl ➔ f 
+ }.
+
+data True : ★ =
+  | I : True.
+
+hd_error : ∀ A : ★ . Π l : list ·A . option ·A = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ }.
+
+hd_error_some_nil : ∀ A : ★ . Π l : list ·A . Π a : A . eq ·(option ·A) (hd_error ·A l) (Some ·A a) ➔ not ·(eq ·(list ·A) l (nil ·A)) = Λ A : ★ . λ l : list ·A . σ l @(λ l' : list ·A . Π a : A . eq ·(option ·A) σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } (Some ·A a) ➔ not ·(eq ·(list ·A) l' (nil ·A))) {
+  | nil ➔ λ a : A . λ H : eq ·(option ·A) (None ·A) (Some ·A a) . λ H0 : eq ·(list ·A) (nil ·A) (nil ·A) . False_ind ·False (eq_ind ·(option ·A) (None ·A) (λ e : option ·A . σ e @(λ o : option ·A . xx) {
+  | Some XX ➔ False 
+  | None ➔ True 
+ }) I (Some ·A a) H) 
+  | cons a l' ➔ λ a0 : A . λ H : eq ·(option ·A) (Some ·A a) (Some ·A a0) . λ H0 : eq ·(list ·A) (cons ·A a l') (nil ·A) . False_ind ·False (eq_ind ·(list ·A) (cons ·A a l') (λ e : list ·A . σ e @(λ l' : list ·A . xx) {
+  | nil ➔ False 
+  | cons XX XX ➔ True 
+ }) I (nil ·A) H0) 
+ }.
+
+

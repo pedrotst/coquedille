@@ -12,8 +12,8 @@ data eq (A : ★) (x : A) : A ➔ ★ =
   | eq_refl : eq x.
 
 app : ∀ A : ★ . list ·A ➔ list ·A ➔ list ·A = Λ A : ★ . λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
-  | nil ➔ λ _ . m 
-  | cons a l1 ➔ λ _ . cons ·A a (app l1 m) 
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·A a (app l1 m) 
  } m.
 
 eq_trans : ∀ A : ★ . Π x : A . Π y : A . Π z : A . eq ·A x y ➔ eq ·A y z ➔ eq ·A x z = Λ A : ★ . λ x : A . λ y : A . λ z : A . λ H : eq ·A x y . λ H0 : eq ·A y z . σ H0 @(λ y' : A . λ _ : eq ·A y y' . eq ·A x y') {
