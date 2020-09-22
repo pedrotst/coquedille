@@ -1,0 +1,8 @@
+module test.
+False : ★ = ∀ X : ★ . X.
+
+in_nil : ∀ A : ★ . Π a : A . Π H : False . False = Λ A : ★ . λ a : A . λ H : False . σ H @(λ _ : False . False) {
+
+ }.
+
+

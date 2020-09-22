@@ -1,0 +1,105 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+existsb_app : ∀ A : ★ . Π f : A ➔ bool . Π l1 : list ·A . Π l2 : list ·A . eq ·bool ((λ l : list ·A . μ existsb. l @(λ l : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) ((λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l1 l2)) σ (λ l : list ·A . μ existsb. l @(λ l : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l1 @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ (λ l : list ·A . μ existsb. l @(λ l : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l2 
+ } = Λ A : ★ . λ f : A ➔ bool . λ l1 : list ·A . (λ l : list ·A . μ F. l @(λ l : list ·A . Π l2 : list ·A . eq ·bool ((λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l l2)) σ (λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ (λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l2 
+ }) {
+  | nil ➔ λ l2 . λ l2 : list ·A . eq_refl ·bool ((λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l2) 
+  | cons y l' ➔ λ l2 . λ l2 : list ·A . σ f y @(λ b : bool . eq ·bool σ b @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ (λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l2) 
+ } σ σ b @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ (λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l' 
+ } @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ (λ l' : list ·A . μ existsb. l' @(λ l' : list ·A . bool) {
+  | nil ➔ false 
+  | cons a l' ➔ σ f a @(λ b1 : bool . bool) {
+  | true ➔ true 
+  | false ➔ existsb l' 
+ } 
+ }) l2 
+ }) {
+  | true ➔ eq_refl ·bool true 
+  | false ➔ F l' l2 
+ } 
+ } l2) l1.
+
+

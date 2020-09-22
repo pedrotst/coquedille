@@ -1,0 +1,33 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data Add (A : ★) (a : A) : list ·A ➔ list ·A ➔ ★ =
+  | Add_head : Π l : list ·A . Add l (cons ·A a l)
+  | Add_cons : Π x : A . Π l : list ·A . Π l' : list ·A . Add l l' ➔ Add (cons ·A x l) (cons ·A x l').
+
+Add_app : ∀ A : ★ . Π a : A . Π l1 : list ·A . Π l2 : list ·A . Add ·A a ((λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l1 l2) ((λ l : list ·A . λ m : list ·A . μ app. l @(λ l : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l1 (cons ·A a l2)) = Λ A : ★ . λ a : A . λ l1 : list ·A . λ l2 : list ·A . (λ l : list ·A . μ F. l @(λ l : list ·A . Add ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l l2) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l (cons ·A a l2))) {
+  | nil ➔ Add_head ·A a l2 
+  | cons y l' ➔ Add_cons ·A a y ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l' l2) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1' ➔ λ m . cons ·A a' (app l1' m) 
+ } m) l' (cons ·A a l2)) (F l') 
+ }) l1.
+
+

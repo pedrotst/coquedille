@@ -1,0 +1,166 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+firstn_skipn : ∀ A : ★ . Π n : nat . Π l : list ·A . eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·A a (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l') n l) ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ skipn n' l' 
+ } 
+ } l') n l)) l = Λ A : ★ . λ n : nat . (λ n' : nat . μ F. n' @(λ n' : nat . Π l : list ·A . eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·A a (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a (firstn n' l') 
+ } 
+ } l') n' l) ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ skipn n' l' 
+ } 
+ } l') n' l)) l) {
+  | O ➔ λ l . λ l : list ·A . eq_refl ·(list ·A) l 
+  | S n' ➔ λ l . λ l : list ·A . σ l @(λ l' : list ·A . eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·A a (app l1 m) 
+ } m) σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ cons ·A a ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') 
+ } σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a l' ➔ (λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l' 
+ }) l') {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons a l' ➔ σ σ F n' l' @(λ y : list ·A . λ _ : eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l')) y . eq ·(list ·A) (cons ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l'))) (cons ·A a y)) {
+  | eq_refl ➔ eq_refl ·(list ·A) (cons ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l'))) 
+ } @(λ y : list ·A . λ _ : eq ·(list ·A) (cons ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l'))) y . eq ·(list ·A) (cons ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l'))) y) {
+  | eq_refl ➔ eq_refl ·(list ·A) (cons ·A a ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a' l1 ➔ λ m . cons ·A a' (app l1 m) 
+ } m) ((λ n' : nat . λ l' : list ·A . μ firstn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . nil ·A 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ cons ·A a' (firstn n' l') 
+ } 
+ } l') n' l') ((λ n' : nat . λ l' : list ·A . μ skipn. n' @(λ n' : nat . Π l' : list ·A . list ·A) {
+  | O ➔ λ l' . l' 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a' l' ➔ skipn n' l' 
+ } 
+ } l') n' l'))) 
+ } 
+ } 
+ } l) n.
+
+

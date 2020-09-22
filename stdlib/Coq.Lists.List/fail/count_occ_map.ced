@@ -1,0 +1,240 @@
+module test.
+data sumbool (A : ★) (B : ★) : ★ =
+  | left : A ➔ sumbool
+  | right : B ➔ sumbool.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+count_occ_map : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π decA : Π x1 : A . Π x2 : A . sumbool ·(eq ·A x1 x2) ·(eq ·A x1 x2 ➔ False) . Π decB : Π y1 : B . Π y2 : B . sumbool ·(eq ·B y1 y2) ·(eq ·B y1 y2 ➔ False) . Π Hfinjective : Π x1 : A . Π x2 : A . eq ·B (f x1) (f x2) ➔ eq ·A x1 x2 . Π x : A . Π l : list ·A . eq ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y tl ➔ λ x' . σ decA y x' @(λ _ : sumbool ·(eq ·A y x') ·(eq ·A y x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l x) ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y tl ➔ λ x' . σ decB y x' @(λ _ : sumbool ·(eq ·B y x') ·(eq ·B y x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l) (f x)) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ decA : Π x1 : A . Π x2 : A . sumbool ·(eq ·A x1 x2) ·(eq ·A x1 x2 ➔ False) . λ decB : Π y1 : B . Π y2 : B . sumbool ·(eq ·B y1 y2) ·(eq ·B y1 y2 ➔ False) . λ Hfinjective : Π x1 : A . Π x2 : A . eq ·B (f x1) (f x2) ➔ eq ·A x1 x2 . λ x : A . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . Π x' : A . eq ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y tl ➔ λ x' . σ decA y x' @(λ _ : sumbool ·(eq ·A y x') ·(eq ·A y x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y tl ➔ λ x' . σ decB y x' @(λ _ : sumbool ·(eq ·B y x') ·(eq ·B y x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x'))) {
+  | nil ➔ λ x' . λ x' : A . eq_refl ·nat O 
+  | cons y l' ➔ λ x' . λ x' : A . σ decA y x' @(λ s : sumbool ·(eq ·A y x') ·(eq ·A y x' ➔ False) . eq ·nat σ s @(λ _ : sumbool ·(eq ·A y x') ·(eq ·A y x' ➔ False) . nat) {
+  | left XX ➔ S ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') 
+  | right XX ➔ (λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x' 
+ } σ decB (f y) (f x') @(λ _ : sumbool ·(eq ·B (f y) (f x')) ·(eq ·B (f y) (f x') ➔ False) . nat) {
+  | left XX ➔ S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')) 
+  | right XX ➔ (λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x') 
+ }) {
+  | left H1 ➔ σ decB (f y) (f x') @(λ s : sumbool ·(eq ·B (f y) (f x')) ·(eq ·B (f y) (f x') ➔ False) . eq ·nat (S ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x')) σ s @(λ _ : sumbool ·(eq ·B (f y) (f x')) ·(eq ·B (f y) (f x') ➔ False) . nat) {
+  | left XX ➔ S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')) 
+  | right XX ➔ (λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x') 
+ }) {
+  | left H2 ➔ σ σ F l' x' @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') y' . eq ·nat y' ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x')) {
+  | eq_refl ➔ eq_refl ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') 
+ } @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')) y' . eq ·nat (S y') (S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')))) {
+  | eq_refl ➔ eq_refl ·nat (S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x'))) 
+ } 
+  | right H2 ➔ σ H2 σ σ H1 @(λ y' : A . λ _ : eq ·A y y' . eq ·A y' y) {
+  | eq_refl ➔ eq_refl ·A y 
+ } @(λ y' : A . λ _ : eq ·A x' y' . eq ·B (f y') (f x')) {
+  | eq_refl ➔ eq_refl ·B (f x') 
+ } @(λ _ : False . eq ·nat (S ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x')) ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x'))) {
+
+ } 
+ } 
+  | right H1 ➔ σ decB (f y) (f x') @(λ s : sumbool ·(eq ·B (f y) (f x')) ·(eq ·B (f y) (f x') ➔ False) . eq ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') σ s @(λ _ : sumbool ·(eq ·B (f y) (f x')) ·(eq ·B (f y) (f x') ➔ False) . nat) {
+  | left XX ➔ S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')) 
+  | right XX ➔ (λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x') 
+ }) {
+  | left H2 ➔ σ H1 (Hfinjective y x' H2) @(λ _ : False . eq ·nat ((λ l' : list ·A . λ x' : A . μ count_occ. l' @(λ l' : list ·A . Π x' : A . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decA y' x' @(λ _ : sumbool ·(eq ·A y' x') ·(eq ·A y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') l' x') (S ((λ l' : list ·B . λ x' : B . μ count_occ. l' @(λ l' : list ·B . Π x' : B . nat) {
+  | nil ➔ λ x' . O 
+  | cons y' tl ➔ λ x' . σ decB y' x' @(λ _ : sumbool ·(eq ·B y' x') ·(eq ·B y' x' ➔ False) . nat) {
+  | left XX ➔ S (count_occ tl x') 
+  | right XX ➔ count_occ tl x' 
+ } 
+ } x') ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f x')))) {
+
+ } 
+  | right H2 ➔ F l' x' 
+ } 
+ } 
+ } x') l x.
+
+

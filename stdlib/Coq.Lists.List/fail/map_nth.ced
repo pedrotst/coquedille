@@ -1,0 +1,99 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+map_nth : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . Π d : A . Π n : nat . eq ·B ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l) (f d)) (f ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n l d)) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . Π d : A . Π n : nat . eq ·B ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f d)) (f ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n l' d))) {
+  | nil ➔ λ d . λ n . λ d : A . λ n : nat . σ n @(λ n' : nat . eq ·B σ n' @(λ n' : nat . B) {
+  | O ➔ f d 
+  | S m ➔ f d 
+ } (f σ n' @(λ n' : nat . A) {
+  | O ➔ d 
+  | S m ➔ d 
+ })) {
+  | O ➔ eq_refl ·B (f d) 
+  | S n' ➔ eq_refl ·B (f d) 
+ } 
+  | cons y l' ➔ λ d . λ n . λ d : A . λ n : nat . σ n @(λ n' : nat . eq ·B σ n' @(λ n' : nat . B) {
+  | O ➔ f y 
+  | S m ➔ (λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m' ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m' default 
+ } n' default 
+ }) m ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l') (f d) 
+ } (f σ n' @(λ n' : nat . A) {
+  | O ➔ y 
+  | S m ➔ (λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m' ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m' default 
+ } n' default 
+ }) m l' d 
+ })) {
+  | O ➔ eq_refl ·B (f y) 
+  | S n' ➔ F l' d n' 
+ } 
+ } d n) l.
+
+

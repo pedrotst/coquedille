@@ -1,0 +1,635 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+split_nth : ∀ A : ★ . ∀ B : ★ . Π l : list ·(prod ·A ·B) . Π n : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n l d) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l @(λ p : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y ➔ x 
+ } σ d @(λ p : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l @(λ p : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y ➔ y 
+ } σ d @(λ p : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ })) = Λ A : ★ . Λ B : ★ . λ l : list ·(prod ·A ·B) . (λ l' : list ·(prod ·A ·B) . μ F. l' @(λ l' : list ·(prod ·A ·B) . Π n : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n l' d) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y ➔ x 
+ } σ d @(λ p : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y ➔ y 
+ } σ d @(λ p : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ }))) {
+  | nil ➔ λ n . λ d . λ n : nat . σ n @(λ n' : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ d 
+  | S m ➔ d 
+ } (pair ·A ·B σ n' @(λ n' : nat . A) {
+  | O ➔ σ d @(λ p : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ } 
+  | S m ➔ σ d @(λ p : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ } 
+ } σ n' @(λ n' : nat . B) {
+  | O ➔ σ d @(λ p : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ } 
+  | S m ➔ σ d @(λ p : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ } 
+ })) {
+  | O ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) p (pair ·A ·B σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ } σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ })) {
+  | pair a b ➔ eq_refl ·(prod ·A ·B) (pair ·A ·B a b) 
+ } 
+  | S n' ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) p (pair ·A ·B σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y ➔ x 
+ } σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y ➔ y 
+ })) {
+  | pair a b ➔ eq_refl ·(prod ·A ·B) (pair ·A ·B a b) 
+ } 
+ } 
+  | cons y l' ➔ λ n . λ d . λ n : nat . σ n @(λ n' : nat . Π d : prod ·A ·B . eq ·(prod ·A ·B) σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ y 
+  | S m ➔ (λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m' ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m' default 
+ } n' default 
+ }) m l' d 
+ } (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ σ y @(λ p : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } σ d @(λ p : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ σ y @(λ p : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } σ d @(λ p : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ }))) {
+  | O ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) y (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ y @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ y @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ }))) {
+  | pair a0 b ➔ σ y @(λ p : prod ·A ·B . eq ·(prod ·A ·B) p (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } a0) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } b))) {
+  | pair a b0 ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . Π IHl : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' d') (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ p @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } σ d' @(λ p' : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ p @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } σ d' @(λ p' : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ })) . eq ·(prod ·A ·B) (pair ·A ·B a b0) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a left) (cons ·B b0 right) 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } a0) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) O σ σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a left) (cons ·B b0 right) 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } b))) {
+  | pair l0 l1 ➔ λ IHl : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' d') (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l0 σ d' @(λ p : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l1 σ d' @(λ p : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ })) . eq_refl ·(prod ·A ·B) (pair ·A ·B a b0) 
+ } (F l') 
+ } 
+ } 
+  | S n' ➔ λ d : prod ·A ·B . σ d @(λ p : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' p) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ y @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } σ p @(λ p' : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ y @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } σ p @(λ p' : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ }))) {
+  | pair a0 b ➔ σ y @(λ p : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' (pair ·A ·B a0 b)) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } a0) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } b))) {
+  | pair a b0 ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . Π IHl : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' d') (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ p @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } σ d' @(λ p' : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' σ p @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } σ d' @(λ p' : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ })) . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' (pair ·A ·B a0 b)) (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a left) (cons ·B b0 right) 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ } a0) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) (S n') σ σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a left) (cons ·B b0 right) 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·B) {
+  | pair x y' ➔ y' 
+ } b))) {
+  | pair l0 l1 ➔ λ IHl : Π n' : nat . Π d' : prod ·A ·B . eq ·(prod ·A ·B) ((λ n' : nat . λ l' : list ·(prod ·A ·B) . λ default : prod ·A ·B . σ n' @(λ n' : nat . prod ·A ·B) {
+  | O ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·(prod ·A ·B) . Π n' : nat . Π default : prod ·A ·B . prod ·A ·B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l' d') (pair ·A ·B ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l0 σ d' @(λ p : prod ·A ·B . A) {
+  | pair x y' ➔ x 
+ }) ((λ n' : nat . λ l' : list ·B . λ default : B . σ n' @(λ n' : nat . B) {
+  | O ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·B . Π n' : nat . Π default : B . B) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l1 σ d' @(λ p : prod ·A ·B . B) {
+  | pair x y' ➔ y' 
+ })) . IHl n' (pair ·A ·B a0 b) 
+ } (F l') 
+ } 
+ } 
+ } 
+ } n d) l.
+
+

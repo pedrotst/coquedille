@@ -1,0 +1,56 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+map_length : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π l : list ·A . eq ·nat ((λ l' : list ·B . μ length. l' @(λ l' : list ·B . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l)) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . eq ·nat ((λ l' : list ·B . μ length. l' @(λ l' : list ·B . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l')) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) {
+  | nil ➔ eq_refl ·nat O 
+  | cons y l' ➔ σ F l' @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·B . μ length. l' @(λ l' : list ·B . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l')) y' . eq ·nat (S ((λ l' : list ·B . μ length. l' @(λ l' : list ·B . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l'))) (S y')) {
+  | eq_refl ➔ eq_refl ·nat (S ((λ l' : list ·B . μ length. l' @(λ l' : list ·B . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·B) {
+  | nil ➔ nil ·B 
+  | cons a t ➔ cons ·B (f a) (map t) 
+ }) l'))) 
+ } 
+ }) l.
+
+

@@ -1,0 +1,84 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+f_equal_nat : ∀ B : ★ . Π f : nat ➔ B . Π x : nat . Π y : nat . eq ·nat x y ➔ eq ·B (f x) (f y) = f_equal ·nat.
+
+plus_n_O : Π n : nat . eq ·nat n (add n O) = λ n : nat . nat_ind ·(λ n' : nat . eq ·nat n' (add n' O)) (eq_refl ·nat O) (λ n' : nat . λ IHn : eq ·nat n' (add n' O) . f_equal_nat ·nat S n' (add n' O) IHn) n.
+
+plus_n_Sm : Π n : nat . Π m : nat . eq ·nat (S (add n m)) (add n (S m)) = λ n : nat . λ m : nat . nat_ind ·(λ n' : nat . eq ·nat (S (add n' m)) (add n' (S m))) (eq_refl ·nat (S m)) (λ n' : nat . λ IHn : eq ·nat (S (add n' m)) (add n' (S m)) . f_equal_nat ·nat S (S (add n' m)) (add n' (S m)) IHn) n.
+
+fold_left_length : ∀ A : ★ . Π l : list ·A . eq ·nat ((λ l' : list ·A . λ a0 : nat . μ fold_left. l' @(λ l' : list ·A . Π a0 : nat . nat) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (S a0) 
+ } a0) l O) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) O ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l)) = Λ A : ★ . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . Π n : nat . eq ·nat ((λ l' : list ·A . λ a0 : nat . μ fold_left. l' @(λ l' : list ·A . Π a0 : nat . nat) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (S a0) 
+ } a0) l' n) ((λ n' : nat . λ m : nat . μ add. n' @(λ n' : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) n ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l'))) {
+  | nil ➔ λ n . λ n : nat . plus_n_O n 
+  | cons y l' ➔ λ n . λ n : nat . σ σ F l' (S n) @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·A . λ a0 : nat . μ fold_left. l' @(λ l' : list ·A . Π a0 : nat . nat) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (S a0) 
+ } a0) l' (S n)) y' . eq ·nat y' ((λ l' : list ·A . λ a0 : nat . μ fold_left. l' @(λ l' : list ·A . Π a0 : nat . nat) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (S a0) 
+ } a0) l' (S n))) {
+  | eq_refl ➔ eq_refl ·nat ((λ l' : list ·A . λ a0 : nat . μ fold_left. l' @(λ l' : list ·A . Π a0 : nat . nat) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (S a0) 
+ } a0) l' (S n)) 
+ } @(λ y' : nat . λ _ : eq ·nat (S ((λ n' : nat . λ m : nat . μ add. n' @(λ n' : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) n ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l'))) y' . eq ·nat y' ((λ n' : nat . λ m : nat . μ add. n' @(λ n' : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) n (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')))) {
+  | eq_refl ➔ plus_n_Sm n ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') 
+ } 
+ } n) l O.
+
+

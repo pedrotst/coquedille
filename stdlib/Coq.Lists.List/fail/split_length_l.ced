@@ -1,0 +1,116 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+split_length_l : ∀ A : ★ . ∀ B : ★ . Π l : list ·(prod ·A ·B) . eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l @(λ p : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y ➔ x 
+ }) ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l) = Λ A : ★ . Λ B : ★ . λ l : list ·(prod ·A ·B) . (λ l' : list ·(prod ·A ·B) . μ F. l' @(λ l' : list ·(prod ·A ·B) . eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y ➔ x 
+ }) ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) {
+  | nil ➔ eq_refl ·nat O 
+  | cons y l' ➔ σ y @(λ p : prod ·A ·B . eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) σ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p' tl ➔ σ p' @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x' y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x' left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ }) (S ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l'))) {
+  | pair a b ➔ σ (λ l' : list ·(prod ·A ·B) . μ split. l' @(λ l' : list ·(prod ·A ·B) . prod ·(list ·A) ·(list ·B)) {
+  | nil ➔ pair ·(list ·A) ·(list ·B) (nil ·A) (nil ·B) 
+  | cons p tl ➔ σ p @(λ p' : prod ·A ·B . prod ·(list ·A) ·(list ·B)) {
+  | pair x y' ➔ σ split tl @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A x left) (cons ·B y' right) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·B) . Π IHl : eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) σ p @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ }) ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l') . eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) σ σ p @(λ p' : prod ·(list ·A) ·(list ·B) . prod ·(list ·A) ·(list ·B)) {
+  | pair left right ➔ pair ·(list ·A) ·(list ·B) (cons ·A a left) (cons ·B b right) 
+ } @(λ p' : prod ·(list ·A) ·(list ·B) . list ·A) {
+  | pair x y' ➔ x 
+ }) (S ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l'))) {
+  | pair l0 l1 ➔ λ IHl : eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l0) ((λ l' : list ·(prod ·A ·B) . μ length. l' @(λ l' : list ·(prod ·A ·B) . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l') . σ IHl @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l0) y' . eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l0)) (S y')) {
+  | eq_refl ➔ eq_refl ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a' l'' ➔ S (length l'') 
+ }) l0)) 
+ } 
+ } (F l') 
+ } 
+ }) l.
+
+

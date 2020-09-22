@@ -1,0 +1,49 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+app_inv_head : ∀ A : ★ . Π l : list ·A . Π l1 : list ·A . Π l2 : list ·A . eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l l1) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l l2) ➔ eq ·(list ·A) l1 l2 = Λ A : ★ . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . Π l1 : list ·A . Π l2 : list ·A . Π _ : eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l2) . eq ·(list ·A) l1 l2) {
+  | nil ➔ λ l1 . λ l2 . λ _ . λ l1 : list ·A . λ l2 : list ·A . λ H : eq ·(list ·A) l1 l2 . H 
+  | cons y l' ➔ λ l1 . λ l2 . λ _ . λ l1 : list ·A . λ l2 : list ·A . λ H : eq ·(list ·A) (cons ·A y ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1)) (cons ·A y ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l2)) . F l' l1 l2 σ H @(λ y' : list ·A . λ _ : eq ·(list ·A) (cons ·A y ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1)) y' . eq ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1) σ y' @(λ l' : list ·A . list ·A) {
+  | nil ➔ (λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1 
+  | cons a l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) ((λ l' : list ·A . λ m : list ·A . μ app. l' @(λ l' : list ·A . Π m : list ·A . list ·A) {
+  | nil ➔ λ m . m 
+  | cons a l1' ➔ λ m . cons ·A a (app l1' m) 
+ } m) l' l1) 
+ } 
+ } l1 l2 _) l.
+
+

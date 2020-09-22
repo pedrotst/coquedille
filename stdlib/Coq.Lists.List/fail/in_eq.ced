@@ -1,0 +1,23 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data or (A : ★) (B : ★) : ★ =
+  | or_introl : A ➔ or
+  | or_intror : B ➔ or.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+False : ★ = ∀ X : ★ . X.
+
+in_eq : ∀ A : ★ . Π a : A . Π l : list ·A . or ·(eq ·A a a) ((λ a' : A . λ l' : list ·A . μ In. l' @(λ l' : list ·A . Π a' : A . xx) {
+  | nil ➔ λ a' . False 
+  | cons b m ➔ λ a' . or ·(eq ·A b a') (In m a') 
+ } a') a l) = Λ A : ★ . λ a : A . λ l : list ·A . or_introl ·(eq ·A a a) ((λ a' : A . λ l' : list ·A . μ In. l' @(λ l' : list ·A . Π a' : A . xx) {
+  | nil ➔ λ a' . False 
+  | cons b m ➔ λ a' . or ·(eq ·A b a') (In m a') 
+ } a') a l) (eq_refl ·A a).
+
+

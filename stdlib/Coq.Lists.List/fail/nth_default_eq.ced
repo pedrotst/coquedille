@@ -1,0 +1,151 @@
+module test.
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data option (A : ★) : ★ =
+  | Some : A ➔ option
+  | None : option.
+
+nth_default_eq : ∀ A : ★ . Π n : nat . Π l : list ·A . Π d : A . eq ·A σ (λ l' : list ·A . λ n' : nat . μ nth_error. n' @(λ n' : nat . Π l' : list ·A . option ·A) {
+  | O ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l') l n @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n l d) = Λ A : ★ . λ n : nat . (λ n' : nat . μ F. n' @(λ n' : nat . Π l : list ·A . Π d : A . eq ·A σ (λ l' : list ·A . λ n' : nat . μ nth_error. n' @(λ n' : nat . Π l' : list ·A . option ·A) {
+  | O ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l') l n' @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l d)) {
+  | O ➔ λ l . λ d . λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·A σ σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . μ F. n' @(λ n' : nat . Π l : list ·A . Π d : A . eq ·A σ (λ l' : list ·A . λ n' : nat . μ nth_error. n' @(λ n' : nat . Π l' : list ·A . option ·A) {
+  | O ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l') l n' @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l d)) {
+  | O ➔ λ l . λ d . μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ λ l . λ d . μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ } l d) O l' d)) {
+  | nil ➔ λ d : A . eq_refl ·A d 
+  | cons a l' ➔ λ d : A . eq_refl ·A a 
+ } 
+  | S n' ➔ λ l . λ d . λ l : list ·A . σ l @(λ l' : list ·A . Π d : A . eq ·A σ σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ (λ l' : list ·A . λ n' : nat . μ nth_error. n' @(λ n' : nat . Π l' : list ·A . option ·A) {
+  | O ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a' l' ➔ nth_error n' l' 
+ } 
+ } l') l' n' 
+ } @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . μ F. n' @(λ n' : nat . Π l : list ·A . Π d : A . eq ·A σ (λ l' : list ·A . λ n' : nat . μ nth_error. n' @(λ n' : nat . Π l' : list ·A . option ·A) {
+  | O ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons x l0 ➔ Some ·A x 
+ } 
+  | S n' ➔ λ l' . σ l' @(λ l' : list ·A . option ·A) {
+  | nil ➔ None ·A 
+  | cons a l' ➔ nth_error n' l' 
+ } 
+ } l') l n' @(λ x : option ·A . A) {
+  | Some x ➔ x 
+  | None ➔ d 
+ } ((λ n' : nat . λ l' : list ·A . λ default : A . σ n' @(λ n' : nat . A) {
+  | O ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ }) n' l d)) {
+  | O ➔ λ l . λ d . μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x l'' ➔ λ n' . λ default . x 
+ } n' default 
+  | S m ➔ λ l . λ d . μ nth. l' @(λ l' : list ·A . Π n' : nat . Π default : A . A) {
+  | nil ➔ λ n' . λ default . default 
+  | cons x t ➔ λ n' . λ default . nth t m default 
+ } n' default 
+ } l d) (S n') l' d)) {
+  | nil ➔ λ d : A . eq_refl ·A d 
+  | cons a l' ➔ λ d : A . F n' l' d 
+ } 
+ } l d) n.
+
+

@@ -1,0 +1,380 @@
+module test.
+data bool : ★ =
+  | true : bool
+  | false : bool.
+
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+data prod (A : ★) (B : ★) : ★ =
+  | pair : A ➔ B ➔ prod.
+
+data nat : ★ =
+  | O : nat
+  | S : nat ➔ nat.
+
+nat_ind : ∀ P : Π n : nat . ★ . Π f : P O . Π f' : Π n : nat . P n ➔ P (S n) . Π n : nat . P n = Λ P : Π n : nat . ★ . λ f : P O . λ f' : Π n : nat . P n ➔ P (S n) . λ n : nat . μ F. n @(λ n : nat . P n) {
+  | O ➔ f 
+  | S n' ➔ f' (to/nat -isType/F n') (F n') 
+ }.
+
+add : Π n : nat . Π m : nat . nat = λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m.
+
+f_equal : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B . Π x : A . Π y : A . eq ·A x y ➔ eq ·B (f x) (f y) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B . λ x : A . λ y : A . λ H : eq ·A x y . σ H @(λ y' : A . λ _ : eq ·A x y' . eq ·B (f x) (f y')) {
+  | eq_refl ➔ eq_refl ·B (f x) 
+ }.
+
+f_equal_nat : ∀ B : ★ . Π f : nat ➔ B . Π x : nat . Π y : nat . eq ·nat x y ➔ eq ·B (f x) (f y) = f_equal ·nat.
+
+plus_n_Sm : Π n : nat . Π m : nat . eq ·nat (S (add n m)) (add n (S m)) = λ n : nat . λ m : nat . nat_ind ·(λ n' : nat . eq ·nat (S (add n' m)) (add n' (S m))) (eq_refl ·nat (S m)) (λ n' : nat . λ IHn : eq ·nat (S (add n' m)) (add n' (S m)) . f_equal_nat ·nat S (S (add n' m)) (add n' (S m)) IHn) n.
+
+partition_length : ∀ A : ★ . Π f : A ➔ bool . Π l : list ·A . Π l1 : list ·A . Π l2 : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) ((λ l' : list ·A . μ partition. l' @(λ l' : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }) l) (pair ·(list ·A) ·(list ·A) l1 l2) ➔ eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2)) = Λ A : ★ . λ f : A ➔ bool . λ l : list ·A . λ l1 : list ·A . λ l2 : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . Π l1' : list ·A . Π l2' : list ·A . Π _ : eq ·(prod ·(list ·A) ·(list ·A)) ((λ l' : list ·A . μ partition. l' @(λ l' : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }) l') (pair ·(list ·A) ·(list ·A) l1' l2') . eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | nil ➔ λ l1' . λ l2' . λ _ . λ l1' : list ·A . λ l2' : list ·A . λ H : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) (pair ·(list ·A) ·(list ·A) l1' l2') . σ σ H @(λ y : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) y . eq ·(list ·A) (nil ·A) σ y @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) (nil ·A) 
+ } @(λ y : list ·A . λ _ : eq ·(list ·A) (nil ·A) y . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) (pair ·(list ·A) ·(list ·A) y l2') . eq ·(list ·A) (nil ·A) l2' ➔ eq ·nat O ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) l2') . λ H0 : eq ·(list ·A) (nil ·A) l2' . σ H0 @(λ y : list ·A . λ _ : eq ·(list ·A) (nil ·A) y . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) y) . eq ·nat O ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y)) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) . eq_refl ·nat O 
+ } H' 
+ } H σ H @(λ y : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A)) y . eq ·(list ·A) (nil ·A) σ y @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) (nil ·A) 
+ } 
+  | cons y l' ➔ λ l1' . λ l2' . λ _ . λ l1' : list ·A . λ l2' : list ·A . σ f y @(λ b : bool . eq ·(prod ·(list ·A) ·(list ·A)) σ (λ l' : list ·A . μ partition. l' @(λ l' : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ b @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A y g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A y d) 
+ } 
+ } (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | true ➔ σ (λ l' : list ·A . μ partition. l' @(λ l' : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·A) . Π Hrec : Π l1' : list ·A . Π l2' : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) p (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p' ➔ λ m . S (add p' m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2')) . eq ·(prod ·(list ·A) ·(list ·A)) σ p @(λ p' : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ pair ·(list ·A) ·(list ·A) (cons ·A y g) d 
+ } (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p' ➔ λ m . S (add p' m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | pair left right ➔ λ Hrec : Π l1' : list ·A . Π l2' : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left right) (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2')) . λ H : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) (pair ·(list ·A) ·(list ·A) l1' l2') . σ σ H @(λ y' : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) y' . eq ·(list ·A) (cons ·A y left) σ y' @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) (cons ·A y left) 
+ } @(λ y' : list ·A . λ _ : eq ·(list ·A) (cons ·A y left) y' . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) (pair ·(list ·A) ·(list ·A) y' l2') . eq ·(list ·A) right l2' ➔ eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) (pair ·(list ·A) ·(list ·A) (cons ·A y left) l2') . λ H0 : eq ·(list ·A) right l2' . σ H0 @(λ y' : list ·A . λ _ : eq ·(list ·A) right y' . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) (pair ·(list ·A) ·(list ·A) (cons ·A y left) y') . eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) (S ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y')))) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) . σ σ Hrec left right (eq_refl ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left right)) @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') y' . eq ·nat y' ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) {
+  | eq_refl ➔ eq_refl ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') 
+ } @(λ y' : nat . λ _ : eq ·nat ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right)) y' . eq ·nat (S y') (S ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right)))) {
+  | eq_refl ➔ eq_refl ·nat (S ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right))) 
+ } 
+ } H' 
+ } H σ H @(λ y' : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) (cons ·A y left) right) y' . eq ·(list ·A) right σ y' @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) right 
+ } 
+ } (F l') 
+  | false ➔ σ (λ l' : list ·A . μ partition. l' @(λ l' : list ·A . prod ·(list ·A) ·(list ·A)) {
+  | nil ➔ pair ·(list ·A) ·(list ·A) (nil ·A) (nil ·A) 
+  | cons x tl ➔ σ partition tl @(λ p : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ σ f x @(λ _ : bool . prod ·(list ·A) ·(list ·A)) {
+  | true ➔ pair ·(list ·A) ·(list ·A) (cons ·A x g) d 
+  | false ➔ pair ·(list ·A) ·(list ·A) g (cons ·A x d) 
+ } 
+ } 
+ }) l' @(λ p : prod ·(list ·A) ·(list ·A) . Π Hrec : Π l1' : list ·A . Π l2' : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) p (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p' ➔ λ m . S (add p' m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2')) . eq ·(prod ·(list ·A) ·(list ·A)) σ p @(λ p' : prod ·(list ·A) ·(list ·A) . prod ·(list ·A) ·(list ·A)) {
+  | pair g d ➔ pair ·(list ·A) ·(list ·A) g (cons ·A y d) 
+ } (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p' ➔ λ m . S (add p' m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | pair left right ➔ λ Hrec : Π l1' : list ·A . Π l2' : list ·A . eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left right) (pair ·(list ·A) ·(list ·A) l1' l2') ➔ eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l1') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2')) . λ H : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) (pair ·(list ·A) ·(list ·A) l1' l2') . σ σ H @(λ y' : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) y' . eq ·(list ·A) left σ y' @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) left 
+ } @(λ y' : list ·A . λ _ : eq ·(list ·A) left y' . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) (pair ·(list ·A) ·(list ·A) y' l2') . eq ·(list ·A) (cons ·A y right) l2' ➔ eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y') ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l2'))) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) (pair ·(list ·A) ·(list ·A) left l2') . λ H0 : eq ·(list ·A) (cons ·A y right) l2' . σ H0 @(λ y' : list ·A . λ _ : eq ·(list ·A) (cons ·A y right) y' . Π H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) (pair ·(list ·A) ·(list ·A) left y') . eq ·nat (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) y'))) {
+  | eq_refl ➔ λ H' : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) . σ σ Hrec left right (eq_refl ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left right)) @(λ y' : nat . λ _ : eq ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') y' . eq ·nat y' ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l')) {
+  | eq_refl ➔ eq_refl ·nat ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) l') 
+ } @(λ y' : nat . λ _ : eq ·nat ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right)) y' . eq ·nat (S y') ((λ n : nat . λ m : nat . μ add. n @(λ n : nat . Π m : nat . nat) {
+  | O ➔ λ m . m 
+  | S p ➔ λ m . S (add p m) 
+ } m) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) (S ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right)))) {
+  | eq_refl ➔ plus_n_Sm ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) left) ((λ l' : list ·A . μ length. l' @(λ l' : list ·A . nat) {
+  | nil ➔ O 
+  | cons a l'' ➔ S (length l'') 
+ }) right) 
+ } 
+ } H' 
+ } H σ H @(λ y' : prod ·(list ·A) ·(list ·A) . λ _ : eq ·(prod ·(list ·A) ·(list ·A)) (pair ·(list ·A) ·(list ·A) left (cons ·A y right)) y' . eq ·(list ·A) (cons ·A y right) σ y' @(λ p : prod ·(list ·A) ·(list ·A) . list ·A) {
+  | pair l' l' ➔ l' 
+ }) {
+  | eq_refl ➔ eq_refl ·(list ·A) (cons ·A y right) 
+ } 
+ } (F l') 
+ } 
+ } l1' l2' _) l l1 l2.
+
+

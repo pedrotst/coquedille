@@ -1,0 +1,33 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+map_id : ∀ A : ★ . Π l : list ·A . eq ·(list ·A) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a t ➔ cons ·A a (map t) 
+ }) l) l = Λ A : ★ . λ l : list ·A . (λ l' : list ·A . μ F. l' @(λ l' : list ·A . eq ·(list ·A) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a t ➔ cons ·A a (map t) 
+ }) l') l') {
+  | nil ➔ eq_refl ·(list ·A) (nil ·A) 
+  | cons y l' ➔ σ σ F l' @(λ y' : list ·A . λ _ : eq ·(list ·A) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a t ➔ cons ·A a (map t) 
+ }) l') y' . eq ·(list ·A) y' ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a t ➔ cons ·A a (map t) 
+ }) l')) {
+  | eq_refl ➔ eq_refl ·(list ·A) ((λ l' : list ·A . μ map. l' @(λ l' : list ·A . list ·A) {
+  | nil ➔ nil ·A 
+  | cons a t ➔ cons ·A a (map t) 
+ }) l') 
+ } @(λ y' : list ·A . λ _ : eq ·(list ·A) l' y' . eq ·(list ·A) (cons ·A y y') (cons ·A y l')) {
+  | eq_refl ➔ eq_refl ·(list ·A) (cons ·A y l') 
+ } 
+ }) l.
+
+

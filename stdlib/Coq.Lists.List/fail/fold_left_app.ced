@@ -1,0 +1,41 @@
+module test.
+data list (A : ★) : ★ =
+  | nil : list
+  | cons : A ➔ list ➔ list.
+
+data eq (A : ★) (x : A) : A ➔ ★ =
+  | eq_refl : eq x.
+
+fold_left_app : ∀ A : ★ . ∀ B : ★ . Π f : A ➔ B ➔ A . Π l : list ·B . Π l' : list ·B . Π i : A . eq ·A ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) ((λ l' : list ·B . λ m : list ·B . μ app. l' @(λ l' : list ·B . Π m : list ·B . list ·B) {
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·B a (app l1 m) 
+ } m) l l') i) ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) l' ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) l i)) = Λ A : ★ . Λ B : ★ . λ f : A ➔ B ➔ A . λ l : list ·B . (λ l' : list ·B . μ F. l' @(λ l' : list ·B . Π l'' : list ·B . Π i : A . eq ·A ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) ((λ l' : list ·B . λ m : list ·B . μ app. l' @(λ l' : list ·B . Π m : list ·B . list ·B) {
+  | nil ➔ λ m . m 
+  | cons a l1 ➔ λ m . cons ·B a (app l1 m) 
+ } m) l' l'') i) ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) l'' ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) l' i))) {
+  | nil ➔ λ l'' . λ i . λ l'' : list ·B . λ i : A . eq_refl ·A ((λ l' : list ·B . λ a0 : A . μ fold_left. l' @(λ l' : list ·B . Π a0 : A . A) {
+  | nil ➔ λ a0 . a0 
+  | cons b t ➔ λ a0 . fold_left t (f a0 b) 
+ } a0) l'' i) 
+  | cons y l' ➔ λ l'' . λ i . λ l'' : list ·B . λ i : A . F l' l'' (f i y) 
+ } l'' i) l.
+
+
