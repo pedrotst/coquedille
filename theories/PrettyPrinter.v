@@ -1,8 +1,8 @@
 Require Import Coquedille.Ast.
 Import Ced.
 
-Require Import List.
-Require Import Strings.String.
+From Stdlib Require Import List.
+From Stdlib Require Import Strings.String.
 Local Open Scope string.
 
 Require Import Coquedille.DenoteCoq.

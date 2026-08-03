@@ -1,5 +1,5 @@
-Require Import String.
-Require Import List. Import ListNotations.
+From Stdlib Require Import String.
+From Stdlib Require Import List. Import ListNotations.
 
 (* We put all the AST inside a module to avoid name clashes *)
 (* with MetaCoq *)

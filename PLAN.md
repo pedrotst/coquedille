@@ -70,8 +70,10 @@ these versions. The test harness additionally needs `ghc` on `PATH`
 | `Require Coq.extraction.Extraction.` | `From Stdlib Require Extraction.` |
 
 Bare `Require Import String.` / `List.` (as in `Ast.v`, `Hardcoded.v`,
-`PrettyPrinter.v`) still resolve against `rocq-stdlib` by suffix — those files
-need **no changes**. `_CoqProject` is unchanged. Rebuild the Makefile with the
+`PrettyPrinter.v`) still resolve against `rocq-stdlib` by suffix, so they did not
+block the port — but Rocq 9 deprecates loading Stdlib without a prefix, and they
+have since been changed to `From Stdlib Require Import ...` to silence it. The
+build is now warning-free on that count. `_CoqProject` is unchanged. Rebuild the Makefile with the
 9.2 `coq_makefile` (`./init_repo.sh` does both steps); the large Makefile diff
 in the tree is exactly this regeneration.
 
