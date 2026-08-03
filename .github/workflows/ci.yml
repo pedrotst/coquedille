@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The rocq-released repository is required: the default opam repository
+      # does not carry rocq-core 9.2 or the matching MetaRocq.
+      - name: Set up OCaml and the Rocq opam repository
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.3.0
+          opam-repositories: |
+            rocq-released: https://rocq-prover.org/opam/released
+            default: https://github.com/ocaml/opam-repository.git
+
+      - name: Install Rocq, MetaRocq and ext-lib
+        run: |
+          opam install -y \
+            rocq-core.9.2.0 \
+            rocq-stdlib \
+            rocq-metarocq-template.1.5.1+9.2 \
+            coq-ext-lib
+
+      # The test suite extracts the translator to Haskell and compiles it.
+      - name: Set up GHC
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.7'
+
+      - name: Build
+        run: opam exec -- ./init_repo.sh
+
+      - name: Test
+        run: cd tests && opam exec -- ./run_tests.sh

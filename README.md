@@ -1,4 +1,4 @@
-# Coquedille [![Build Status](https://travis-ci.org/pedrotst/coquedille.svg?branch=master)](https://travis-ci.org/pedrotst/coquedille)
+# Coquedille [![CI](https://github.com/pedrotst/coquedille/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrotst/coquedille/actions/workflows/ci.yml)
 
 This project will translate [Rocq](https://rocq-prover.org/) (formerly Coq) terms
 into [Cedille](https://cedille.github.io/) terms.
