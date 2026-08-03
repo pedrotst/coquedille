@@ -1,10 +1,10 @@
-Require Coq.extraction.Extraction.
+From Stdlib Require Extraction.
 Extraction Language Haskell.
 Require Import DenoteCoq.
 
 Redirect "program.hs" Recursive Extraction denoteCoq.
 
-Require Import MetaCoq.Template.All.
+From MetaRocq.Template Require Import All.
 
-Quote Recursively Definition tst_syntax := nat.
+MetaRocq Quote Recursively Definition tst_syntax := nat.
 Print tst_syntax.

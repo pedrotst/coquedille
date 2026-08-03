@@ -1,11 +1,11 @@
-Require Import Coq.Program.Equality.
-Require Import String.
-Require Import List. Import ListNotations.
-Require Import Coq.Vectors.Vector.
+From MetaRocq.Template Require Import Ast AstUtils Loader.
 
-Require Import MetaCoq.Template.Ast.
-Require Import MetaCoq.Template.AstUtils.
-Require Import MetaCoq.Template.Loader.
+(* Required after MetaRocq so that [string] is Rocq's and not MetaRocq's
+   bytestring. *)
+From Stdlib Require Import Program.Equality.
+From Stdlib Require Import String.
+From Stdlib Require Import List. Import ListNotations.
+From Stdlib Require Import Vectors.Vector.
 
 Require Import Coquedille.Ast.
 Require Import Coquedille.PrettyPrinter.
@@ -15,12 +15,9 @@ Definition JMeq_rect' :=
 fun (A : Type) (x : A) (P : A -> Type)
   (H : P x) (y : A) (H' : x ~= y) => true.
 
-(* Quote Recursively Definition JMeq_rect_syntax := JMeq_rect'. *)
-Quote Recursively Definition rect_syntax := JMeq.JMeq_rect.
+MetaRocq Quote Recursively Definition rect_syntax := JMeq.JMeq_rect.
 
 Open Scope string_scope.
-(* Eval compute in (pretty (denoteCoq JMeq_rect_syntax)). *)
-(* Eval compute in ((denoteCoq JMeq_rect_syntax)). *)
 
 Eval compute in (pretty (denoteCoq rect_syntax)).
 Eval compute in ((denoteCoq rect_syntax)).
