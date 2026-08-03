@@ -1,6 +1,13 @@
-Require Import Strings.String.
-Require Import Strings.Ascii.
-Require Import List. Import ListNotations.
+From MetaRocq.Utils Require Import utils.
+From MetaRocq.Common Require Import BasicAst Kernames.
+From MetaRocq.Template Require Import Ast AstUtils.
+
+(* Required after MetaRocq so that [string] and the [String.*] operations below
+   are Rocq's and not MetaRocq's bytestrings. MetaRocq identifiers are converted
+   at the boundary with [of_bs]. *)
+From Stdlib Require Import Strings.String.
+From Stdlib Require Import Strings.Ascii.
+From Stdlib Require Import List. Import ListNotations.
 
 Require Import ExtLib.Structures.Monads.
 Require Import ExtLib.Structures.Functor.
@@ -10,49 +17,198 @@ Import MonadNotation.
 Require Import ExtLib.Data.Monads.StateMonad.
 Require Import ExtLib.Data.Monads.ReaderMonad.
 Require Import ExtLib.Data.Monads.OptionMonad.
-Require Import ExtLib.Data.Monads.ListMonad.
 Require Import ExtLib.Data.Monads.IdentityMonad.
 Require Import ExtLib.Data.Monads.EitherMonad.
 Require Import ExtLib.Data.Monads.ContMonad.
 Require Import ExtLib.Data.Map.FMapAList.
-
-Require Import MetaCoq.Template.Ast.
-Require Import MetaCoq.Template.AstUtils.
-Require Import MetaCoq.Template.BasicAst.
-Require Import MetaCoq.Template.utils.
 
 Require Import Coquedille.Ast.
 Require Import Coquedille.Hardcoded.
 
 Require Import ExtLib.Core.RelDec.
 
-Require Import Coq.Sorting.Mergesort.
+From Stdlib Require Import Sorting.Mergesort.
 Module Import NatSort := Sort NatOrder.
+
+(* MetaRocq opens [bs_scope] globally; string literals in this file are Rocq's. *)
+Local Open Scope string_scope.
 
 Definition inj1M {A B mon} `{Monad mon} : mon A -> mon (sum A B) := fun m => fmap inl m.
 Definition inj2M {A B mon} `{Monad mon} : mon B -> mon (sum A B) := fun m => fmap inr m.
 
 Definition ctx := list Ced.Var.
 
-Local Definition string_eq x y := string_compare x y = Eq.
+Local Definition string_eq (x y: string) := Stdlib.Strings.String.eqb x y = true.
 
+#[global]
 Instance string_RelDec : RelDec.RelDec string_eq :=
-  { rel_dec := String.eqb }.
+  { rel_dec := Stdlib.Strings.String.eqb }.
 
-Fixpoint string_of_list_ascii (s : list ascii) : string
-  := match s with
-     | nil => EmptyString
-     | cons ch s => String ch (string_of_list_ascii s)
-     end.
+(* MetaRocq identifiers are bytestrings; everything downstream of here uses
+   Rocq's [string]. *)
+Definition of_bs (b : bytestring.String.t) : string := bytestring.String.to_string b.
 
-Fixpoint list_ascii_of_string (s : string) : list ascii
-  := match s with
-     | EmptyString => nil
-     | String ch s => cons ch (list_ascii_of_string s)
-     end.
+Definition of_nat (n : nat) : string := of_bs (string_of_nat n).
 
-Definition revStr (s: string) : string :=
-string_of_list_ascii (rev (list_ascii_of_string s)).
+(* A [kername] is now a module path paired with the bare identifier, so the
+   qualid is just its second component. *)
+Definition kername_to_qualid (kn : kername) : string := of_bs (snd kn).
+
+Definition kername_full (kn : kername) : string := of_bs (string_of_kername kn).
+
+(* Rocq 9 moved the standard library out from under the [Coq.] prefix, so the
+   hardcoded declarations below are recognised by their trailing module path
+   instead of by their full kername. *)
+Definition kername_is (kn : kername) (suffix : string) : bool :=
+  let full := kername_full kn in
+  let lf := Stdlib.Strings.String.length full in
+  let ls := Stdlib.Strings.String.length suffix in
+  if Nat.leb ls lf
+  then Stdlib.Strings.String.eqb (Stdlib.Strings.String.substring (lf - ls) ls full) suffix
+  else false.
+
+Definition name_to_var (n : name) : Ced.Var :=
+  match n with
+  | nAnon => "_"
+  | nNamed c => of_bs c
+  end.
+
+Definition aname_to_name (n : aname) : name := binder_name n.
+
+(** * Re-inflating [tCase]
+
+    Rocq 9 stores a match's return type under binders that are only named by
+    [pcontext] (their types come from the inductive declaration), and stores
+    each branch body without the lambdas that bind its pattern variables.
+    The translation below was written against the older representation, where
+    both were explicit [tLambda] chains.
+
+    [expand_cases] rebuilds that representation.  Doing it as a separate pass
+    also keeps the denotation functions structurally recursive: they only ever
+    descend into genuine subterms, never into a motive synthesised from the
+    global environment. *)
+
+(* Beta-reduce [ty] against [args], i.e. instantiate its leading products. *)
+Fixpoint inst_prods (ty : term) (args : list term) : term :=
+  match args with
+  | [] => ty
+  | a :: args' =>
+    match ty with
+    | tProd _ _ b => inst_prods (subst10 a b) args'
+    | _ => ty
+    end
+  end.
+
+(* The type of the matched term under [k] index binders: the inductive applied
+   to the parameters and to the indices just bound. *)
+Definition discr_type (ind : inductive) (u : Instance.t)
+           (pparams : list term) (k : nat) : term :=
+  mkApps (tInd ind u) (map (lift0 k) pparams ++ rev (map tRel (seq 0 k))).
+
+(* [nas] is [pcontext] in application order, i.e. the indices followed by the
+   binder for the matched term. *)
+Fixpoint build_motive (ind : inductive) (u : Instance.t) (pparams : list term)
+         (nas : list aname) (arity : term) (k : nat) (rty : term) : term :=
+  match nas with
+  | [] => rty
+  | [na] => tLambda na (discr_type ind u pparams k) rty
+  | na :: nas' =>
+    match arity with
+    | tProd _ ity arity' =>
+      tLambda na ity (build_motive ind u pparams nas' arity' (S k) rty)
+    | _ => tLambda na arity (build_motive ind u pparams nas' arity (S k) rty)
+    end
+  end.
+
+(* [nas] is [bcontext] in application order and [cty] the constructor's type
+   with the inductive block and the parameters already instantiated. *)
+Fixpoint build_branch (nas : list aname) (cty : term) (body : term) : term :=
+  match nas with
+  | [] => body
+  | na :: nas' =>
+    match cty with
+    | tProd _ aty cty' => tLambda na aty (build_branch nas' cty' body)
+    | _ => tLambda na cty (build_branch nas' cty body)
+    end
+  end.
+
+Definition lookup_ind (decls : global_declarations) (ind : inductive)
+  : option (mutual_inductive_body * one_inductive_body) :=
+  match lookup_mind_decl (inductive_mind ind) decls with
+  | None => None
+  | Some mdecl =>
+    match hd_error (ind_bodies mdecl) with
+    | None => None
+    | Some idecl => Some (mdecl, idecl)
+    end
+  end.
+
+Fixpoint expand_cases (decls : global_declarations) (t : term) {struct t} : term :=
+  match t with
+  | tEvar ev args => tEvar ev (map (expand_cases decls) args)
+  | tCast t k v => tCast (expand_cases decls t) k (expand_cases decls v)
+  | tProd na ty b => tProd na (expand_cases decls ty) (expand_cases decls b)
+  | tLambda na ty b => tLambda na (expand_cases decls ty) (expand_cases decls b)
+  | tLetIn na d dty b =>
+    tLetIn na (expand_cases decls d) (expand_cases decls dty) (expand_cases decls b)
+  | tApp f args => tApp (expand_cases decls f) (map (expand_cases decls) args)
+  | tProj p t => tProj p (expand_cases decls t)
+  | tFix mfix idx =>
+    tFix (map (fun d => mkdef _ (dname d) (expand_cases decls (dtype d))
+                              (expand_cases decls (dbody d)) (rarg d)) mfix) idx
+  | tCoFix mfix idx =>
+    tCoFix (map (fun d => mkdef _ (dname d) (expand_cases decls (dtype d))
+                                (expand_cases decls (dbody d)) (rarg d)) mfix) idx
+  | tArray u arr d ty =>
+    tArray u (map (expand_cases decls) arr) (expand_cases decls d) (expand_cases decls ty)
+  | tCase ci p discr brs =>
+    let ind := ci_ind ci in
+    let u := puinst p in
+    let params := map (expand_cases decls) (pparams p) in
+    let rty := expand_cases decls (preturn p) in
+    let discr' := expand_cases decls discr in
+    match lookup_ind decls ind with
+    | None => tCase ci p discr' brs
+    | Some (mdecl, idecl) =>
+      let arity := inst_prods (ind_type idecl) params in
+      let mot := build_motive ind u params (rev (pcontext p)) arity 0 rty in
+      (* The constructor type with the inductive block and the parameters
+         instantiated, so its leading products are the branch's argument types. *)
+      let ctor_type i :=
+          match nth_error (ind_ctors idecl) i with
+          | Some cb =>
+            inst_prods
+              (subst0 (inds (inductive_mind ind) u (ind_bodies mdecl)) (cstr_type cb))
+              params
+          | None => tSort (Sort.type1)
+          end in
+      (* Indexed rather than zipped with [ind_ctors] so that each [bbody] stays a
+         syntactic subterm of [t] and this stays structurally recursive. *)
+      let brs' :=
+          mapi (fun i br =>
+                  mk_branch (bcontext br)
+                            (build_branch (rev (bcontext br)) (ctor_type i)
+                                          (expand_cases decls (bbody br))))
+               brs in
+      tCase ci (mk_predicate u params (pcontext p) mot) discr' brs'
+    end
+  | _ => t
+  end.
+
+Definition expand_constant (decls : global_declarations) (cb : constant_body) : constant_body :=
+  {| cst_type := expand_cases decls (cst_type cb);
+     cst_body := option_map (expand_cases decls) (cst_body cb);
+     cst_universes := cst_universes cb;
+     cst_relevance := cst_relevance cb |}.
+
+Definition expand_decl (decls : global_declarations) (d : global_decl) : global_decl :=
+  match d with
+  | ConstantDecl cb => ConstantDecl (expand_constant decls cb)
+  | InductiveDecl _ => d
+  end.
+
+Definition expand_env (decls : global_declarations) : global_declarations :=
+  map (fun '(kn, d) => (kn, expand_decl decls d)) decls.
 
 Section monadic.
   Open Scope monad_scope.
@@ -89,19 +245,19 @@ Section monadic.
   Definition fresh_renv: rec_env := (nil, nil, nil, nil, nil).
 
   Definition m A := stateT params_env
-                           (readerT (global_env * ctx * rec_env)
+                           (readerT (global_declarations * ctx * rec_env)
                                     (eitherT string IdentityMonad.ident)) A.
 
-  Definition run_m {A} (params: params_env) (env: global_env * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
+  Definition run_m {A} (params: params_env) (env: global_declarations * ctx * rec_env) (ev: m A) := unIdent (unEitherT (runReaderT (runStateT ev params) env)).
   Context {Monad_m : Monad m}.
-  Context {Reader_m: MonadReader (global_env * ctx * rec_env) m}.
+  Context {Reader_m: MonadReader (global_declarations * ctx * rec_env) m}.
   Context {State_m: MonadState params_env m}.
   Context {Either_m: MonadExc string m}.
 
   Definition denoteName (n: name): Ced.Name :=
   match n with
   | nAnon => Ced.Anon
-  | nNamed c => Ced.Named c
+  | nNamed c => Ced.Named (of_bs c)
   end.
 
   Definition getName (n: Ced.Name): Ced.Var :=
@@ -125,14 +281,6 @@ Section monadic.
   | Some y => ret y
   end.
 
-  Definition kername_to_qualid (s: string): string :=
-  match index 0 "." (revStr s) with
-  | None => s
-  | Some n =>
-    let s_len := String.length s in
-    substring (s_len - n) s_len s
-  end.
-
   Fixpoint isKind (t: term): bool :=
   match t with
   | tSort _ => true
@@ -140,11 +288,11 @@ Section monadic.
   | _ => false
   end.
 
-  Fixpoint lookup_constant (id : ident) (decls : global_env)
+  Fixpoint lookup_constant (id : kername) (decls : global_declarations)
     := match decls with
        | nil => None
        | (kn , ConstantDecl d) :: tl =>
-         if String.eqb kn id then Some d else lookup_constant id tl
+         if eq_kername kn id then Some d else lookup_constant id tl
        | _ :: tl => lookup_constant id tl
        end.
 
@@ -164,33 +312,33 @@ Section monadic.
    | _ => ret false
    end.
 
-  Fixpoint decl_exists (id : ident) (decls : global_env) : bool :=
+  Fixpoint decl_exists (id : Ced.Var) (decls : global_declarations) : bool :=
   match decls with
   | [] => false
-  | (kn, ConstantDecl d) :: tl => (String.eqb (kername_to_qualid kn) id) || decl_exists id tl
+  | (kn, ConstantDecl d) :: tl => (Stdlib.Strings.String.eqb (kername_to_qualid kn) id) || decl_exists id tl
   | (kn, InductiveDecl d) :: tl =>
-      if String.eqb (kername_to_qualid kn) id
+      if Stdlib.Strings.String.eqb (kername_to_qualid kn) id
       then true
       else
-        let fix exists_constr (l : list ((ident × term) × nat)) :=
+        let fix exists_constr (l : list constructor_body) :=
             match l with
             | nil => false
-            | (c, _, _) :: tl => (String.eqb c id) || (exists_constr tl)
+            | c :: tl => (Stdlib.Strings.String.eqb (of_bs (cstr_name c)) id) || (exists_constr tl)
             end in
         let bdy := ind_bodies d in
-        match head bdy with
+        match hd_error bdy with
         | None => decl_exists id tl
         | Some b => exists_constr (ind_ctors b) || decl_exists id tl
         end
   end.
 
-  Fixpoint bound_var (x : ident) (Γ : ctx) : bool :=
+  Fixpoint bound_var (x : Ced.Var) (Γ : ctx) : bool :=
   match Γ with
   | [] => false
-  | x' :: xs => (String.eqb x x') || (bound_var x xs)
+  | x' :: xs => (Stdlib.Strings.String.eqb x x') || (bound_var x xs)
   end.
 
-  Definition fresh (x: ident) : m ident :=
+  Definition fresh (x: Ced.Var) : m Ced.Var :=
   '(genv, Γ, _) <- ask ;;
   if (bound_var x Γ) || (decl_exists x genv)
   (* TODO: Implement a smarter / nicer fresh generator *)
@@ -203,7 +351,7 @@ Section monadic.
     r' <- local (fun '(genv, Γ, renv) => (genv, "_" :: Γ, renv)) r ;;
     ret (r', Ced.Anon)
   | nNamed n =>
-    x' <- fresh n ;;
+    x' <- fresh (of_bs n) ;;
     r' <- local (fun '(genv, Γ, renv) => (genv, x' :: Γ, renv)) r ;;
     ret (r' , Ced.Named x')
   end.
@@ -215,7 +363,7 @@ Section monadic.
   | S n' =>
     match t with
     | tLambda x ty t' =>
-      x' <- fresh (get_ident x) ;;
+      x' <- fresh (name_to_var (aname_to_name x)) ;;
       b <- isType ty ;;
       if b
       then take_args' (inl (Ced.TyVar x') :: acc) n' t'
@@ -224,28 +372,29 @@ Section monadic.
     end
   end.
 
-  Definition ctor_typ := ((ident × term) × nat).
+  Definition ctor_typ := constructor_body.
 
   Definition take_args (brch : nat * term) :=
   let '(nargs, t) := brch in
   args <- take_args' nil nargs t;;
   ret (rev args).
 
-  Definition get_ctors ind : m (list ctor_typ) :=
+  Definition get_decls ind : m (mutual_inductive_body * one_inductive_body) :=
     '(genv, _, _) <- ask ;;
-    let minds := inductive_mind ind in
-    m_decl <- option_m (lookup_mind_decl minds genv) "Declaration not found" ;;
-    let bodies := ind_bodies m_decl in
-    body <- option_m (head bodies) "Could not find declaration body" ;;
+    m_decl <- option_m (lookup_mind_decl (inductive_mind ind) genv) "Declaration not found" ;;
+    body <- option_m (hd_error (ind_bodies m_decl)) "Could not find declaration body" ;;
+    ret (m_decl, body).
+
+  Definition get_ctors ind : m (list ctor_typ) :=
+    '(_, body) <- get_decls ind ;;
     ret (ind_ctors body).
 
   Definition build_tApp (nts: ctor_typ * list (Ced.Typ + Ced.Term)) :=
   let '(ctor, ts) := nts in
-  let '(n, _, _) := ctor in
-  Ced.TApp (Ced.TVar n) (map (fun t => (false, t)) ts).
+  Ced.TApp (Ced.TVar (of_bs (cstr_name ctor))) (map (fun t => (false, t)) ts).
 
-  Definition get_ctor_name : ctor_typ -> ident :=
-  fun x => fst (fst x).
+  Definition get_ctor_name : ctor_typ -> Ced.Var :=
+  fun x => of_bs (cstr_name x).
 
   Fixpoint removeLambdas (n: nat) (t: Ced.Term) :=
   match n with
@@ -263,7 +412,7 @@ Section monadic.
   | cons x xs => x ++ ", " ++ showList' xs
   end.
 
-  Fixpoint showList (ls : list string) : string :=
+  Definition showList (ls : list string) : string :=
   "[ " ++ showList' ls ++ "]".
 
   Definition defaultK : Ced.Kind := Ced.KdStar.
@@ -275,10 +424,10 @@ Section monadic.
   | tLetIn v t' kty bdy =>
     match kty with
     | tInd s _ =>
-      if String.eqb "Coq.Init.Logic.False" (inductive_mind s)
+      if kername_is (inductive_mind s) "Init.Logic.False"
       then match t' with
            | tApp (tConst s' _) _ =>
-             if String.eqb "Coq.Init.Logic.eq_ind" s'
+             if kername_is s' "Init.Logic.eq_ind"
              then true
              else false
            | _ => true
@@ -312,7 +461,7 @@ Section monadic.
   | _ => nil
   end.
 
-  Definition get_motive (x: option ident) (mfty: a_motives) (default: Ced.Typ) :=
+  Definition get_motive (x: option Ced.Var) (mfty: a_motives) (default: Ced.Typ) :=
   match x with
   | None => default
   | Some x' => match alist_find _ x' mfty with
@@ -351,7 +500,7 @@ Section monadic.
              end
   end.
 
-  Fixpoint nth_to_head {A} (l: list A) (n: nat) : list A :=
+  Definition nth_to_head {A} (l: list A) (n: nat) : list A :=
   match nth_error l n with
   | None => l
   | Some x => x :: delete_nth l n
@@ -534,7 +683,7 @@ Section monadic.
 
   Definition build_env t := rev (build_env' t nil).
 
-  Fixpoint pull_env (env: mot_env) (x: Ced.Var) (bdy: Ced.Typ) : Ced.Typ * mot_env :=
+  Definition pull_env (env: mot_env) (x: Ced.Var) (bdy: Ced.Typ) : Ced.Typ * mot_env :=
   match alist_find _ x env with
   | Some ty =>
     let t' := match ty with
@@ -556,7 +705,7 @@ Section monadic.
   end.
 
   (* Inserts Lam x ty in the begining of the lambda list *)
-  Fixpoint insert_lam_body (t: Ced.Typ) (x: Ced.Var) (kty: Ced.Kind + Ced.Typ): Ced.Typ :=
+  Definition insert_lam_body (t: Ced.Typ) (x: Ced.Var) (kty: Ced.Kind + Ced.Typ): Ced.Typ :=
   match kty with
   | inl k => Ced.TyLamK (Ced.Named x) (Some k) t
   | inr ty => Ced.TyLam (Ced.Named x) (Some ty) t
@@ -604,12 +753,10 @@ Section monadic.
   let tys := map snd ts in
   (* let erased_tys := map (deleteparams penv) tys in *)
   let deps' := concat (map (get_deps penv) tys) in
-  if eq_nat #|deps'| 0
+  if Nat.eqb #|deps'| 0
   then (t', fvars')
   else pull_deps t' deps' fvars' penv.
-  Next Obligation.
-    admit.
-  Admitted.
+  Admit Obligations.
 
   Fixpoint get_lambodies (t: Ced.Typ) : list Ced.Var :=
   match t with
@@ -678,7 +825,7 @@ Section monadic.
     k1 <- (if isKind t1
          then fmap inl (denoteKind t1)
          else fmap inr (denoteType t1)) ;;
-    '(k2, x') <- localDenote x (denoteKind t2) ;;
+    '(k2, x') <- localDenote (aname_to_name x) (denoteKind t2) ;;
     ret (Ced.KdAll x' k1 k2)
   | _ => raise "Ill-formed kind"
   end
@@ -687,10 +834,10 @@ Section monadic.
   match t with
   | tRel n =>
     '(_, Γ, _) <- ask ;;
-     v <- option_m (nth_error Γ n) ("ty tRel " ++ string_of_nat n ++ " not in environment " ++ showList Γ);;
+     v <- option_m (nth_error Γ n) ("ty tRel " ++ of_nat n ++ " not in environment " ++ showList Γ);;
      ret (Ced.TyVar v)
   | tProd x t1 t2 =>
-    '(t2', x') <- localDenote x (denoteType t2) ;;
+    '(t2', x') <- localDenote (aname_to_name x) (denoteType t2) ;;
     if isKind t1
     then
       k <- denoteKind t1 ;;
@@ -707,7 +854,7 @@ Section monadic.
                       ts) ;;
     ret (Ced.TyApp t' ts')
   | tLambda x kty t =>
-    '(t', x') <- localDenote x (denoteType t) ;;
+    '(t', x') <- localDenote (aname_to_name x) (denoteType t) ;;
     if isKind kty
     then k <- denoteKind kty ;;
          ret (Ced.TyLamK x' (Some k) t')
@@ -715,8 +862,8 @@ Section monadic.
          ret (Ced.TyLam x' (Some ty) t')
   | tInd ind univ => ret (Ced.TyVar (kername_to_qualid (inductive_mind ind)))
   | tFix f _ =>
-    fdef <- option_m (head f) "No definition of fixpoint" ;;
-    raise (append (append "Error translating " (get_ident (dname fdef))) " : type tFix not implemented yet")
+    fdef <- option_m (hd_error f) "No definition of fixpoint" ;;
+    raise (append (append "Error translating " (name_to_var (aname_to_name (dname fdef)))) " : type tFix not implemented yet")
   | tConstruct ind n _ => raise "type tConstruct not implemented yet"
   | tVar _ => raise "type tVar not implemented yet"
   | tEvar _ _ => raise "type tEvar not implemented yet"
@@ -727,6 +874,10 @@ Section monadic.
   | tCase _ _ _ _ => raise "type tCase not implemented yet"
   | tLetIn _ _ _ _ => raise "type tLetIn not implemented yet"
   | tSort univ => ret defaultTy
+  | tInt _ => raise "type tInt not implemented yet"
+  | tFloat _ => raise "type tFloat not implemented yet"
+  | tString _ => raise "type tString not implemented yet"
+  | tArray _ _ _ _ => raise "type tArray not implemented yet"
   end
 
   with denoteTerm (t: term): m Ced.Term :=
@@ -734,7 +885,7 @@ Section monadic.
   | tSort univ => ret (Ced.TVar "tSort")
   | tRel n =>
     '(_, Γ, _) <- ask ;;
-     v <- option_m (nth_error Γ n) ("term Variable " ++ string_of_nat n ++ " not in environment");;
+     v <- option_m (nth_error Γ n) ("term Variable " ++ of_nat n ++ " not in environment");;
      ret (Ced.TVar v)
   | tApp t ts =>
     t' <- ⟦ t ⟧ ;;
@@ -749,11 +900,11 @@ Section monadic.
   | tInd ind univ => ret (Ced.TVar (kername_to_qualid (inductive_mind ind)))
   | tConstruct ind n _ =>
     ctors <- get_ctors ind ;;
-    '(ctor, _, _) <- option_m (nth_error ctors n) "Could not find constructor";;
-    ret (Ced.TVar ctor)
+    ctor <- option_m (nth_error ctors n) "Could not find constructor";;
+    ret (Ced.TVar (get_ctor_name ctor))
   | tProd x kty t => ret (Ced.TVar "tprodT?")
   | tLambda x kty t =>
-    '(t', x') <- localDenote x ⟦ t ⟧ ;;
+    '(t', x') <- localDenote (aname_to_name x) ⟦ t ⟧ ;;
     if isKind kty
     then k <- denoteKind kty ;;
          ret (Ced.TLamK x' (Some k) t')
@@ -769,7 +920,7 @@ Section monadic.
       | _ => ret (Ced.TVar "delwrong")
       end
     else
-      '(bdy', x') <- localDenote x ⟦ bdy ⟧ ;;
+      '(bdy', x') <- localDenote (aname_to_name x) ⟦ bdy ⟧ ;;
       if isKind kty
       then k <- denoteKind kty ;;
            t'' <- denoteType t' ;;
@@ -784,7 +935,7 @@ Section monadic.
   | tConst kern _ => ret (Ced.TVar (kername_to_qualid kern))
   | tCast t _ _ => ⟦ t ⟧
   | tFix [f] _ =>
-    let fname := get_ident (dname f) in
+    let fname := name_to_var (aname_to_name (dname f)) in
     let body := dbody f in
     let type := dtype f in
     let rarg_pos := rarg f in
@@ -792,15 +943,17 @@ Section monadic.
     renv' <- denoteMotive ty rarg_pos fname;;
     local (fun '(genv, Γ, renv) => (genv, fname :: Γ, renv')) ⟦ body ⟧
   | tFix _ _ => raise "Mutually recursive fixpoints not implemented yet"
-  | tCase (ind, npars) mot matchvar brchs =>
+  | tCase ci p matchvar brchs =>
     '(_, _, renv) <- ask ;;
     let '(arargs, _, anargs, amots, _) := renv in
-    ctors <- get_ctors ind ;;
+    ctors <- get_ctors (ci_ind ci) ;;
     matchvar' <- ⟦ matchvar ⟧ ;;
-    mot' <- denoteType mot ;;
-    args <- list_m (map take_args brchs) ;;
-    brchs_t' <- list_m (map (fun '(_, t) => ⟦ t ⟧) brchs) ;;
-    let brchs_n := map fst brchs in
+    (* [expand_cases] has already put the motive and the branch bodies back in
+       their explicit lambda form, so both are plain subterms here. *)
+    mot' <- denoteType (preturn p) ;;
+    let brchs_n := map (fun br => #|bcontext br|) brchs in
+    args <- list_m (map (fun br => take_args (#|bcontext br|, bbody br)) brchs) ;;
+    brchs_t' <- list_m (map (fun br => ⟦ bbody br ⟧) brchs) ;;
     let trimmed_brchs' := map (fun '(n, t) => removeLambdas n t) (combine brchs_n brchs_t') in
     let constrs := map build_tApp (combine ctors args) in
     let flat_constrs := map flattenTApp constrs in
@@ -814,13 +967,18 @@ Section monadic.
     let tapp_args := map build_appargs app_args in
     let t' := Ced.TApp (Ced.TMu fname matchvar' (Some mot') (combine flat_constrs nrargs_brchs)) tapp_args in
     ret (flattenTApp t')
+  | tInt _ => raise "tInt not implemented yet"
+  | tFloat _ => raise "tFloat not implemented yet"
+  | tString _ => raise "tString not implemented yet"
+  | tArray _ _ _ _ => raise "tArray not implemented yet"
   end
   where "⟦ x ⟧" := (denoteTerm x).
 
-  Fixpoint denoteCtors (data_name : Ced.Var)
+  Definition denoteCtors (data_name : Ced.Var)
            (params: Ced.Params)
-           (ctor: (ident * term) * nat) : m Ced.Ctor  :=
-  let '(name, t, i) := ctor in
+           (ctor: ctor_typ) : m Ced.Ctor  :=
+  let name := of_bs (cstr_name ctor) in
+  let t := cstr_type ctor in
   let paramnames := map fst params in
   t' <- local (fun '(genv, _, _) => (genv, [data_name], fresh_renv)) (denoteType t) ;;
   ret (Ced.Ctr name t').
@@ -829,7 +987,7 @@ Section monadic.
   match params with
   | nil => ret []
   | p :: ps =>
-    let x := decl_name p in
+    let x := aname_to_name (decl_name p) in
     let t := decl_type p in
     tk <- (if isKind t then inj1M (denoteKind t) else inj2M (denoteType t)) ;;
     '(ls, x') <- localDenote x (denoteParams ps) ;;
@@ -837,14 +995,14 @@ Section monadic.
   end.
 
   Definition denoteInductive mbody : m Ced.Cmd :=
-  body <- option_m (head (ind_bodies mbody)) "Could not find body of definition" ;;
-  let name := ind_name body in
-  if String.eqb name "False"
+  body <- option_m (hd_error (ind_bodies mbody)) "Could not find body of definition" ;;
+  let name := of_bs (ind_name body) in
+  if Stdlib.Strings.String.eqb name "False"
   then ret (Ced.CmdAssgn False_term)
   else
     let ctors := ind_ctors body in
     let param_l := rev (ind_params mbody) in
-    let param_names := map (get_ident ̊ decl_name) param_l in
+    let param_names := map (name_to_var ̊ aname_to_name ̊ decl_name) param_l in
     params <- denoteParams param_l;;
     let tki := ind_type body in
     ki <- local (fun '(genv, _, _) => (genv, nil, fresh_renv)) (denoteKind tki) ;;
@@ -853,7 +1011,7 @@ Section monadic.
     ctors' <- list_m (map (denoteCtors name (rev params)) ctors);;
     ret (Ced.CmdData (Ced.DefData name params ki ctors')).
 
-  Fixpoint denoteGenv (genv: global_env): m Ced.Program :=
+  Fixpoint denoteGenv (genv: global_declarations): m Ced.Program :=
   match genv with
   | nil => ret nil
   | (kern, e) :: es' =>
@@ -864,26 +1022,26 @@ Section monadic.
       ret (p :: ps)
     | ConstantDecl cbody =>
       ps <- denoteGenv es';;
-      if (String.eqb kern "Coq.Init.Logic.False_ind")
+      if (kername_is kern "Init.Logic.False_ind")
       then ret ((Ced.CmdAssgn False_ind_term) :: ps)
       else
-      if (String.eqb kern "Coq.Logic.JMeq.JMeq_rect")
+      if (kername_is kern "Logic.JMeq.JMeq_rect")
       then ret ((Ced.CmdAssgn JMeq_rect_term) :: ps)
       else
-      if (String.eqb kern "Coq.Init.Datatypes.list_ind")
+      if (kername_is kern "Init.Datatypes.list_ind")
       then ret ((Ced.CmdAssgn list_ind_term) :: ps)
       else
-      if (String.eqb kern "Coq.Init.Datatypes.nat_rect")
+      if (kername_is kern "Init.Datatypes.nat_rect")
       then ret ((Ced.CmdAssgn nat_rect_term) :: ps)
       else
-      if (String.eqb kern "Coq.Init.Datatypes.nat_ind")
+      if (kername_is kern "Init.Datatypes.nat_ind")
       then ret ((Ced.CmdAssgn nat_ind_term) :: ps)
       else
         (* Ignore JMeq_eq because it is an axiom *)
-      if (String.eqb kern "Coq.Logic.JMeq.JMeq_eq")
+      if (kername_is kern "Logic.JMeq.JMeq_eq")
       then ret ps
       else
-      bdy <- option_m (cst_body cbody) ("Constant " ++ kern ++ " does not have a body defined") ;;
+      bdy <- option_m (cst_body cbody) ("Constant " ++ kername_full kern ++ " does not have a body defined") ;;
       let name := kername_to_qualid kern in
       if isKind (cst_type cbody)
       then ty <- denoteType bdy ;;
@@ -907,6 +1065,7 @@ Section monadic.
 
 End monadic.
 
+#[global]
 Instance m_Monad : Monad m.
 apply Monad_stateT.
 apply Monad_readerT.
@@ -914,7 +1073,8 @@ apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
-Instance m_MonadReader : MonadReader (global_env * ctx * rec_env) m.
+#[global]
+Instance m_MonadReader : MonadReader (global_declarations * ctx * rec_env) m.
 apply MonadReader_stateT.
 apply Monad_readerT.
 apply Monad_eitherT.
@@ -924,6 +1084,7 @@ apply Monad_eitherT.
 apply Monad_ident.
 Defined.
 
+#[global]
 Instance m_MonadExc : MonadExc string m.
 apply Exc_stateT.
 apply Monad_readerT.
@@ -934,6 +1095,7 @@ apply Exception_eitherT.
 apply Monad_ident.
 Defined.
 
+#[global]
 Instance m_MonadState : MonadState params_env m.
 apply MonadState_stateT.
 apply Monad_readerT.
@@ -943,7 +1105,9 @@ Defined.
 
 Definition denoteCoq (p: program): string + Ced.Program :=
 let '(genv, t) := p in
-match run_m nil (genv, nil, fresh_renv) (denoteCoq' t) with
+(* [declarations] lists the most recently added declaration first. *)
+let decls := rev (declarations genv) in
+match run_m nil (expand_env decls, nil, fresh_renv) (denoteCoq' t) with
 | inl l => inl l
 | inr (p, _) => inr p
 end.
