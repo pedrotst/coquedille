@@ -8,6 +8,7 @@ From MetaRocq.Template Require Import Ast AstUtils.
 From Stdlib Require Import Strings.String.
 From Stdlib Require Import Strings.Ascii.
 From Stdlib Require Import List. Import ListNotations.
+From Stdlib Require Import Lia.
 
 Require Import ExtLib.Structures.Monads.
 Require Import ExtLib.Structures.Functor.
@@ -745,6 +746,134 @@ Section monadic.
   end.
   Definition alist_pos {K V R RD_K} := @alist_pos' K V R RD_K 0.
 
+  (** ** Termination of [pull_deps]
+
+      [alist_remove_many deps fvars] only shrinks [fvars] when one of the keys
+      in [deps] is actually bound there, so the measure does not decrease on its
+      own. What saves it is the recursion guard: the recursive call happens only
+      when [deps'] is non-empty, and [deps'] is built out of [ts], so in that
+      branch [ts] is non-empty too - which forces at least one key of [deps] to
+      have been found in [fvars]. The lemmas below make that chain explicit.
+
+      A note on the tactics: [Ced.Var] is a transparent alias of [string], so a
+      [rel_dec] application written in a tactic elaborates at [string] while the
+      one sitting in the goal is at [Ced.Var]. The two are convertible but not
+      syntactically equal, which silently defeats [destruct] and makes [lia] see
+      two distinct atoms. Every boolean scrutinee below is therefore taken out
+      of the goal with [match goal with ... context [...] ...] rather than
+      written out. *)
+
+  Lemma remove_many_nil : forall (e : mot_env),
+      alist_remove_many [] e = e.
+  Proof. reflexivity. Qed.
+
+  Lemma remove_many_cons : forall a deps (e : mot_env),
+      alist_remove_many (a :: deps) e
+      = alist_remove _ a (alist_remove_many deps e).
+  Proof. reflexivity. Qed.
+
+  Lemma remove_length_le : forall x (e : mot_env),
+      #|alist_remove _ x e| <= #|e|.
+  Proof. intros x e. apply filter_length_le. Qed.
+
+  Lemma remove_length_lt : forall x (e : mot_env) v,
+      alist_find _ x e = Some v -> #|alist_remove _ x e| < #|e|.
+  Proof.
+    intros x e. unfold alist_remove.
+    induction e as [| [k w] e IH]; simpl; intros v Hf; [ discriminate |].
+    match goal with
+    | |- context [ filter ?f ?l ] => pose proof (filter_length_le f l) as Hle
+    end.
+    match type of Hf with
+    | context [ if ?b then _ else _ ] => destruct b eqn:Hxk
+    end; simpl.
+    - lia.
+    - specialize (IH v Hf). lia.
+  Qed.
+
+  Lemma remove_many_length_le : forall deps (e : mot_env),
+      #|alist_remove_many deps e| <= #|e|.
+  Proof.
+    induction deps as [| a deps IH]; intros e.
+    - rewrite remove_many_nil. apply Nat.le_refl.
+    - rewrite remove_many_cons.
+      pose proof (remove_length_le a (alist_remove_many deps e)).
+      pose proof (IH e). lia.
+  Qed.
+
+  Lemma find_remove_neq : forall x a (e : mot_env),
+      x <> a -> alist_find _ x (alist_remove _ a e) = alist_find _ x e.
+  Proof.
+    intros x a e Hne. unfold alist_remove.
+    induction e as [| [k v] e IH]; simpl; auto.
+    match goal with | |- _ = (if ?b then Some _ else _) => destruct b eqn:Hxk end;
+    match goal with | |- context [ negb ?b ] => destruct b eqn:Hak end;
+    simpl.
+    - exfalso. apply Hne.
+      cbn in Hxk, Hak.
+      apply Stdlib.Strings.String.eqb_eq in Hxk.
+      apply Stdlib.Strings.String.eqb_eq in Hak.
+      congruence.
+    - rewrite Hxk. reflexivity.
+    - exact IH.
+    - rewrite Hxk. exact IH.
+  Qed.
+
+  Lemma find_remove_many_notin : forall deps x (e : mot_env),
+      ~ In x deps -> alist_find _ x (alist_remove_many deps e) = alist_find _ x e.
+  Proof.
+    induction deps as [| a deps IH]; intros x e Hni.
+    - rewrite remove_many_nil. reflexivity.
+    - rewrite remove_many_cons.
+      rewrite find_remove_neq by (intro Heq; apply Hni; left; symmetry; exact Heq).
+      apply IH. intro Hin; apply Hni; right; exact Hin.
+  Qed.
+
+  (* Removing a set of keys of which at least one is actually bound strictly
+     shrinks the environment. *)
+  Lemma remove_many_length_lt : forall deps x (e : mot_env) v,
+      In x deps -> alist_find _ x e = Some v ->
+      #|alist_remove_many deps e| < #|e|.
+  Proof.
+    induction deps as [| a deps IH]; intros x e v Hin Hf; [ contradiction |].
+    rewrite remove_many_cons.
+    destruct (In_dec Stdlib.Strings.String.string_dec x deps) as [Hin' | Hni'].
+    - (* x is removed further down the fold *)
+      pose proof (remove_length_le a (alist_remove_many deps e)).
+      pose proof (IH x e v Hin' Hf). lia.
+    - (* x is not in the tail, so it is a itself, and it survives to here *)
+      assert (a = x) as -> by (destruct Hin; [ auto | contradiction ]).
+      assert (alist_find _ x (alist_remove_many deps e) = Some v) as Hf'
+          by (rewrite find_remove_many_notin by exact Hni'; exact Hf).
+      pose proof (remove_length_lt x (alist_remove_many deps e) v Hf').
+      pose proof (remove_many_length_le deps e). lia.
+  Qed.
+
+  Lemma combine_maybe_find_many_nonnil : forall deps (e : mot_env),
+      combine_maybe deps (alist_find_many deps e) <> nil ->
+      exists x v, In x deps /\ alist_find _ x e = Some v.
+  Proof.
+    induction deps as [| a deps IH]; intros e Hne; [ simpl in Hne; contradiction |].
+    destruct (alist_find _ a e) as [w|] eqn:Hfa.
+    - exists a, w. split; [ left; reflexivity | exact Hfa ].
+    - simpl in Hne. rewrite Hfa in Hne.
+      destruct (IH e Hne) as [x [u [Hin Hf]]].
+      exists x, u. split; [ right; exact Hin | exact Hf ].
+  Qed.
+
+  Lemma pull_deps_decrease : forall deps (e : mot_env),
+      combine_maybe deps (alist_find_many deps e) <> nil ->
+      #|alist_remove_many deps e| < #|e|.
+  Proof.
+    intros deps e Hne.
+    destruct (combine_maybe_find_many_nonnil deps e Hne) as [x [v [Hin Hf]]].
+    eapply remove_many_length_lt; eauto.
+  Qed.
+
+  (* The guard matches on [deps'] directly rather than testing [#|deps'| = 0]:
+     the two are equivalent, but [Program] records the branch taken for a match
+     on a constructor, and discards it for a boolean [if] — without it the
+     obligation below is not just hard but false. *)
   Program Fixpoint pull_deps t deps fvars penv { measure #|fvars| } :=
   let fvars' := alist_remove_many deps fvars in
   let deps_ty := alist_find_many deps fvars in
@@ -753,10 +882,21 @@ Section monadic.
   let tys := map snd ts in
   (* let erased_tys := map (deleteparams penv) tys in *)
   let deps' := concat (map (get_deps penv) tys) in
-  if Nat.eqb #|deps'| 0
-  then (t', fvars')
-  else pull_deps t' deps' fvars' penv.
-  Admit Obligations.
+  match deps' with
+  | [] => (t', fvars')
+  | _ :: _ => pull_deps t' deps' fvars' penv
+  end.
+  Next Obligation.
+    apply pull_deps_decrease. intro Hts.
+    match goal with
+    | H : _ :: _ = _ |- _ => rewrite Hts in H; simpl in H; discriminate
+    end.
+  Qed.
+  (* Well-foundedness of the measure itself; [Admit Obligations] was hiding this
+     one too, not just the decrease above. *)
+  Next Obligation.
+    apply Wf.measure_wf. exact Wf_nat.lt_wf.
+  Qed.
 
   Fixpoint get_lambodies (t: Ced.Typ) : list Ced.Var :=
   match t with

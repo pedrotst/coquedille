@@ -1,7 +1,7 @@
 Require Import Coquedille.Ast.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
+From Stdlib Require Import String.
 
 Local Open Scope string_scope.
 

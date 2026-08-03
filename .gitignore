@@ -41,3 +41,6 @@ cabal.project.local~
 .idea
 *.log
 tmp/
+
+# lia/micromega proof cache
+.lia.cache
