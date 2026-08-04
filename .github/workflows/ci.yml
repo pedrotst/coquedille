@@ -14,22 +14,27 @@ jobs:
       - uses: actions/checkout@v4
 
       # The rocq-released repository is required: the default opam repository
-      # does not carry rocq-core 9.2 or the matching MetaRocq.
+      # does not carry rocq-core 9.0 or the matching MetaRocq.
+      #
+      # The compiler is 4.14 rather than 5.x because rocq-autosubst-ocaml
+      # requires ocaml < 4.15; that package is also what pins Rocq to 9.0
+      # (rocq-core >= 9.0 & < 9.1).
       - name: Set up OCaml and the Rocq opam repository
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 5.3.0
+          ocaml-compiler: 4.14.2
           opam-repositories: |
             rocq-released: https://rocq-prover.org/opam/released
             default: https://github.com/ocaml/opam-repository.git
 
-      - name: Install Rocq, MetaRocq and ext-lib
+      - name: Install Rocq, MetaRocq, ext-lib and Autosubst
         run: |
           opam install -y \
-            rocq-core.9.2.0 \
+            rocq-core.9.0.0 \
             rocq-stdlib \
-            rocq-metarocq-template.1.5.1+9.2 \
-            coq-ext-lib
+            coq-ext-lib.0.13.0 \
+            rocq-metarocq-template.1.4+9.0 \
+            rocq-autosubst-ocaml.1.1+9.0
 
       # The test suite extracts the translator to Haskell and compiles it.
       - name: Set up GHC

@@ -7,7 +7,7 @@
 ##         #     GNU Lesser General Public License Version 2.1          ##
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
-## GNUMakefile for Rocq 9.2
+## GNUMakefile for Rocq 9.0.0
 
 # For debugging purposes (must stay here, don't move below)
 INITIAL_VARS := $(.VARIABLES)
@@ -48,7 +48,7 @@ Makefile.conf: _CoqProject
 	coq_makefile -f _CoqProject -o Makefile
 
 # This file can be created by the user to hook into double colon rules or
-# add any other Makefile code they may need
+# add any other Makefile code he may need
 -include Makefile.local
 
 # Parameters ##################################################################
@@ -77,6 +77,7 @@ TIMED?=
 TIMECMD?=
 # Use command time on linux, gtime on Mac OS
 TIMEFMT?="$(if $(findstring undefined, $(flavor 1)),$@,$(1)) (real: %e, user: %U, sys: %S, mem: %M ko)"
+ifneq (,$(TIMED))
 ifeq (0,$(shell command time -f "" true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=command time -f $(TIMEFMT)
 else
@@ -85,6 +86,9 @@ STDTIME?=gtime -f $(TIMEFMT)
 else
 STDTIME?=command time
 endif
+endif
+else
+STDTIME?=command time -f $(TIMEFMT)
 endif
 
 COQBIN?=
@@ -272,8 +276,9 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 
 # The version of Coq being run and the version of rocq makefile that
 # generated this makefile
-COQ_VERSION:=$(shell $(ROCQ) --print-version | cut -d " " -f 1)
-COQMAKEFILE_VERSION:=9.2
+# NB --print-version is not in the rocq shim
+COQ_VERSION:=$(shell $(ROCQ) c --print-version | cut -d " " -f 1)
+COQMAKEFILE_VERSION:=9.0.0
 
 # COQ_SRC_SUBDIRS is for user-overriding, usually to add
 # `user-contrib/Foo` to the includes, we keep COQCORE_SRC_SUBDIRS for
@@ -677,8 +682,8 @@ clean::
 	$(HIDE)rm -f $(VOFILES)
 	$(HIDE)rm -f $(VOFILES:.vo=.vos)
 	$(HIDE)rm -f $(VOFILES:.vo=.vok)
-	$(HIDE)rm -f $(VOFILES:.vo=.vo.prof.json)
-	$(HIDE)rm -f $(VOFILES:.vo=.vo.prof.json.gz)
+	$(HIDE)rm -f $(VOFILES:.vo=.v.prof.json)
+	$(HIDE)rm -f $(VOFILES:.vo=.v.prof.json.gz)
 	$(HIDE)rm -f $(BEAUTYFILES) $(VFILES:=.old)
 	$(HIDE)rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex
 	$(HIDE)rm -f $(VFILES:.v=.glob)
@@ -784,7 +789,6 @@ define globvorule=
   $(1).vo $(1).glob &: $(1).v | $$(VDFILE)
 	$$(SHOW)ROCQ compile $(1).v
 	$$(HIDE)$$(TIMER) $$(ROCQ) compile $$(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $$(COQFLAGS) $$(COQLIBS) $(1).v
-	$$(HIDE)rm -f $(1).vos $(1).vok && touch $(1).vos $(1).vok # make empty vos and vok files
 	$$(HIDE)$$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$$(SHOW)COQNATIVE $(1).vo
@@ -797,7 +801,6 @@ else
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)ROCQ compile $<
 	$(HIDE)$(TIMER) $(ROCQ) compile $(COQDEBUG) $(TIMING_ARG) $(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $<
-	$(HIDE)rm -f $@s $@k && touch $@s $@k # make empty vos and vok files
 	$(HIDE)$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
@@ -819,7 +822,6 @@ $(VFILES:.v=.vos): %.vos: %.v
 
 $(VFILES:.v=.vok): %.vok: %.v
 	$(SHOW)ROCQ compile -vok $<
-	$(HIDE)rm -f $@ && touch $@ # make empty vok file
 	$(HIDE)$(TIMER) $(ROCQ) compile -vok $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
